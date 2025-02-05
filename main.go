@@ -15,10 +15,10 @@ func monitorGameRooms() {
 		roomCount := len(rooms)
 		playerCount := 0
 		for _, room := range rooms {
-			if room.player1 != nil {
+			if room.Player1 != nil {
 				playerCount++
 			}
-			if room.player2 != nil {
+			if room.Player2 != nil {
 				playerCount++
 			}
 		}

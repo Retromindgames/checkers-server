@@ -1,6 +1,7 @@
 package main
 
 import (
+	"checkers-server/game"
 	"fmt"
 	"net/http"
 	"sync"
@@ -12,8 +13,8 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-var waitingQueue []*Player
-var rooms []*GameRoom
+var waitingQueue []*game.Player
+var rooms []*game.Room
 var mutex sync.Mutex
 
 // handleConnection manages the logic for new player connections.
@@ -26,7 +27,7 @@ func handleConnection(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("New player connected:", r.RemoteAddr)
 
-	player := &Player{conn: conn}
+	player := &game.Player{Conn: conn}
 	conn.WriteMessage(websocket.TextMessage, []byte("Connected successfully!"))
 
 	mutex.Lock()
@@ -38,17 +39,17 @@ func handleConnection(w http.ResponseWriter, r *http.Request) {
 		p2 := waitingQueue[1]
 		waitingQueue = waitingQueue[2:] // Remove matched players from queue
 
-		room := &GameRoom{player1: p1, player2: p2}
+		room := &game.Room{Player1: p1, Player2: p2}
 		rooms = append(rooms, room) // Store active room
-		p1.room = room
-		p2.room = room
+		p1.Room = room
+		p2.Room = room
 
 		mutex.Unlock()
 
 		fmt.Println("New game started!")
 
-		p1.conn.WriteMessage(websocket.TextMessage, []byte("Paired! Game started."))
-		p2.conn.WriteMessage(websocket.TextMessage, []byte("Paired! Game started."))
+		p1.Conn.WriteMessage(websocket.TextMessage, []byte("Paired! Game started."))
+		p2.Conn.WriteMessage(websocket.TextMessage, []byte("Paired! Game started."))
 
 		go gameLoop(p1, p2) // Start the game
 	} else {
@@ -59,19 +60,19 @@ func handleConnection(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleDisconnection handles the disconnection of players.
-func handleDisconnection(player *Player, opponent *Player) {
+func handleDisconnection(player *game.Player, opponent *game.Player) {
 	// Notify both players about the disconnection
-	player.conn.WriteMessage(websocket.TextMessage, []byte("You disconnected."))
-	opponent.conn.WriteMessage(websocket.TextMessage, []byte("Opponent disconnected."))
+	player.Conn.WriteMessage(websocket.TextMessage, []byte("You disconnected."))
+	opponent.Conn.WriteMessage(websocket.TextMessage, []byte("Opponent disconnected."))
 
 	// Close both connections
-	player.conn.Close()
-	opponent.conn.Close()
+	player.Conn.Close()
+	opponent.Conn.Close()
 
 	// Remove room from active list
 	mutex.Lock()
 	for i, room := range rooms {
-		if room == player.room {
+		if room == player.Room {
 			rooms = append(rooms[:i], rooms[i+1:]...)
 			break
 		}
