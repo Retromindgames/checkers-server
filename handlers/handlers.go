@@ -1,8 +1,7 @@
-package main
+package handlers
 
 import (
 	"checkers-server/game"
-	"checkers-server/gameloop"
 	"fmt"
 	"net/http"
 	"sync"
@@ -51,7 +50,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		p1.Conn.WriteMessage(websocket.TextMessage, []byte("Paired! Game started."))
 		p2.Conn.WriteMessage(websocket.TextMessage, []byte("Paired! Game started."))
 
-		go gameloop.Loop(p1, p2) // Start the game
+		go game.gameloop.Loop(p1, p2) // Start the game
 	} else {
 		Mutex.Unlock()
 		fmt.Println("Waiting for opponent...")

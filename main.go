@@ -2,6 +2,7 @@ package main
 
 import (
 	"checkers-server/game"
+	"checkers-server/handlers"
 	"fmt"
 	"net/http"
 	"time"
@@ -12,7 +13,7 @@ func monitorGameRooms() {
 	for {
 		time.Sleep(5 * time.Second) // Adjust as needed
 
-		Mutex.Lock()
+		handlers.Mutex.Lock()
 		roomCount := len(game.Rooms)
 		playerCount := 0
 		for _, room := range game.Rooms {
@@ -23,7 +24,7 @@ func monitorGameRooms() {
 				playerCount++
 			}
 		}
-		Mutex.Unlock()
+		handlers.Mutex.Unlock()
 
 		fmt.Printf("Active Rooms: %d | Total Players: %d\n", roomCount, playerCount)
 	}
@@ -32,7 +33,7 @@ func monitorGameRooms() {
 func main() {
 	go monitorGameRooms()
 
-	http.HandleFunc("/ws", HandleConnection)
+	http.HandleFunc("/ws", handlers.HandleConnection)
 	fmt.Println("Server started on :8080")
 	http.ListenAndServe(":8080", nil)
 }
