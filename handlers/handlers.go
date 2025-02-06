@@ -34,11 +34,10 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		for {
 			_, msg, err := conn.ReadMessage()
 			if err != nil {
-				fmt.Println("Player disconnected:", r.RemoteAddr)
+				fmt.Println("Player disconnected: ", r.RemoteAddr)
 				HandleDisconnection(player, player.Room.GetOpponent(player))
 				return
 			}
-
 			message, err := message.ParseMessage(msg, conn)
 			if err != nil {
 				conn.WriteMessage(websocket.TextMessage, []byte("Invalid message format."))

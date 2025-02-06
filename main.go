@@ -14,7 +14,6 @@ import (
 )
 
 // TODO: Pass this to a consoleUtils package.
-// TODO: Have a config file? Idk...
 // ! Not working right.
 // clearConsole clears the console screen.
 func clearConsole() {
