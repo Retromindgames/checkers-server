@@ -2,6 +2,7 @@ package main
 
 import (
 	"checkers-server/game"
+	"checkers-server/gameloop"
 	"fmt"
 	"net/http"
 	"sync"
@@ -9,17 +10,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
+var Upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-var waitingQueue []*game.Player
-var rooms []*game.Room
-var mutex sync.Mutex
+var Mutex sync.Mutex
+
 
 // handleConnection manages the logic for new player connections.
-func handleConnection(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+func HandleConnection(w http.ResponseWriter, r *http.Request) {
+	conn, err := Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println("WebSocket upgrade failed:", err)
 		return
@@ -30,37 +30,38 @@ func handleConnection(w http.ResponseWriter, r *http.Request) {
 	player := &game.Player{Conn: conn}
 	conn.WriteMessage(websocket.TextMessage, []byte("Connected successfully!"))
 
-	mutex.Lock()
-	waitingQueue = append(waitingQueue, player)
+	Mutex.Lock()
+	game.WaitingQueue = append(game.WaitingQueue, player)
 
 	// If two players are waiting, create a game room
-	if len(waitingQueue) >= 2 {
-		p1 := waitingQueue[0]
-		p2 := waitingQueue[1]
-		waitingQueue = waitingQueue[2:] // Remove matched players from queue
+	if len(game.WaitingQueue) >= 2 {
+		p1 := game.WaitingQueue[0]
+		p2 := game.WaitingQueue[1]
+		game.WaitingQueue = game.WaitingQueue[2:] // Remove matched players from queue
 
 		room := &game.Room{Player1: p1, Player2: p2}
-		rooms = append(rooms, room) // Store active room
+		game.Rooms = append(game.Rooms, room) // Store active room
 		p1.Room = room
 		p2.Room = room
 
-		mutex.Unlock()
+		Mutex.Unlock()
 
 		fmt.Println("New game started!")
 
 		p1.Conn.WriteMessage(websocket.TextMessage, []byte("Paired! Game started."))
 		p2.Conn.WriteMessage(websocket.TextMessage, []byte("Paired! Game started."))
 
-		go gameLoop(p1, p2) // Start the game
+		go gameloop.Loop(p1, p2) // Start the game
 	} else {
-		mutex.Unlock()
+		Mutex.Unlock()
 		fmt.Println("Waiting for opponent...")
 		conn.WriteMessage(websocket.TextMessage, []byte("Waiting for opponent..."))
 	}
 }
 
+
 // handleDisconnection handles the disconnection of players.
-func handleDisconnection(player *game.Player, opponent *game.Player) {
+func HandleDisconnection(player *game.Player, opponent *game.Player) {
 	// Notify both players about the disconnection
 	player.Conn.WriteMessage(websocket.TextMessage, []byte("You disconnected."))
 	opponent.Conn.WriteMessage(websocket.TextMessage, []byte("Opponent disconnected."))
@@ -70,14 +71,14 @@ func handleDisconnection(player *game.Player, opponent *game.Player) {
 	opponent.Conn.Close()
 
 	// Remove room from active list
-	mutex.Lock()
-	for i, room := range rooms {
+	Mutex.Lock()
+	for i, room := range game.Rooms {
 		if room == player.Room {
-			rooms = append(rooms[:i], rooms[i+1:]...)
+			game.Rooms = append(game.Rooms[:i], game.Rooms[i+1:]...)
 			break
 		}
 	}
-	mutex.Unlock()
+	Mutex.Unlock()
 
 	fmt.Println("Game ended.")
 }
