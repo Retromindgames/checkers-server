@@ -1,22 +1,20 @@
 package main
 
 import (
-	"checkers-server/game"
+	"checkers-server/core"
 	"checkers-server/handlers"
 	"fmt"
 	"net/http"
 	"time"
 )
 
-// Periodically prints game room status
 func monitorGameRooms() {
 	for {
-		time.Sleep(5 * time.Second) // Adjust as needed
+		time.Sleep(5 * time.Second)
 
-		handlers.Mutex.Lock()
-		roomCount := len(game.Rooms)
+		roomCount := len(core.Rooms)
 		playerCount := 0
-		for _, room := range game.Rooms {
+		for _, room := range core.Rooms {
 			if room.Player1 != nil {
 				playerCount++
 			}
@@ -24,7 +22,6 @@ func monitorGameRooms() {
 				playerCount++
 			}
 		}
-		handlers.Mutex.Unlock()
 
 		fmt.Printf("Active Rooms: %d | Total Players: %d\n", roomCount, playerCount)
 	}
