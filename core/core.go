@@ -26,6 +26,7 @@ type Room struct {
 type Player struct {
 	Conn *websocket.Conn
 	Room *Room
+	Color int	// 1 = black / 0 = white -- This is defined on room start.
 	SelectedBid float64
 }
 
@@ -38,6 +39,16 @@ func AddPlayer(player *Player) {
 	defer Mutex.Unlock()
 
 	ConnectedPlayers = append(ConnectedPlayers, player)
+}
+
+// * This is cooool
+func (r *Room) GetOpponent(player *Player) (*Player){
+	if r.Player1 == player {
+		return r.Player2
+	} else if r.Player2 == player {
+		return r.Player1
+	}
+	return nil;
 }
 
 // RemovePlayer removes a player from the ConnectedPlayers list and queue
