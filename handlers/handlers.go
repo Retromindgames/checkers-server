@@ -58,9 +58,11 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 							return player.SelectedBid == message.Value
 						})
 						if len(filteredQueue) >= 2{
-							HandleRoomCreation(player.SelectedBid)	
+							HandleRoomCreation(filteredQueue)	// pass the filtered queue to create a room	
+						} else {
+							player.Conn.WriteMessage(websocket.TextMessage, []byte("Waiting for an opponent..."))
 						}
-					}else {
+					} else {
 						player.Conn.WriteMessage(websocket.TextMessage, []byte("Waiting for an opponent..."))
 					}
 				}
@@ -69,9 +71,9 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-func HandleRoomCreation(bidAmount float64) {
+func HandleRoomCreation(filteredQueue []*core.Player) {
 	// Created room withh the first two players of the queue.
-	room := core.CreateRoom(core.WaitingQueue[0], core.WaitingQueue[1], bidAmount);
+	room := core.CreateRoom(filteredQueue[0], filteredQueue[1]);
 	// remove them from the Queue (!)
 	core.RemoveFromQueue(room.Player1);
 	core.RemoveFromQueue(room.Player2);
@@ -84,11 +86,18 @@ func HandleRoomCreation(bidAmount float64) {
 }
 
 func HandleDisconnection(player *core.Player, opponent *core.Player) {
-	if player.Conn != nil {
-		opponent.Conn.WriteMessage(websocket.TextMessage, []byte("Opponent disconnected."))
-		player.Conn.Close()
-		core.RemovePlayer(player)
+	// So when a player disconnects he can be:
+	// - In a Queue, and not in a room.
+	// - In a Room, and not in a Queue.
+	// This means, we will need to handle it diferently.
+
+	if player.Room == nil{
+		core.RemoveFromQueue(player)	// We remove it from the Queue, it might now always be there tho. Dont think its an issue.
+	} else {
+		opponent.Conn.WriteMessage(websocket.TextMessage, []byte("Opponent disconnected."))		
+		core.RemoveRoom(player.Room); 	// If there is a room, we need to remove it.
 	}
-	core.RemoveRoom(player.Room);
+	core.RemovePlayer(player)			// Either way, we need to remove the player from the room.
+
 	fmt.Println("Game ended.")
 }

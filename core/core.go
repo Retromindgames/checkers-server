@@ -43,6 +43,11 @@ func AddPlayer(player *Player) {
 
 // * This is cooool
 func (r *Room) GetOpponent(player *Player) (*Player){
+	// Just in case there is no room 
+	if r == nil{
+		return nil
+	}
+
 	if r.Player1 == player {
 		return r.Player2
 	} else if r.Player2 == player {
@@ -109,11 +114,11 @@ func RemoveFromQueue(player *Player) {
 	}
 }
 
-func CreateRoom(p1, p2 *Player, bid float64) *Room {
+func CreateRoom(p1, p2 *Player) *Room {
 	Mutex.Lock()
 	defer Mutex.Unlock()
 
-	room := &Room{Player1: p1, Player2: p2, BidAmount: bid}
+	room := &Room{Player1: p1, Player2: p2, BidAmount: p1.SelectedBid}
 	Rooms = append(Rooms, room)
 	p1.Room = room
 	p2.Room = room

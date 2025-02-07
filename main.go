@@ -1,6 +1,7 @@
 package main
 
-// TODO: Think about  Redis integraton.
+// TODO: (1) - Implement Auth.
+// TODO: (2) - Think about  Redis integraton.
 
 import (
 	"checkers-server/core"
@@ -33,7 +34,7 @@ func clearConsole() {
 
 func monitorGameRooms() {
 	for {
-		time.Sleep(1 * time.Second)
+		time.Sleep(2 * time.Second)
 		//clearConsole()
 		
 		onlinePlayers := len(core.ConnectedPlayers)
