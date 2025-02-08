@@ -32,13 +32,6 @@ This is used to leave the queue.
 }
 ```
 
-```json
-{
-  "command": "join_queue",
-  "value": 0.5
-}
-```
-
 ### Example 3: Send Message (NOT IMPLEMENTED)
 
 Doesnt do anything.
