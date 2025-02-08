@@ -47,7 +47,6 @@ func handlePlayerMessages(player *core.Player) {
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Println("Player disconnected: ", conn.RemoteAddr())
 			HandleDisconnection(player, player.Room.GetOpponent(player))
 			return
 		}
@@ -64,6 +63,9 @@ func handlePlayerMessages(player *core.Player) {
 
 			case "join_queue":
 				handleJoinQueue(player, message)
+
+			case "move_piece":
+				handleMovePiece(player, message)
 
 			default:
 				// Handle unrecognized command, or log it
@@ -85,12 +87,10 @@ func handleJoinQueue(player *core.Player, message *message.Message) {
 	}
 
 	if core.IsPlayerInQueue(player) {
-		fmt.Println("Player already in queue:", player.Conn.RemoteAddr())
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("You are already in a Queue!..."))
 		return
 	} 
 
-	fmt.Println("Player joining queue:", player.Conn.RemoteAddr())
 	player.SelectedBid = selectedBid
 	core.AddToQueue(player)
 
@@ -120,12 +120,20 @@ func handleRoomCreation(filteredQueue []*core.Player) {
 	// remove them from the Queue (!)
 	core.RemoveFromQueue(room.Player1);
 	core.RemoveFromQueue(room.Player2);
-	fmt.Println("New game started!")
 	room.Player1.Conn.WriteMessage(websocket.TextMessage, []byte(message.GeneratePairedMessage(room.Player1, room.Player2, 1)))
 	room.Player1.Color = 1
 	room.Player2.Conn.WriteMessage(websocket.TextMessage, []byte(message.GeneratePairedMessage(room.Player2, room.Player1, 0)))
 	room.Player2.Color = 0
 
+}
+
+// For now we just send the update to the oponent.
+func handleMovePiece(player *core.Player, message *message.Message) {
+	if player.Room != nil {
+		player.Room.GetOpponent(player).Conn.WriteMessage(websocket.TextMessage, []byte(message.Value))
+		return
+	} 
+	player.Conn.WriteMessage(websocket.TextMessage, []byte("You are not in a Game!..."))
 }
 
 func HandleDisconnection(player *core.Player, opponent *core.Player) {
@@ -141,6 +149,4 @@ func HandleDisconnection(player *core.Player, opponent *core.Player) {
 		core.RemoveRoom(player.Room); 	// If there is a room, we need to remove it.
 	}
 	core.RemovePlayer(player)			// Either way, we need to remove the player from the room.
-
-	fmt.Println("Game ended.")
 }

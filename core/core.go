@@ -102,6 +102,15 @@ func IsPlayerInQueue(player *Player) bool {
     return false
 }
 
+func IsPlayerInGame(player *Player) bool {
+    for _, r := range Rooms {
+        if r.Player1 == player || r.Player2 == player  { 
+            return true
+        }
+    }
+    return false
+}
+
 func RemoveFromQueue(player *Player) {
 	Mutex.Lock()
 	defer Mutex.Unlock()
