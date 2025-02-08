@@ -16,6 +16,7 @@ var Upgrader = websocket.Upgrader{
 
 var Mutex sync.Mutex
 
+// This should handle our initial connection. Then handlePlayerMessages() should do most of the work.
 func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	conn, err := Upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -28,48 +29,55 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("New player connected:", r.RemoteAddr)
 	conn.WriteMessage(websocket.TextMessage, []byte("Connected successfully!"))
 
-	go func() {
-		defer conn.Close()
-		for {
-			_, msg, err := conn.ReadMessage()
-			if err != nil {
-				fmt.Println("Player disconnected: ", r.RemoteAddr)
-				HandleDisconnection(player, player.Room.GetOpponent(player))
-				return
-			}
-			message, err := message.ParseMessage(msg, conn)
-			if err != nil {
-				conn.WriteMessage(websocket.TextMessage, []byte("Invalid message format."))
-				continue
-			}
-
-			if message.Command == "join_queue" {
-				if core.IsPlayerInQueue(player) {
-					fmt.Println("Player already in queue:", r.RemoteAddr)
-					player.Conn.WriteMessage(websocket.TextMessage, []byte("You are already in a Queue!..."))
-				} else {
-					fmt.Println("Player joining queue:", r.RemoteAddr)
-					player.SelectedBid = message.Value
-					core.AddToQueue(player)
-					if len(core.WaitingQueue) >= 2 {
-						filteredQueue := core.FilterWaitingQueue(core.WaitingQueue, func(player *core.Player) bool {
-							return player.SelectedBid == message.Value
-						})
-						if len(filteredQueue) >= 2{
-							HandleRoomCreation(filteredQueue)	// pass the filtered queue to create a room	
-						} else {
-							player.Conn.WriteMessage(websocket.TextMessage, []byte("Waiting for an opponent..."))
-						}
-					} else {
-						player.Conn.WriteMessage(websocket.TextMessage, []byte("Waiting for an opponent..."))
-					}
-				}
-			} 
-		}
-	}()
+	go handlePlayerMessages(player);
 }
 
-func HandleRoomCreation(filteredQueue []*core.Player) {
+
+func handlePlayerMessages(player *core.Player) {
+	conn := player.Conn
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			fmt.Println("Player disconnected: ", conn.RemoteAddr())
+			HandleDisconnection(player, player.Room.GetOpponent(player))
+			return
+		}
+		message, err := message.ParseMessage(msg, conn)
+		if err != nil {
+			conn.WriteMessage(websocket.TextMessage, []byte("Invalid message format."))
+			continue
+		}
+
+		if message.Command == "join_queue" {
+			handleJoinQueue(player, message)
+		} 
+	}
+}
+
+func handleJoinQueue(player *core.Player, message *message.Message) {
+	if core.IsPlayerInQueue(player) {
+		fmt.Println("Player already in queue:", player.Conn.RemoteAddr())
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("You are already in a Queue!..."))
+	} else {
+		fmt.Println("Player joining queue:", player.Conn.RemoteAddr())
+		player.SelectedBid = message.Value
+		core.AddToQueue(player)
+		if len(core.WaitingQueue) >= 2 {
+			filteredQueue := core.FilterWaitingQueue(core.WaitingQueue, func(player *core.Player) bool {
+				return player.SelectedBid == message.Value
+			})
+			if len(filteredQueue) >= 2 {
+				handleRoomCreation(filteredQueue)
+			} else {
+				player.Conn.WriteMessage(websocket.TextMessage, []byte("Waiting for an opponent..."))
+			}
+		} else {
+			player.Conn.WriteMessage(websocket.TextMessage, []byte("Waiting for an opponent..."))
+		}
+	}
+}
+
+func handleRoomCreation(filteredQueue []*core.Player) {
 	// Created room withh the first two players of the queue.
 	room := core.CreateRoom(filteredQueue[0], filteredQueue[1]);
 	// remove them from the Queue (!)

@@ -30,8 +30,8 @@ func clearConsole() {
 
 func monitorGameRooms() {
 	for {
-		time.Sleep(2 * time.Second)
-		//clearConsole()
+		time.Sleep(3 * time.Second)
+		clearConsole()
 		
 		onlinePlayers := len(core.ConnectedPlayers)
 		queuePlayers := len(core.WaitingQueue)
