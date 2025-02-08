@@ -3,6 +3,7 @@ package handlers
 import (
 	"checkers-server/core"
 	"checkers-server/message"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sync"
@@ -48,6 +49,7 @@ func handlePlayerMessages(player *core.Player) {
 			continue
 		}
 
+		// Since we have a valid message, its time to have it processed.
 		if message.Command == "join_queue" {
 			handleJoinQueue(player, message)
 		} 
@@ -55,16 +57,22 @@ func handlePlayerMessages(player *core.Player) {
 }
 
 func handleJoinQueue(player *core.Player, message *message.Message) {
+	var selectedBid float64
+	if err := json.Unmarshal(message.Value, &selectedBid); err != nil {
+		// If the Value cannot be unmarshalled to a float64, send an error message
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid bid value."))
+		return
+	}
 	if core.IsPlayerInQueue(player) {
 		fmt.Println("Player already in queue:", player.Conn.RemoteAddr())
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("You are already in a Queue!..."))
 	} else {
 		fmt.Println("Player joining queue:", player.Conn.RemoteAddr())
-		player.SelectedBid = message.Value
+		player.SelectedBid = selectedBid
 		core.AddToQueue(player)
 		if len(core.WaitingQueue) >= 2 {
 			filteredQueue := core.FilterWaitingQueue(core.WaitingQueue, func(player *core.Player) bool {
-				return player.SelectedBid == message.Value
+				return player.SelectedBid == selectedBid
 			})
 			if len(filteredQueue) >= 2 {
 				handleRoomCreation(filteredQueue)

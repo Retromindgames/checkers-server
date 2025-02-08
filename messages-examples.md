@@ -29,9 +29,9 @@ Doesnt do anything.
 }
 ```
 
-### Example 3: Join Queue
+### Example 3: Custom value (WIP)
 
-This message is used to join the queue with a bid value.
+Used to send more complex data, needs to be worked on.
 
 ```json
 {
