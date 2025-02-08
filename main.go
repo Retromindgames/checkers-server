@@ -1,8 +1,5 @@
 package main
 
-// TODO: (1) - Implement Auth.
-// TODO: (2) - Think about  Redis integraton.
-
 import (
 	"checkers-server/core"
 	"checkers-server/handlers"
@@ -14,7 +11,6 @@ import (
 	"time"
 )
 
-// TODO: Pass this to a consoleUtils package.
 // ! Not working right.
 // clearConsole clears the console screen.
 func clearConsole() {

@@ -28,7 +28,6 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("New player connected:", r.RemoteAddr)
 	conn.WriteMessage(websocket.TextMessage, []byte("Connected successfully!"))
 
-	// TODO: Since this is pretty much the main "loop" of the client connection. Maybe move it elsewheere??
 	go func() {
 		defer conn.Close()
 		for {
@@ -44,7 +43,6 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			// TODO: After creating the unmarshal package, organize this code.
 			if message.Command == "join_queue" {
 				if core.IsPlayerInQueue(player) {
 					fmt.Println("Player already in queue:", r.RemoteAddr)

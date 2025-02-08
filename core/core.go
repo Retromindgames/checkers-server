@@ -14,7 +14,6 @@ import (
 var Mutex sync.Mutex
 
 // Room represents a game room containing two players.
-// TODO: Figure out what other info we need too keep in sync
 type Room struct {
 	Player1  *Player
 	Player2  *Player
@@ -82,7 +81,6 @@ func AddToQueue(player *Player) {
 	WaitingQueue = append(WaitingQueue, player)
 }
 
-// TODO: Unsure if this is the right way, investigate?
 func FilterWaitingQueue(queue []*Player, predicate func(*Player) bool) []*Player {
 	var filtered []*Player
 	for _, player := range queue {
