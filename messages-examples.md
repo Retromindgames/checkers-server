@@ -1,5 +1,7 @@
 # WebSocket Messages
 
+---
+
 ## Cliente
 
 ### Example 1: Join Queue
@@ -20,7 +22,24 @@ This is used to join the queue with a bid value.
 }
 ```
 
-### Example 2: Send Message (NOT IMPLEMENTED)
+### Example 2: Leave Queue
+
+This is used to leave the queue.
+
+```json
+{
+  "command": "leave_queue"
+}
+```
+
+```json
+{
+  "command": "join_queue",
+  "value": 0.5
+}
+```
+
+### Example 3: Send Message (NOT IMPLEMENTED)
 
 Doesnt do anything.
 
@@ -31,7 +50,7 @@ Doesnt do anything.
 }
 ```
 
-### Example 3: Custom value (WIP)
+### Example 4: Custom value (WIP)
 
 Used to send more complex data, needs to be worked on.
 
@@ -41,6 +60,8 @@ Used to send more complex data, needs to be worked on.
   "value": { "key": "value" }
 }
 ```
+
+---
 
 # Server
 
