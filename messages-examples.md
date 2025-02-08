@@ -1,5 +1,7 @@
 # WebSocket Messages
 
+## Cliente
+
 ### Example 1: Join Queue
 
 This is used to join the queue with a bid value.
@@ -37,5 +39,18 @@ Used to send more complex data, needs to be worked on.
 {
   "command": "custom_command",
   "value": { "key": "value" }
+}
+```
+
+# Server
+
+### Example 1: Custom value (WIP)
+
+When a patch starts, the value represents the color, 1 = black, 0 = white.
+
+```json
+{
+  "command": "paired",
+  "value": 1
 }
 ```

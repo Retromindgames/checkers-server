@@ -49,40 +49,61 @@ func handlePlayerMessages(player *core.Player) {
 			continue
 		}
 
-		// Since we have a valid message, its time to have it processed.
-		if message.Command == "join_queue" {
-			handleJoinQueue(player, message)
-		} 
+		// Since we have a valid message, process it based on the command
+		switch message.Command {
+			case "leave_queue":
+				handleLeaveQueue(player, message)
+
+			case "join_queue":
+				handleJoinQueue(player, message)
+
+			default:
+				// Handle unrecognized command, or log it
+				fmt.Println("Unknown command:", message.Command)
+		}
 	}
+}
+
+func handleLeaveQueue(player *core.Player, message *message.Message) {
+	core.RemoveFromQueue(player);
+	player.Conn.WriteMessage(websocket.TextMessage, []byte("You left the Queue!..."))
 }
 
 func handleJoinQueue(player *core.Player, message *message.Message) {
 	var selectedBid float64
 	if err := json.Unmarshal(message.Value, &selectedBid); err != nil {
-		// If the Value cannot be unmarshalled to a float64, send an error message
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid bid value."))
 		return
 	}
+
 	if core.IsPlayerInQueue(player) {
 		fmt.Println("Player already in queue:", player.Conn.RemoteAddr())
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("You are already in a Queue!..."))
-	} else {
-		fmt.Println("Player joining queue:", player.Conn.RemoteAddr())
-		player.SelectedBid = selectedBid
-		core.AddToQueue(player)
-		if len(core.WaitingQueue) >= 2 {
-			filteredQueue := core.FilterWaitingQueue(core.WaitingQueue, func(player *core.Player) bool {
-				return player.SelectedBid == selectedBid
-			})
-			if len(filteredQueue) >= 2 {
-				handleRoomCreation(filteredQueue)
-			} else {
-				player.Conn.WriteMessage(websocket.TextMessage, []byte("Waiting for an opponent..."))
-			}
-		} else {
-			player.Conn.WriteMessage(websocket.TextMessage, []byte("Waiting for an opponent..."))
-		}
+		return
+	} 
+
+	fmt.Println("Player joining queue:", player.Conn.RemoteAddr())
+	player.SelectedBid = selectedBid
+	core.AddToQueue(player)
+
+	// not enough players to check for a match.
+	if len(core.WaitingQueue) < 2 {
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Waiting for an opponent..."))
+		return
 	}
+
+	// Lets filter the queue to try to find a match
+	filteredQueue := core.FilterWaitingQueue(core.WaitingQueue, func(player *core.Player) bool {
+		return player.SelectedBid == selectedBid
+	})
+
+	// No two players with the same bet waiting...
+	if len(filteredQueue) < 2 {
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Waiting for an opponent..."))
+		return
+	}
+	// if there are we move on to creating our room for the match.
+	handleRoomCreation(filteredQueue)
 }
 
 func handleRoomCreation(filteredQueue []*core.Player) {
