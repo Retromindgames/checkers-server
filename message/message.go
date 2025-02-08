@@ -1,6 +1,7 @@
 package message
 
 import (
+	"checkers-server/core"
 	"encoding/json"
 	"fmt"
 
@@ -56,4 +57,33 @@ func ParseMessage(msg []byte, conn *websocket.Conn) (*Message, error) {
 	}
 
 	return &message, nil
+}
+
+func GenerateConnectedMessage(player *core.Player) (string, error) {
+	response := struct {
+		Command   string  `json:"command"`
+		Value     struct {
+			PlayerName string  `json:"player_name"`
+			Money      float64 `json:"money"`
+		} `json:"value"`
+	}{
+		Command: "connected",
+	}
+	response.Value.PlayerName = "Player_" + player.Name
+	response.Value.Money = player.Money
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonResponse), nil
+}
+
+func GeneratePairedMessage(player1, player2 *core.Player, color int) string {
+	return fmt.Sprintf(`{
+		"command": "paired",
+		"value": {
+			"color": %d,
+			"opponent": "%s"
+		}
+	}`, color, player2.Name)
 }

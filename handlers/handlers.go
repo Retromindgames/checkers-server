@@ -25,17 +25,25 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player := &core.Player{Conn: conn}
+	player := &core.Player{Conn: conn, Money: 999, Name: r.RemoteAddr}
+	
 	core.AddPlayer(player)
-	fmt.Println("New player connected:", r.RemoteAddr)
-	conn.WriteMessage(websocket.TextMessage, []byte("Connected successfully!"))
-
+	fmt.Println("New player connected:", player.Name)
+	
 	go handlePlayerMessages(player);
 }
 
 
 func handlePlayerMessages(player *core.Player) {
+	// TODO: does this need to be sent to the player? Where do we get these values?
 	conn := player.Conn
+	jsonMessage, err := message.GenerateConnectedMessage(player)
+	if err != nil {
+		fmt.Println("Error generating message:", err)
+		return
+	}
+	conn.WriteMessage(websocket.TextMessage, []byte(jsonMessage))
+
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -113,9 +121,9 @@ func handleRoomCreation(filteredQueue []*core.Player) {
 	core.RemoveFromQueue(room.Player1);
 	core.RemoveFromQueue(room.Player2);
 	fmt.Println("New game started!")
-	room.Player1.Conn.WriteMessage(websocket.TextMessage, []byte(`{"command": "paired", "value": 1}`))
+	room.Player1.Conn.WriteMessage(websocket.TextMessage, []byte(message.GeneratePairedMessage(room.Player1, room.Player2, 1)))
 	room.Player1.Color = 1
-	room.Player2.Conn.WriteMessage(websocket.TextMessage, []byte(`{"command": "paired", "value": 0}`))
+	room.Player2.Conn.WriteMessage(websocket.TextMessage, []byte(message.GeneratePairedMessage(room.Player2, room.Player1, 0)))
 	room.Player2.Color = 0
 
 }

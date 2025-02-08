@@ -65,13 +65,30 @@ Used to send more complex data, needs to be worked on.
 
 # Server
 
-### Example 1: Custom value (WIP)
+### Example 1: Connected
 
-When a patch starts, the value represents the color, 1 = black, 0 = white.
+After the connecton is established, sent to the cliente.
+
+```json
+{
+  "command": "connected",
+  "value": {
+    "player_name": "JohnDoe",
+    "money": 1000.5
+  }
+}
+```
+
+### Example 2: Paired
+
+When a match starts, the value represents the color, 1 = black, 0 = white.
 
 ```json
 {
   "command": "paired",
-  "value": 1
+  "value": {
+    "color": 1,
+    "opponent": "127.0.0.1:54918"
+  }
 }
 ```
