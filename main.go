@@ -1,6 +1,7 @@
 package main
 
 import (
+	"checkers-server/broadcast"
 	"checkers-server/core"
 	"checkers-server/handlers"
 	"fmt"
@@ -63,7 +64,7 @@ func monitorGameRooms() {
 
 func main() {
 	go monitorGameRooms()
-
+	go broadcast.PlayersInQueue()
 	http.HandleFunc("/ws", handlers.HandleConnection)
 	fmt.Println("Server started on :8080")
 	http.ListenAndServe(":8080", nil)

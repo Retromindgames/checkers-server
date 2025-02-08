@@ -1,5 +1,7 @@
 # WebSocket Messages
 
+Messages with the tag [BROADCAST] are sent periodically to eligible clients.
+
 ---
 
 ## Cliente
@@ -82,6 +84,19 @@ When a match starts, the value represents the color, 1 = black, 0 = white.
   "value": {
     "color": 1,
     "opponent": "127.0.0.1:54918"
+  }
+}
+```
+
+### Example 3: [BRADCAST] Update wating queue total
+
+So that the client knows how many players are in queue.
+
+```json
+{
+  "command": "update_waiting_queue",
+  "value": {
+    "waiting_queue_size": 5
   }
 }
 ```
