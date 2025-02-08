@@ -13,6 +13,20 @@ type Message struct {
 	Value   json.RawMessage `json:"value,omitempty"` 
 }
 
+type Position struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type MovePieceMessage struct {
+	Command string `json:"command"`
+	Value   struct {
+		PreviousPosition Position   `json:"previous_position"`
+		NewPosition      Position   `json:"new_position"`
+		KilledPieces     []Position `json:"killed_pieces"`
+	} `json:"value"`
+}
+
 func ParseMessage(msg []byte, conn *websocket.Conn) (*Message, error) {
 	var message Message
 	if err := json.Unmarshal(msg, &message); err != nil {
@@ -39,6 +53,13 @@ func ParseMessage(msg []byte, conn *websocket.Conn) (*Message, error) {
 				return nil, fmt.Errorf("invalid value format for send_message: %v", err)
 			}
 			message.Value = json.RawMessage(fmt.Sprintf("\"%s\"", value)) 		
+
+		case "move_piece":
+			var value MovePieceMessage
+			if err := json.Unmarshal(message.Value, &value.Value); err != nil {
+				return nil, fmt.Errorf("invalid value format for move_piece: %v", err)
+			}
+			message.Value, _ = json.Marshal(message)											// ! For convinience we store the whole message in the value. To sendo it arround. 
 
 		case "custom_command":
 			// Expected to be an object or array
