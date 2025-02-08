@@ -100,3 +100,29 @@ So that the client knows how many players are in queue.
   }
 }
 ```
+
+---
+
+# Relay Messages
+
+These ones are sent from one cliente to the server and then to other clientes.
+
+### Example 1: Piece movement
+
+This should be sent when the client moves a piece; it will be relayed to the opponent to update their game.
+
+```json
+{
+  "command": "move_piece",
+  "value": {
+    "previous_position": { "x": 1, "y": 2 },
+    "new_position": { "x": 3, "y": 4 },
+    "killed_pieces": [
+      { "x": 5, "y": 6 },
+      { "x": 7, "y": 8 }
+    ]
+  }
+}
+```
+
+---
