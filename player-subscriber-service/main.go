@@ -2,6 +2,7 @@ package main
 
 import (
 	"checkers-server/player-subscriber-service/redisdb"
+	"fmt"
 	"log"
 )
 
@@ -10,8 +11,10 @@ func main() {
 	redisSubscriber, err := redisdb.NewRedisSubscriber("localhost:6379")
 	if err != nil {
 		log.Fatalf("Failed to initialize Redis subscriber: %v", err)
+	} else {
+		fmt.Println("[Player-Subscriber-Service] - Started")
 	}
 
-	// Start subscribing to the "player-events" channel
+	// "player-events" channel
 	redisSubscriber.SubscribeToPlayerEvents()
 }

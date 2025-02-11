@@ -15,14 +15,6 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-// Player represents a connected user.
-type Player struct {
-	ID       string
-	Conn     *websocket.Conn
-	Token    string
-	SessionID string
-	Currency string
-}
 
 func init() {
 	client, err := redisdb.NewRedisClient("localhost:6379")
@@ -48,18 +40,19 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player := &Player{
-		ID:       r.RemoteAddr, // TODO: Generate a proper player ID
+	player := &redisdb.Player{
+		ID:       r.RemoteAddr, // TODO: Generate a proper player ID?
 		Conn:     conn,
 		Token:    token,
 		SessionID: sessionID,
 		Currency: currency,
+		Status: "connected",
 	}
 	
 	// Log the new player connection details
 	fmt.Println("New player connected:", player.ID)
 	// Publish the connection event to Redis
-	err = redisClient.PublishPlayerEvent(player.ID, "connected")
+	err = redisClient.PublishPlayerEvent(player, player.Status)
 	if err != nil {
 		fmt.Println("Failed to publish player event:", err)
 		return

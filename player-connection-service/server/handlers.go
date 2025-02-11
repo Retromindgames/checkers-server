@@ -1,22 +1,25 @@
 package server
 
 import (
+	"checkers-server/pkg/redisdb"
 	"fmt"
 )
 
-// handleMessages listens for messages from a player.
-func handleMessages(player *Player) {
+
+func handleMessages(player *redisdb.Player) {
 	defer player.Conn.Close()
 
+	// Start listening for messages from the player
 	for {
 		_, msg, err := player.Conn.ReadMessage()
 		if err != nil {
+			// Player disconnected or there was an error reading the message
 			fmt.Println("Player disconnected:", player.ID)
-			return
+			redisClient.PublishPlayerEvent(player, "disconnected")
 		}
-
+		// Print received message
 		fmt.Println("Received message:", string(msg))
 
-		// TODO: Publish event to Redis
+		// TODO: Handle the message further if needed
 	}
 }

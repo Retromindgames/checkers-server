@@ -6,14 +6,26 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
 )
+
+// Player represents a connected user.
+type Player struct {
+	ID       string
+	Conn     *websocket.Conn
+	Token    string
+	SessionID string
+	Currency string
+	Status string
+}
 
 // RedisClient represents a wrapper around Redis client.
 type RedisClient struct {
 	Client *redis.Client
 	Ctx    context.Context
 }
+
 func NewRedisClient(addr string) (*RedisClient, error) {
 	// Initialize the Redis client
 	client := redis.NewClient(&redis.Options{
@@ -31,10 +43,13 @@ func NewRedisClient(addr string) (*RedisClient, error) {
 	return &RedisClient{Client: client}, nil
 }
 
-func (rc *RedisClient) PublishPlayerEvent(playerID string, status string) error {
-	event := map[string]string{
-		"playerID": playerID,
-		"status":   status,
+func (rc *RedisClient) PublishPlayerEvent(player *Player, status string) error {
+	event := map[string]interface{}{
+		"ID":        player.ID,
+		"Token":     player.Token,
+		"SessionID": player.SessionID,
+		"Currency":  player.Currency,
+		"status":    status,
 	}
 
 	data, err := json.Marshal(event)
@@ -42,13 +57,12 @@ func (rc *RedisClient) PublishPlayerEvent(playerID string, status string) error 
 		return fmt.Errorf("[pkg/redisdb/cliente] - failed to marshal event data: %w", err)
 	}
 
-	err = rc.Client.Publish(context.Background(), "player_updates", data).Err()
+	err = rc.Client.Publish(context.Background(), "player-events", data).Err()
 	if err != nil {
 		return fmt.Errorf("[pkg/redisdb/cliente] - failed to publish player event: %w", err)
 	}
 	return nil
 }
-
 
 // Subscribe listens to the Redis channel for updates.
 func (rc *RedisClient) Subscribe() {
