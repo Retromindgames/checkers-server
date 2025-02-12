@@ -1,7 +1,7 @@
 package main
 
 import (
-	"checkers-server/player-connection-service/server"
+	"checkers-server/wsapi/server"
 	"fmt"
 	"net/http"
 )
