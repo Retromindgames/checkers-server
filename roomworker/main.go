@@ -1,10 +1,12 @@
 package main
 
 import (
+	"checkers-server/models"
 	"checkers-server/redisdb"
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 var pid int
@@ -14,13 +16,13 @@ func init() {
 	pid = os.Getpid()
 	client, err := redisdb.NewRedisClient("localhost:6379")
 	if err != nil {
-		log.Fatalf("[Redis] Error initializing Redis client: %v", err)
+		log.Fatalf("[Redis] Error initializing Redis client: %v\n", err)
 	}
 	redisClient = client
 }
 
 func main() {
-	fmt.Printf("[Worker-%d] - Waiting for player connections...\n", pid)
+	fmt.Printf("[Worker-%d] - Waiting for room messages...\n", pid)
 
 	go processRoomCreation()
 	go processRoomJoin()
@@ -29,42 +31,65 @@ func main() {
 	select {}
 }
 
-
 func processRoomCreation(){
 	for {
-		playerData, err := redisClient.BLPop("room_creation", 0) // Block
+		playerData, err := redisClient.BLPop("create_room", 0) // Block
 		if err != nil {
-			fmt.Println("[Worker] - Error retrieving player:", err)
+			fmt.Printf("[Worker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
 		}
-		fmt.Printf("[Worker] - Player connected: %+v\n", playerData)
-	
+		fmt.Printf("[Worker-%d] - create room!: %+v\n", pid, playerData)
+		handleCreateRoom(playerData)
 	}
 }
 
 // TODO
 func processRoomJoin(){
 	for {
-		playerData, err := redisClient.BLPop("room_join", 0) // Block 
+		playerData, err := redisClient.BLPop("join_room", 0) // Block 
 		if err != nil {
-			fmt.Println("[Worker] - Error retrieving player:", err)
+			fmt.Printf("[Worker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
 		}
-		fmt.Printf("[Worker] - Player disconnected: %+v\n", playerData)
+		fmt.Printf("[Worker-%d] - create join room!: %+v\n", pid, playerData)
 	}
 }
 
 // TODO
 func processRoomEnding(){
 	for {
-		playerData, err := redisClient.BLPop("room_end", 0) // Block 
+		playerData, err := redisClient.BLPop("end_room", 0) // Block 
 		if err != nil {
-			fmt.Println("[Worker] - Error retrieving player:", err)
+			fmt.Printf("[Worker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
 		}
-		fmt.Printf("[Worker] - Player disconnected: %+v\n", playerData)
+		fmt.Printf("[Worker-%d] - end room!: %+v\n", playerData)
 
 	}
+}
+
+func handleCreateRoom(player *models.Player) {
+	fmt.Printf("[Worker-%d] - Handling player (CREATE ROOM): %s (Session: %s, Currency: %s)\n",
+		pid, player.ID, player.SessionID, player.Currency)
+
+	room := &models.Room{
+		ID:    models.GenerateUUID(),
+		Player1:   player,
+		StartDate: time.Now(),
+		Currency:  player.Currency,  
+		BidAmount: player.SelectedBid, 
+	}
+	err := redisClient.AddRoom("room:"+room.ID, room)
+	if err != nil {
+		fmt.Printf("[Worker-%d] - Failed to add room to Redis: %v\n", pid, err)
+		return
+	}
+	err = redisClient.PublishToPlayer(*player, "ROOM CREATED")
+	if err != nil {
+		fmt.Printf("[Worker-%d] - Failed to publish message to player: %v\n", pid, err)
+		return
+	}
+	fmt.Printf("[Worker-%d] - Player successfully handled and notified, Room ID: %s\n", pid, room.ID)
 }
 
 

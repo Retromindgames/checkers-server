@@ -4,8 +4,6 @@ import (
 	"checkers-server/models"
 	"encoding/json"
 	"fmt"
-
-	"github.com/gorilla/websocket"
 )
 
 type Message struct {
@@ -27,7 +25,7 @@ type MovePieceMessage struct {
 	} `json:"value"`
 }
 
-func ParseMessage(msg []byte, conn *websocket.Conn) (*Message, error) {
+func ParseMessage(msg []byte) (*Message, error) {
 	var message Message
 	if err := json.Unmarshal(msg, &message); err != nil {
 		return nil, fmt.Errorf("invalid message format: %v", err)
@@ -39,12 +37,12 @@ func ParseMessage(msg []byte, conn *websocket.Conn) (*Message, error) {
 		case "leave_queue":
 			return &message, nil	
 			
-		case "join_queue":
+		case "create_room":
 			var value float64
 			if err := json.Unmarshal(message.Value, &value); err != nil {
-				return nil, fmt.Errorf("invalid value format for join_queue: %v", err)
+				return nil, fmt.Errorf("invalid value format for create_room: %v", err)
 			}
-			message.Value = json.RawMessage(fmt.Sprintf("%v", value)) 							// Store it back as raw JSON
+			message.Value = json.RawMessage(message.Value) 							// Store it back as raw JSON
 
 		case "send_message":
 			// not sure if we will need this.

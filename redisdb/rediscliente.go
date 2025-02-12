@@ -127,3 +127,14 @@ func (r *RedisClient) GetPlayer(key string, playerID string) (*models.Player, er
 func (r *RedisClient) RemovePlayer(key string, playerID string) error {
 	return r.Client.HDel(context.Background(), key, playerID).Err()
 }
+
+
+func (r *RedisClient) AddRoom(key string, room *models.Room) error {
+	data, err := json.Marshal(room)
+	if err != nil {
+		return fmt.Errorf("failed to serialize room: %v", err)
+	}
+
+	// Store the room using the roomID as the key
+	return r.Client.HSet(context.Background(), key, room.ID, data).Err()
+}
