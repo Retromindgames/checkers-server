@@ -1,6 +1,7 @@
 package main
 
 import (
+	"checkers-server/messages"
 	"checkers-server/models"
 	"checkers-server/redisdb"
 	"fmt"
@@ -79,7 +80,8 @@ func handleNewPlayer(player *models.Player) {
 		fmt.Printf("[Worker-%d] - Failed to add player: %v\n", pid, err)
 		return
 	}
-	err = redisClient.PublishToPlayer(*player, "Welcome to the game!")
+	jsonMessage, err := messages.GenerateConnectedMessage(player)
+	err = redisClient.PublishToPlayer(*player, jsonMessage)
 	if err != nil {
 		fmt.Printf("[Worker-%d] - Failed to publish message to player: %v\n", pid, err)
 		return
