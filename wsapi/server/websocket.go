@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -45,16 +44,9 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		Status:    "connected",
 	}
 	
-	// TODO: This seemed to solve an issue, make sure it is needed...
-	// Use a WaitGroup to wait for the subscription to finish before proceeding
-	var wg sync.WaitGroup
-	wg.Add(1) // Wait for the subscription to be set up
-	// Subscribe to the player's Redis channel in a separate goroutine
-	go func() {
-		defer wg.Done() // Mark the subscription as done once it starts
-		subscribeToPlayerChannel(player)
-	}() // Wait for the subscription to be ready before proceeding with other actions
-	wg.Wait()	// seends a message to be processed once by a worker.
+	subscriptionReady := make(chan bool)
+	go subscribeToPlayerChannel(player, subscriptionReady)
+	<-subscriptionReady // Wait for the subscription to be ready
 	
 	err = redisClient.RPush("player_online", player)
 	if err != nil {
@@ -65,12 +57,15 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	go handleMessages(player);
 }
 
-// ssubscribes to a Redis channel / sends messages to the WebSocket 
-func subscribeToPlayerChannel(player *models.Player) {
-	go redisClient.SubscribePlayerChannel(*player, func(message string) {
+// Function to handle player channel subscription
+func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
+	redisClient.SubscribePlayerChannel(*player, func(message string) {
+		// Send the received message to the player's WebSocket connection
 		err := player.Conn.WriteMessage(websocket.TextMessage, []byte(message))
 		if err != nil {
 			fmt.Println("[wsapi] - Failed to send message to player:", err)
+			player.Conn.Close()
 		}
 	})
+	ready <- true // Notify that the subscription is ready
 }
