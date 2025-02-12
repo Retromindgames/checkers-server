@@ -69,7 +69,7 @@ func handleRemovePlayer(player *models.Player) {
 	}
 
 	// Publish player-offline event to Redis
-	err = redisClient.PublishToPlayer(player.ID, "player-offline")
+	err = redisClient.PublishToPlayer(*player, "player-offline")
 	if err != nil {
 		fmt.Printf("[Worker-%d] - Failed to publish player-offline event: %v\n", pid, err)
 		return
@@ -82,15 +82,12 @@ func handleNewPlayer(player *models.Player) {
 	fmt.Printf("[Worker-%d] - Handling player: %s (Session: %s, Currency: %s)\n",
 		pid, player.ID, player.SessionID, player.Currency)
 
-	// Add player data to Redis using the player ID
 	err := redisClient.AddPlayer("player:"+player.ID, player)
 	if err != nil {
 		fmt.Printf("[Worker-%d] - Failed to add player: %v\n", pid, err)
 		return
 	}
-
-	// Example: Notify player via their Redis Pub/Sub channel
-	err = redisClient.PublishToPlayer(player.ID, "Welcome to the game!")
+	err = redisClient.PublishToPlayer(*player, "Welcome to the game!")
 	if err != nil {
 		fmt.Printf("[Worker-%d] - Failed to publish message to player: %v\n", pid, err)
 		return

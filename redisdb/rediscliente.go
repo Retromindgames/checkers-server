@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -84,35 +83,9 @@ func (rc *RedisClient) PublishPlayerEvent(player *models.Player, chanel string) 
 	return nil
 }
 
-// Subscribe listens to the Redis channel for updates.
-func (rc *RedisClient) Subscribe() {
-	pubsub := rc.Client.Subscribe(rc.Ctx, "player_updates")
-
-	// Make sure to unsubscribe when done
-	defer pubsub.Close()
-
-	for {
-		msg, err := pubsub.ReceiveMessage(rc.Ctx)
-		if err != nil {
-			log.Printf("[pkg/redisdb/cliente] - Failed to receive message: %v", err)
-			return
-		}
-
-		// Process message
-		var playerEvent map[string]string
-		if err := json.Unmarshal([]byte(msg.Payload), &playerEvent); err != nil {
-			log.Printf("[pkg/redisdb/cliente] - Failed to unmarshal event: %v", err)
-			continue
-		}
-
-		// For example, you can print or update the player's data based on the event
-		fmt.Printf("[pkg/redisdb/cliente] - Received update for player: %s, status: %s\n", playerEvent["playerID"], playerEvent["status"])
-	}
-}
-
 // Subscribe to a Redis Pub/Sub channel
-func (r *RedisClient) SubscribePlayerChannel(playerChannel string, messageHandler func(string)) {
-	pubsub := r.Client.Subscribe(context.Background(), playerChannel)
+func (r *RedisClient) SubscribePlayerChannel(player models.Player, messageHandler func(string)) {
+	pubsub := r.Client.Subscribe(context.Background(), GetPlayerPubSubChannel(player))
 
 	// Start listening for messages
 	go func() {
@@ -122,9 +95,9 @@ func (r *RedisClient) SubscribePlayerChannel(playerChannel string, messageHandle
 	}()
 }
 
-// Publish a message to a player's Redis Pub/Sub channel
-func (r *RedisClient) PublishToPlayer(playerID string, message string) error {
-	return r.Client.Publish(context.Background(), playerID, message).Err()
+// Publish a message to a player's Redis Pub/Sub channel , generates chanel from player.
+func (r *RedisClient) PublishToPlayer(player models.Player, message string) error {
+	return r.Client.Publish(context.Background(), GetPlayerPubSubChannel(player), message).Err()
 }
 
 func (r *RedisClient) AddPlayer(key string, player *models.Player) error {
