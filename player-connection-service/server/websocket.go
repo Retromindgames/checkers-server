@@ -52,7 +52,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	// Log the new player connection details
 	fmt.Println("New player connected:", player.ID)
 	// Publish the connection event to Redis
-	err = redisClient.PublishPlayerEvent(player, player.Status)
+	err = redisClient.PublishPlayerEvent(player, "player-connected")
 	if err != nil {
 		fmt.Println("Failed to publish player event:", err)
 		return

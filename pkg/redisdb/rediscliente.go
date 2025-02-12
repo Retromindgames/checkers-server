@@ -43,13 +43,13 @@ func NewRedisClient(addr string) (*RedisClient, error) {
 	return &RedisClient{Client: client}, nil
 }
 
-func (rc *RedisClient) PublishPlayerEvent(player *Player, status string) error {
+func (rc *RedisClient) PublishPlayerEvent(player *Player, chanel string) error {
 	event := map[string]interface{}{
 		"ID":        player.ID,
 		"Token":     player.Token,
 		"SessionID": player.SessionID,
 		"Currency":  player.Currency,
-		"status":    status,
+		"status":    player.Status,
 	}
 
 	data, err := json.Marshal(event)
@@ -57,7 +57,7 @@ func (rc *RedisClient) PublishPlayerEvent(player *Player, status string) error {
 		return fmt.Errorf("[pkg/redisdb/cliente] - failed to marshal event data: %w", err)
 	}
 
-	err = rc.Client.Publish(context.Background(), "player-events", data).Err()
+	err = rc.Client.Publish(context.Background(), chanel, data).Err()
 	if err != nil {
 		return fmt.Errorf("[pkg/redisdb/cliente] - failed to publish player event: %w", err)
 	}
