@@ -1,25 +1,32 @@
 FROM golang:1.23.6-alpine AS builder
 
 # Set the working directory inside the container
-WORKDIR /app
+WORKDIR /app/wsapi
 
 # Copy go.mod and go.sum from the root
-COPY ../go.mod ../go.sum ./
+COPY ./go.mod ./go.sum /app/wsapi/
+
 # List files after copying go.mod and go.sum
-RUN echo "Files after copying go.mod and go.sum:" && ls -l /app
+RUN echo "Files after copying go.mod and go.sum:" && ls -l /app/wsapi
 
 ENV GOPROXY=https://proxy.golang.org,direct
 
-RUN go mod tidy 
 
 # Copy shared packages
 COPY ./messages ./messages
 COPY ./models ./models
 COPY ./redisdb ./redisdb
-COPY ./wsapi ./wsapi
+COPY ./wsapi ./
+RUN mkdir -p /app/wsapi/wsapi && mv /app/wsapi/server /app/wsapi/wsapi
 
 # List files after copying the source code
 RUN echo "Files after copying wsapi source code:" && ls -l /app/wsapi
+
+RUN go mod tidy 
+
+# List files after copying the source code
+RUN echo "Files after copying wsapi source code:" 
+RUN ls -l /app/wsapi
 
 # Set working directory for wsapi
 WORKDIR /app/wsapi
