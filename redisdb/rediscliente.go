@@ -9,29 +9,24 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// RedisClient represents a wrapper around Redis client.
 type RedisClient struct {
 	Client *redis.Client
 	Ctx    context.Context
 }
 
 func NewRedisClient(addr string) (*RedisClient, error) {
-	// Initialize the Redis client
 	client := redis.NewClient(&redis.Options{
 		Addr: addr,
 	})
 
-	// Attempt to ping Redis to check connection
+	// check connection
 	ctx := context.Background()
 	_, err := client.Ping(ctx).Result()
 	if err != nil {
-		return nil, fmt.Errorf("[pkg/redisdb/cliente] - failed to connect to Redis at %s: %w", addr, err)
+		return nil, fmt.Errorf("[RedisClient] - failed to connect to Redis at %s: %w", addr, err)
 	}
-
-	// Return the initialized RedisClient on success
 	return &RedisClient{Client: client}, nil
 }
-
 
 // RPush - Push serialized player to Redis
 func (r *RedisClient) RPush(queue string, player *models.Player) error {
@@ -83,11 +78,22 @@ func (rc *RedisClient) PublishPlayerEvent(player *models.Player, chanel string) 
 	return nil
 }
 
-// Subscribe to a Redis Pub/Sub channel
+func (rc *RedisClient) Publish(chanel string, message string) error {
+	data, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - failed to marshal message data: %w", err)
+	}
+
+	err = rc.Client.Publish(context.Background(), chanel, data).Err()
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - failed to publish message: %w", err)
+	}
+	return nil
+}
+
 func (r *RedisClient) SubscribePlayerChannel(player models.Player, messageHandler func(string)) {
 	pubsub := r.Client.Subscribe(context.Background(), GetPlayerPubSubChannel(player))
 
-	// Start listening for messages
 	go func() {
 		for msg := range pubsub.Channel() {
 			messageHandler(msg.Payload) // Pass message to handler
@@ -95,7 +101,6 @@ func (r *RedisClient) SubscribePlayerChannel(player models.Player, messageHandle
 	}()
 }
 
-// Publish a message to a player's Redis Pub/Sub channel , generates chanel from player.
 func (r *RedisClient) PublishToPlayer(player models.Player, message string) error {
 	return r.Client.Publish(context.Background(), GetPlayerPubSubChannel(player), message).Err()
 }
@@ -103,7 +108,7 @@ func (r *RedisClient) PublishToPlayer(player models.Player, message string) erro
 func (r *RedisClient) AddPlayer(key string, player *models.Player) error {
 	data, err := json.Marshal(player)
 	if err != nil {
-		return fmt.Errorf("failed to serialize player: %v", err)
+		return fmt.Errorf("[RedisClient] - failed to serialize player: %v", err)
 	}
 
 	return r.Client.HSet(context.Background(), key, player.ID, data).Err()
@@ -118,7 +123,7 @@ func (r *RedisClient) GetPlayer(key string, playerID string) (*models.Player, er
 	var player models.Player
 	err = json.Unmarshal([]byte(data), &player)
 	if err != nil {
-		return nil, fmt.Errorf("failed to deserialize player: %v", err)
+		return nil, fmt.Errorf("[RedisClient] - failed to deserialize player: %v", err)
 	}
 
 	return &player, nil
@@ -128,11 +133,10 @@ func (r *RedisClient) RemovePlayer(key string, playerID string) error {
 	return r.Client.HDel(context.Background(), key, playerID).Err()
 }
 
-
 func (r *RedisClient) AddRoom(key string, room *models.Room) error {
 	data, err := json.Marshal(room)
 	if err != nil {
-		return fmt.Errorf("failed to serialize room: %v", err)
+		return fmt.Errorf("[RedisClient] - failed to serialize room: %v", err)
 	}
 
 	// Store the room using the roomID as the key
