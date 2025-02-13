@@ -48,6 +48,10 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	go subscribeToPlayerChannel(player, subscriptionReady)
 	<-subscriptionReady // Wait for the subscription to be ready
 	
+	subscriptionReady = make(chan bool)
+	go subscribeToBroadcastChannel(player, subscriptionReady)
+	<-subscriptionReady // Wait for the subscription to be ready
+	
 	err = redisClient.RPush("player_online", player)
 	if err != nil {
 		fmt.Println("[wsapi] - Failed to push player online", err)
@@ -60,6 +64,19 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 // Function to handle player channel subscription
 func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	redisClient.SubscribePlayerChannel(*player, func(message string) {
+		// Send the received message to the player's WebSocket connection
+		err := player.Conn.WriteMessage(websocket.TextMessage, []byte(message))
+		if err != nil {
+			fmt.Println("[wsapi] - Failed to send message to player:", err)
+			player.Conn.Close()
+		}
+	})
+	ready <- true // Notify that the subscription is ready
+}
+
+// Function to handle player channel subscription
+func subscribeToBroadcastChannel(player *models.Player, ready chan bool) {
+	redisClient.Subscribe("room-info", func(message string) {
 		// Send the received message to the player's WebSocket connection
 		err := player.Conn.WriteMessage(websocket.TextMessage, []byte(message))
 		if err != nil {

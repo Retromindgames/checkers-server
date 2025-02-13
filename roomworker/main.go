@@ -63,8 +63,7 @@ func processRoomEnding(){
 			fmt.Printf("[Worker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
 		}
-		fmt.Printf("[Worker-%d] - end room!: %+v\n", playerData)
-
+		fmt.Printf("[Worker-%d] - end room!: %+v\n", pid,playerData)
 	}
 }
 
