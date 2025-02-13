@@ -78,13 +78,13 @@ func (rc *RedisClient) PublishPlayerEvent(player *models.Player, chanel string) 
 	return nil
 }
 
-func (rc *RedisClient) Publish(chanel string, message string) error {
+func (rc *RedisClient) Publish(channel string, message string) error {
 	data, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("[RedisClient] - failed to marshal message data: %w", err)
 	}
 
-	err = rc.Client.Publish(context.Background(), chanel, data).Err()
+	err = rc.Client.Publish(context.Background(), channel, data).Err()
 	if err != nil {
 		return fmt.Errorf("[RedisClient] - failed to publish message: %w", err)
 	}
@@ -93,6 +93,16 @@ func (rc *RedisClient) Publish(chanel string, message string) error {
 
 func (r *RedisClient) SubscribePlayerChannel(player models.Player, messageHandler func(string)) {
 	pubsub := r.Client.Subscribe(context.Background(), GetPlayerPubSubChannel(player))
+
+	go func() {
+		for msg := range pubsub.Channel() {
+			messageHandler(msg.Payload) // Pass message to handler
+		}
+	}()
+}
+
+func (r *RedisClient) Subscribe(channel string, messageHandler func(string)) {
+	pubsub := r.Client.Subscribe(context.Background(), channel)
 
 	go func() {
 		for msg := range pubsub.Channel() {
