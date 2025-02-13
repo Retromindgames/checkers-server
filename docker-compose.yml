@@ -1,45 +1,30 @@
-version: "3.8"
+version: '3.8'
 
 services:
-  # WebSocket API service
   wsapi:
     build:
-      context: .
-      dockerfile: wsapi.dockerfile
-    container_name: wsapi
+      context: .  # Root of the project
+      dockerfile: wsapi.dockerfile  # Dockerfile in the root
     ports:
-      - "8080:8080" # Expose WebSocket port
-    environment:
-      - REDIS_URL=redis:6379
+      - "8080:8080"
     depends_on:
       - redis
 
-  # Player status worker service
   pstatusworker:
     build:
       context: .
       dockerfile: pstatusworker.dockerfile
-    container_name: pstatusworker
-    environment:
-      - REDIS_URL=redis:6379
     depends_on:
       - redis
 
-  # Room worker service
   roomworker:
     build:
       context: .
-      dockerfile: roomworker.dockefile
-    container_name: roomworker
-    environment:
-      - REDIS_URL=redis:6379
+      dockerfile: roomworker.dockerfile
     depends_on:
       - redis
 
-  # Redis service for pub/sub
   redis:
-    image: redis:latest
-    container_name: redis
+    image: redis:alpine
     ports:
-      - "6379:6379" # Expose Redis port
-    restart: always
+      - "6379:6379"
