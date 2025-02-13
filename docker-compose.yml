@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   wsapi:
+    container_name: wsapi
     build:
       context: .  # Root of the project
       dockerfile: wsapi.dockerfile  # Dockerfile in the root
@@ -11,6 +12,7 @@ services:
       - redis
 
   pstatusworker:
+    container_name: pstatusworker
     build:
       context: .
       dockerfile: pstatusworker.dockerfile
@@ -18,6 +20,7 @@ services:
       - redis
 
   roomworker:
+    container_name: roomworker
     build:
       context: .
       dockerfile: roomworker.dockerfile

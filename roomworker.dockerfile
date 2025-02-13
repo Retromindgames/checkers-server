@@ -1,38 +1,30 @@
 FROM golang:1.23.6-alpine AS builder
+WORKDIR /app/
 
-# Set the working directory inside the container
-WORKDIR /app
+RUN echo "Files on /app/:" && ls -l /app/
+RUN echo "Files on .:" && ls -l .
 
-# Copy go.mod and go.sum from the root
-COPY go.mod go.sum ./
+COPY go.mod go.sum /app/
+COPY messages /app/messages
+COPY models /app/models
+COPY redisdb /app/redisdb
+RUN echo "Files after copying shared code:" && ls -l /app/
+COPY ./roomworker /app/
+RUN echo "Files after copying roomworker source code:" && ls -l /app/
 
-ENV GOPROXY=https://proxy.golang.org,direct
-
-# Download dependencies
-RUN go mod download
 RUN go mod tidy 
-
-# Copy shared packages
-COPY ./messages ./messages
-COPY ./models ./models
-COPY ./redisdb ./redisdb
-
-# Copy the specific service code (not everything)
-COPY ./roomworker ./roomworker
-
-# Set working directory for roomworker
-WORKDIR /app/roomworker
-
-# Build the roomworker binary
+RUN go mod download
 RUN go build -o roomworker .
+RUN ls -l /app/
+RUN ls -l .
 
 # Create the final image with only the binary
 FROM alpine:latest
-
 WORKDIR /root/
-
 # Copy the built binary from the builder stage
-COPY --from=builder /app/roomworker/roomworker .
+COPY --from=builder /app/ .
+RUN ls -l .
+RUN ls -lh /root/
 
 # Run the roomworker service
 CMD ["./roomworker"]
