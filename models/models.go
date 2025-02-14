@@ -36,6 +36,12 @@ type Room struct {
 	IsRoomOpen     	  bool       `json:"IsRoomOpen"`        
 }
 
+type RoomAgregate struct {
+	Currency          string     `json:"Currency"`    		// Currency for the room
+	BidAmount         float64    `json:"BidAmount"`  		// Bet amount for the game
+	GameStatus        string     `json:"GameStatus"` 		// Status of the game (e.g., "waiting", "in_progress", "finished")
+	GameEndDate       *time.Time `json:"GameEndDate,omitempty"`
+}
 
 func GenerateUUID() string {
 	return uuid.New().String() // Generates a new UUID and returns it as a string

@@ -14,7 +14,7 @@ var redisClient *redisdb.RedisClient
 
 func init() {
 	pid = os.Getpid()
-	client, err := redisdb.NewRedisClient("localhost:6379")
+	client, err := redisdb.NewRedisClient("redis:6379")
 	if err != nil {
 		log.Fatalf("[Redis] Error initializing Redis client: %v\n", err)
 	}

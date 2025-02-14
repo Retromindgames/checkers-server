@@ -17,7 +17,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func init() {
-	client, err := redisdb.NewRedisClient("localhost:6379")
+	client, err := redisdb.NewRedisClient("redis:6379")
 	if err != nil {
 		log.Fatalf("[Redis] Error initializing Redis client: %v", err)
 	}
