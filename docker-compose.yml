@@ -26,8 +26,17 @@ services:
       dockerfile: roomworker.dockerfile
     depends_on:
       - redis
+  
+  broadcastworker:
+    container_name: broadcastworker
+    build:
+      context: .
+      dockerfile: broadcastworker.dockerfile
+    depends_on:
+      - redis
 
   redis:
+    container_name: redis
     image: redis:alpine
     ports:
       - "6379:6379"
