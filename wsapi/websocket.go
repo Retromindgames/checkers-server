@@ -1,4 +1,4 @@
-package server
+package wsapi
 
 import (
 	"checkers-server/models"
@@ -34,7 +34,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Failed to upgrade:", err)
 		return
 	}
-	playerID := r.RemoteAddr 
+	playerID := r.RemoteAddr
 	player := &models.Player{
 		ID:        playerID,
 		Conn:      conn,
@@ -43,7 +43,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		Currency:  currency,
 		Status:    "connected",
 	}
-	
+
 	subscriptionReady := make(chan bool)
 	go subscribeToPlayerChannel(player, subscriptionReady)
 	<-subscriptionReady // Wait for the subscription to be ready
@@ -52,6 +52,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	go subscribeToBroadcastChannel(player, subscriptionReady)
 	<-subscriptionReady // Wait for the subscription to be ready
 	
+
 	err = redisClient.RPush("player_online", player)
 	if err != nil {
 		fmt.Println("[wsapi] - Failed to push player online", err)

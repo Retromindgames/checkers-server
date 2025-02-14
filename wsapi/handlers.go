@@ -1,4 +1,4 @@
-package server
+package wsapi
 
 import (
 	"checkers-server/messages"

@@ -12,7 +12,7 @@ RUN echo "Files after copying shared code:" && ls -l /app/
 COPY ./roomworker /app/
 RUN echo "Files after copying roomworker source code:" && ls -l /app/
 
-RUN go mod tidy 
+RUN go mod tidy
 RUN go mod download
 RUN go build -o roomworker .
 RUN ls -l /app/
