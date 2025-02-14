@@ -1,6 +1,7 @@
 package main
 
 import (
+	"checkers-server/config"
 	"checkers-server/redisdb"
 	"encoding/json"
 	"fmt"
@@ -10,13 +11,16 @@ import (
 )
 
 var pid int
+var name = "Broadcaster"
 var redisClient *redisdb.RedisClient
 
 func init() {
+	config.LoadConfig("config/config.json")
 	pid = os.Getpid()
-	client, err := redisdb.NewRedisClient("redis:6379")
+	redisAddr := config.Cfg.Redis.Addr
+	client, err := redisdb.NewRedisClient(redisAddr)
 	if err != nil {
-		log.Fatalf("[Redis] Error initializing Redis client: %v", err)
+		log.Fatalf("[%d][Redis] Error initializing Redis client: %v", name, err)
 	}
 	redisClient = client
 }
@@ -30,19 +34,19 @@ func main() {
 	for range ticker.C {
 		aggregates, err := redisdb.GetRoomAggregates(redisClient.Client)
 		if err != nil {
-			log.Printf("[Worker-%d] Error fetching room aggregates: %v", pid, err)
+			log.Printf("[Worker-%d] Error fetching room aggregates: %v\n", pid, err)
 			continue
 		}
 
 		messageBytes, err := json.Marshal(aggregates)
 		if err != nil {
-			log.Printf("[Worker-%d] Error marshalling message: %v", pid, err)
+			log.Printf("[Worker-%d] Error marshalling message: %v\n", pid, err)
 			continue
 		}
 
 		err = redisClient.Publish("room-info", string(messageBytes))
 		if err != nil {
-			log.Printf("[Worker-%d] Error publishing message: %v", pid, err)
+			log.Printf("[Worker-%d] Error publishing message: %v\n", pid, err)
 		} else {
 			fmt.Printf("[Worker-%d] Published room aggregates\n", pid)
 		}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"checkers-server/config"
 	"checkers-server/messages"
 	"checkers-server/models"
 	"checkers-server/redisdb"
@@ -14,7 +15,9 @@ var redisClient *redisdb.RedisClient
 
 func init() {
 	pid = os.Getpid()
-	client, err := redisdb.NewRedisClient("redis:6379")
+	config.LoadConfig("config/config.json")
+	redisAddr := config.Cfg.Redis.Addr
+	client, err := redisdb.NewRedisClient(redisAddr)
 	if err != nil {
 		log.Fatalf("[Redis] Error initializing Redis client: %v\n", err)
 	}
@@ -57,7 +60,7 @@ func processPlayerOffline(){
 	for {
 		playerData, err := redisClient.BLPop("player_offline", 0) // Block
 		if err != nil {
-			fmt.Printf("[Worker-%d] - Error retrieving player: %d", pid, err)
+			fmt.Printf("[Worker-%d] - Error retrieving player: %d\n", pid, err)
 			continue
 		}
 		fmt.Printf("[Worker-%d] - Player disconnected: %+v\n", pid, playerData)

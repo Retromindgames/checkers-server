@@ -1,6 +1,7 @@
 package main
 
 import (
+	"checkers-server/config"
 	"checkers-server/models"
 	"checkers-server/redisdb"
 	"fmt"
@@ -14,7 +15,9 @@ var redisClient *redisdb.RedisClient
 
 func init() {
 	pid = os.Getpid()
-	client, err := redisdb.NewRedisClient("redis:6379")
+	config.LoadConfig("config/config.json")
+	redisAddr := config.Cfg.Redis.Addr
+	client, err := redisdb.NewRedisClient(redisAddr)
 	if err != nil {
 		log.Fatalf("[Redis] Error initializing Redis client: %v\n", err)
 	}
@@ -23,11 +26,9 @@ func init() {
 
 func main() {
 	fmt.Printf("[Worker-%d] - Waiting for room messages...\n", pid)
-
 	go processRoomCreation()
 	go processRoomJoin()
 	go processRoomEnding()
-
 	select {}
 }
 

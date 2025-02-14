@@ -1,6 +1,7 @@
 package wsapi
 
 import (
+	"checkers-server/config"
 	"checkers-server/models"
 	"checkers-server/redisdb"
 	"fmt"
@@ -17,7 +18,9 @@ var upgrader = websocket.Upgrader{
 }
 
 func init() {
-	client, err := redisdb.NewRedisClient("redis:6379")
+	config.LoadConfig("config/config.json")
+	redisAddr := config.Cfg.Redis.Addr
+	client, err := redisdb.NewRedisClient(redisAddr)
 	if err != nil {
 		log.Fatalf("[Redis] Error initializing Redis client: %v", err)
 	}
