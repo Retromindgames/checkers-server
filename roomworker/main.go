@@ -4,6 +4,7 @@ import (
 	"checkers-server/config"
 	"checkers-server/models"
 	"checkers-server/redisdb"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -47,7 +48,7 @@ func processRoomCreation(){
 // TODO
 func processRoomJoin(){
 	for {
-		playerData, err := redisClient.BLPop("join_room", 0) // Block 
+		playerData, err := redisClient.BLPop("join_room", 0) // Block
 		if err != nil {
 			fmt.Printf("[Worker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
@@ -59,7 +60,7 @@ func processRoomJoin(){
 // TODO
 func processRoomEnding(){
 	for {
-		playerData, err := redisClient.BLPop("end_room", 0) // Block 
+		playerData, err := redisClient.BLPop("end_room", 0) // Block
 		if err != nil {
 			fmt.Printf("[Worker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
@@ -76,15 +77,34 @@ func handleCreateRoom(player *models.Player) {
 		ID:    models.GenerateUUID(),
 		Player1:   player,
 		StartDate: time.Now(),
-		Currency:  player.Currency,  
-		BidAmount: player.SelectedBid, 
+		Currency:  player.Currency,
+		BidAmount: player.SelectedBid,
 	}
 	err := redisClient.AddRoom("room:"+room.ID, room)
 	if err != nil {
 		fmt.Printf("[Worker-%d] - Failed to add room to Redis: %v\n", pid, err)
 		return
 	}
-	err = redisClient.PublishToPlayer(*player, "ROOM CREATED")
+
+	roomValue := models.RoomValue{
+    ID:          room.ID,
+    Player:      room.Player1.Name,
+    Currency:    room.Currency,
+    SelectedBid: room.BidAmount,
+}
+
+	messageJson := &models.CreateRoomMessage{
+		Command: "room_created",
+		Value: roomValue,
+	}
+
+	messageBytes, err := json.Marshal(messageJson)
+
+	if err != nil {
+		fmt.Printf("[Worker-%d] - Error marshalling message: %v\n", pid, err)
+		return
+	}
+	err = redisClient.PublishToPlayer(*player, string(messageBytes))
 	if err != nil {
 		fmt.Printf("[Worker-%d] - Failed to publish message to player: %v\n", pid, err)
 		return

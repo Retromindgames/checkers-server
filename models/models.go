@@ -27,13 +27,13 @@ type Room struct {
 	StartDate         time.Time  `json:"StartDate"`
 	Currency          string     `json:"Currency"`    		// Currency for the room
 	BidAmount         float64    `json:"BidAmount"`  		// Bet amount for the game
-	Turn	          int    	 `json:"Turn"`  			
-	CurrentTurnPlayer *Player    `json:"CurrentTurnPlayer"` 	
+	Turn	          int    	 `json:"Turn"`
+	CurrentTurnPlayer *Player    `json:"CurrentTurnPlayer"`
 	GameBoard         string     `json:"GameBoard"`  		// TODO: Representation of the game board (could be a string of board state?)
 	GameStatus        string     `json:"GameStatus"` 		// Status of the game (e.g., "waiting", "in_progress", "finished")
 	GameEndDate       *time.Time `json:"GameEndDate,omitempty"`
 	Winner            *Player    `json:"Winner,omitempty"`  // Player who won (if game is over)
-	IsRoomOpen     	  bool       `json:"IsRoomOpen"`        
+	IsRoomOpen     	  bool       `json:"IsRoomOpen"`
 }
 
 type RoomAgregate struct {
@@ -41,6 +41,19 @@ type RoomAgregate struct {
 	BidAmount         float64    `json:"BidAmount"`  		// Bet amount for the game
 	GameStatus        string     `json:"GameStatus"` 		// Status of the game (e.g., "waiting", "in_progress", "finished")
 	GameEndDate       *time.Time `json:"GameEndDate,omitempty"`
+}
+
+
+type RoomValue struct {
+	ID        string `json:"id"`
+	Player     string `json:"name"`
+	Currency  string `json:"currency"`
+	SelectedBid float64 `json:"SelectedBid"`
+}
+
+type CreateRoomMessage struct {
+	Command string `json:"command"`
+	Value RoomValue `json:"value"`
 }
 
 func GenerateUUID() string {
