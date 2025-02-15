@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	config.LoadConfig("config/config.json")
+	config.LoadConfig()
 	ports := config.Cfg.Services["wsapi"].Ports
 	if len(ports) == 0 {
 		log.Fatal("[wsapi] - No ports defined for wsapi\n")

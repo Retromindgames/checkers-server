@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 )
@@ -32,18 +33,25 @@ type Config struct {
 // Global config instance
 var Cfg Config
 
-func LoadConfig(filePath string) {
-	file, err := os.Open(filePath)
+func LoadConfig() {
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		log.Fatal("CONFIG_PATH not set")
+	}
+	if configPath == "" {
+		log.Fatal("CONFIG_PATH not set")
+	} else {
+		fmt.Println("Config path is:", configPath)
+	}
+	file, err := os.Open(configPath)
 	if err != nil {
 		log.Fatalf("Error opening config file: %v", err)
 	}
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&Cfg)
-	if err != nil {
+	if err := decoder.Decode(&Cfg); err != nil {
 		log.Fatalf("Error decoding JSON: %v", err)
 	}
-
 	log.Printf("Config loaded: %+v", Cfg)
 }

@@ -18,7 +18,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func init() {
-	config.LoadConfig("config/config.json")
+	config.LoadConfig()
 	redisAddr := config.Cfg.Redis.Addr
 	client, err := redisdb.NewRedisClient(redisAddr)
 	if err != nil {
@@ -89,4 +89,12 @@ func subscribeToBroadcastChannel(player *models.Player, ready chan bool) {
 		}
 	})
 	ready <- true // Notify that the subscription is ready
+}
+
+func unsubscribeFromPlayerChannel(player *models.Player) {
+	redisClient.UnsubscribePlayerChannel(*player)
+}
+
+func unsubscribeFromBroadcastChannel(player *models.Player) {
+	redisClient.Unsubscribe("room-info")
 }

@@ -15,7 +15,7 @@ var name = "Broadcaster"
 var redisClient *redisdb.RedisClient
 
 func init() {
-	config.LoadConfig("config/config.json")
+	config.LoadConfig()
 	pid = os.Getpid()
 	redisAddr := config.Cfg.Redis.Addr
 	client, err := redisdb.NewRedisClient(redisAddr)

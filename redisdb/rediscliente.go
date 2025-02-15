@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"sync"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -14,6 +15,8 @@ import (
 type RedisClient struct {
 	Client *redis.Client
 	Ctx    context.Context
+	Subscriptions   map[string]*redis.PubSub // Stores active subscriptions per channel
+	mu             sync.Mutex
 }
 
 func NewRedisClient(addr string) (*RedisClient, error) {
@@ -27,7 +30,10 @@ func NewRedisClient(addr string) (*RedisClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("[RedisClient] - failed to connect to Redis at %s: %w", addr, err)
 	}
-	return &RedisClient{Client: client}, nil
+	return &RedisClient{
+		Client:        client,
+		Subscriptions: make(map[string]*redis.PubSub),
+	}, nil
 }
 
 // RPush - Push serialized player to Redis
@@ -93,24 +99,101 @@ func (rc *RedisClient) Publish(channel string, message string) error {
 	return nil
 }
 
+//func (r *RedisClient) SubscribePlayerChannel(player models.Player, messageHandler func(string)) {
+//	pubsub := r.Client.Subscribe(context.Background(), GetPlayerPubSubChannel(player))
+//
+//	go func() {
+//		for msg := range pubsub.Channel() {
+//			messageHandler(msg.Payload) // Pass message to handler
+//		}
+//	}()
+//}
+
 func (r *RedisClient) SubscribePlayerChannel(player models.Player, messageHandler func(string)) {
-	pubsub := r.Client.Subscribe(context.Background(), GetPlayerPubSubChannel(player))
+	channel := GetPlayerPubSubChannel(player) // Function to get player-specific channel
+	r.mu.Lock()
+	if _, exists := r.Subscriptions[channel]; exists {
+		r.mu.Unlock()
+		fmt.Println("Already subscribed to", channel)
+		return
+	}
+	pubsub := r.Client.Subscribe(context.Background(), channel)
+	r.Subscriptions[channel] = pubsub
+	r.mu.Unlock()
 
 	go func() {
 		for msg := range pubsub.Channel() {
-			messageHandler(msg.Payload) // Pass message to handler
+			messageHandler(msg.Payload)
 		}
 	}()
 }
 
+
+//func (r *RedisClient) Subscribe(channel string, messageHandler func(string)) {
+//	pubsub := r.Client.Subscribe(context.Background(), channel)
+//
+//	go func() {
+//		for msg := range pubsub.Channel() {
+//			messageHandler(msg.Payload) // Pass message to handler
+//		}
+//	}()
+//}
+
 func (r *RedisClient) Subscribe(channel string, messageHandler func(string)) {
+	r.mu.Lock()
+	if _, exists := r.Subscriptions[channel]; exists {
+		r.mu.Unlock()
+		fmt.Println("Already subscribed to", channel)
+		return
+	}
 	pubsub := r.Client.Subscribe(context.Background(), channel)
+	r.Subscriptions[channel] = pubsub
+	r.mu.Unlock()
 
 	go func() {
 		for msg := range pubsub.Channel() {
-			messageHandler(msg.Payload) // Pass message to handler
+			messageHandler(msg.Payload)
 		}
 	}()
+}
+
+
+func (r *RedisClient) UnsubscribePlayerChannel(player models.Player) {
+	channel := GetPlayerPubSubChannel(player)
+
+	r.mu.Lock()
+	pubsub, exists := r.Subscriptions[channel]
+	if !exists {
+		r.mu.Unlock()
+		fmt.Println("Not subscribed to", channel)
+		return
+	}
+	delete(r.Subscriptions, channel)
+	fmt.Printf ("[RedisClii] (UnsubscribePlayerChannel) - Deleted subscription of [%d] and [%v]\n", player.Name, channel)
+	r.mu.Unlock()
+
+	if err := pubsub.Unsubscribe(context.Background(), channel); err != nil {
+		fmt.Println("Error unsubscribing from", channel, ":", err)
+	} else {
+		fmt.Printf("[RedisClii] (UnsubscribePlayerChannel) - Unsubscribe of [%d] and [%v]\n", player.Name, channel)
+	}
+}
+
+
+func (r *RedisClient) Unsubscribe(channel string) {
+	r.mu.Lock()
+	pubsub, exists := r.Subscriptions[channel]
+	if !exists {
+		r.mu.Unlock()
+		fmt.Println("Not subscribed to", channel)
+		return
+	}
+	delete(r.Subscriptions, channel)
+	r.mu.Unlock()
+
+	if err := pubsub.Unsubscribe(context.Background(), channel); err != nil {
+		fmt.Println("Error unsubscribing from", channel, ":", err)
+	}
 }
 
 func (r *RedisClient) PublishToPlayer(player models.Player, message string) error {

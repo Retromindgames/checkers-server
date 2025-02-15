@@ -13,9 +13,8 @@ func handleMessages(player *models.Player) {
 	defer player.Conn.Close()
 	for {
 		_, msg, err := player.Conn.ReadMessage()
-		if err != nil {
-			fmt.Println("Player disconnected:", player.ID)
-			err = redisClient.RPush("player_offline", player)
+		if err != nil {	
+			handlePlayerDisconnect(player)
 			break
 		}
 		fmt.Printf("Message from %s: %s\n", player.ID, string(msg))
@@ -39,4 +38,14 @@ func handleMessages(player *models.Player) {
 		// Now we push the command to our worker, he will determine if we can start a match
 		err = redisClient.RPush(message.Command , player)
 	}
+}
+
+
+func handlePlayerDisconnect(player *models.Player) {
+	fmt.Println("Player disconnected:", player.ID)
+	// Unsubscribe from Redis channels
+	unsubscribeFromPlayerChannel(player)
+	unsubscribeFromBroadcastChannel(player)
+	// Notify worker of disconnection
+	redisClient.RPush("player_offline", player)
 }
