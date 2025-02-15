@@ -4,7 +4,6 @@ import (
 	"checkers-server/config"
 	"checkers-server/models"
 	"checkers-server/redisdb"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -85,27 +84,27 @@ func subscribeToBroadcastChannel(player *models.Player, ready chan bool) {
 		fmt.Println("[wsapi] - broadcast message:", message)
 		fmt.Printf("[wsapi] - Type of message: %T\n", message)
 		// First, unwrap the JSON string
-		var rawString string
-		err := json.Unmarshal([]byte(message), &rawString)
-		if err != nil {
-			fmt.Println("[wsapi] - Failed to unmarshal outer string:", err)
-			return
-		}
-		// Unmarshal the received message from Redis (string) to the appropriate structure
-		var aggregates models.RoomAggregateResponse
-		err = json.Unmarshal([]byte(rawString), &aggregates)
-		if err != nil {
-			fmt.Println("[wsapi] - Failed to unmarshal message:", err)
-			return
-		}
-		// Re-marshal the message to ensure it's properly formatted without unwanted escape characters
-		formattedMessage, err := json.Marshal(aggregates)
-		if err != nil {
-			fmt.Println("[wsapi] - Failed to marshal message:", err)
-			return
-		}
+		//var rawString string
+		//err := json.Unmarshal([]byte(message), &rawString)
+		//if err != nil {
+		//	fmt.Println("[wsapi] - Failed to unmarshal outer string:", err)
+		//	return
+		//}
+		//// Unmarshal the received message from Redis (string) to the appropriate structure
+		//var aggregates models.RoomAggregateResponse
+		//err = json.Unmarshal([]byte(rawString), &aggregates)
+		//if err != nil {
+		//	fmt.Println("[wsapi] - Failed to unmarshal message:", err)
+		//	return
+		//}
+		//// Re-marshal the message to ensure it's properly formatted without unwanted escape characters
+		//formattedMessage, err := json.Marshal(aggregates)
+		//if err != nil {
+		//	fmt.Println("[wsapi] - Failed to marshal message:", err)
+		//	return
+		//}
 		// Send the properly formatted message to the player's WebSocket connection
-		err = player.Conn.WriteMessage(websocket.TextMessage, formattedMessage)
+		err := player.Conn.WriteMessage(websocket.TextMessage, []byte(message))
 		if err != nil {
 			fmt.Println("[wsapi] - Failed to send message to player:", err)
 			player.Conn.Close()
