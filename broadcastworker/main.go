@@ -44,7 +44,7 @@ func main() {
 			continue
 		}
 
-		err = redisClient.Publish("room-info", string(messageBytes))
+		err = redisClient.Publish("room_info", string(messageBytes))
 		if err != nil {
 			log.Printf("[Worker-%d] Error publishing message: %v\n", pid, err)
 		} else {

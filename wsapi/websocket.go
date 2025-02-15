@@ -81,7 +81,7 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 }
 
 func subscribeToBroadcastChannel(player *models.Player, ready chan bool) {
-	redisClient.Subscribe("room-info", func(message string) {
+	redisClient.Subscribe("room_info", func(message string) {
 		fmt.Println("[wsapi] - broadcast message:", message)
 		fmt.Printf("[wsapi] - Type of message: %T\n", message)
 		// First, unwrap the JSON string
@@ -119,5 +119,5 @@ func unsubscribeFromPlayerChannel(player *models.Player) {
 }
 
 func unsubscribeFromBroadcastChannel(player *models.Player) {
-	redisClient.Unsubscribe("room-info")
+	redisClient.Unsubscribe("room_info")
 }
