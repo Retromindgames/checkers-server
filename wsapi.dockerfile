@@ -29,6 +29,7 @@ COPY --from=builder /app/ .
 # RUN ls -l .
 # RUN ls -lh /root/
 
+ENV CONFIG_PATH=/root/config/config.json
 EXPOSE 8080
 
 # Run the wsapi service

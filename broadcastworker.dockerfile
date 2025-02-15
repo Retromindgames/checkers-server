@@ -26,6 +26,6 @@ WORKDIR /root/
 COPY --from=builder /app/ .
 # RUN ls -l .
 # RUN ls -lh /root/
-
+ENV CONFIG_PATH=/root/config/config.json
 # Run the broadcastworker service
 CMD ["./broadcastworker"]

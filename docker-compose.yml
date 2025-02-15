@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   wsapi:
     container_name: wsapi
     build:
-      context: .  # Root of the project
-      dockerfile: wsapi.dockerfile  # Dockerfile in the root
+      context: . # Root of the project
+      dockerfile: wsapi.dockerfile # Dockerfile in the root
     ports:
       - "8080:8080"
     depends_on:
@@ -26,7 +24,7 @@ services:
       dockerfile: roomworker.dockerfile
     depends_on:
       - redis
-  
+
   broadcastworker:
     container_name: broadcastworker
     build:
