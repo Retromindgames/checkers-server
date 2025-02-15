@@ -40,24 +40,23 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	playerID := r.RemoteAddr
 	player := &models.Player{
-		ID:        playerID,
-		Conn:      conn,
-		Token:     token,
-		Name:	   "PLACEHOLDER-SERVER",
-		SessionID: sessionID,
-		Currency:  currency,
+		ID:             playerID,
+		Conn:           conn,
+		Token:          token,
+		Name:           "PLACEHOLDER-SERVER",
+		SessionID:      sessionID,
+		Currency:       currency,
 		CurrencyAmount: 999,
-		Status:    "connected",
+		Status:         "connected",
 	}
 
 	subscriptionReady := make(chan bool)
 	go subscribeToPlayerChannel(player, subscriptionReady)
 	<-subscriptionReady // Wait for the subscription to be ready
-	
+
 	subscriptionReady = make(chan bool)
 	go subscribeToBroadcastChannel(player, subscriptionReady)
 	<-subscriptionReady // Wait for the subscription to be ready
-	
 
 	err = redisClient.RPush("player_online", player)
 	if err != nil {
@@ -65,7 +64,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println("[wsapi] - Player added online:", player.ID)
-	go handleMessages(player);
+	go handleMessages(player)
 }
 
 // Function to handle player channel subscription
@@ -85,22 +84,26 @@ func subscribeToBroadcastChannel(player *models.Player, ready chan bool) {
 	redisClient.Subscribe("room-info", func(message string) {
 		fmt.Println("[wsapi] - broadcast message:", message)
 		fmt.Printf("[wsapi] - Type of message: %T\n", message)
-
+		// First, unwrap the JSON string
+		var rawString string
+		err := json.Unmarshal([]byte(message), &rawString)
+		if err != nil {
+			fmt.Println("[wsapi] - Failed to unmarshal outer string:", err)
+			return
+		}
 		// Unmarshal the received message from Redis (string) to the appropriate structure
-		var aggregates models.RoomAggregatesResponse // Assuming this is the structure you use
-		err := json.Unmarshal([]byte(message), &aggregates)
+		var aggregates models.RoomAggregateResponse
+		err = json.Unmarshal([]byte(rawString), &aggregates)
 		if err != nil {
 			fmt.Println("[wsapi] - Failed to unmarshal message:", err)
 			return
 		}
-
 		// Re-marshal the message to ensure it's properly formatted without unwanted escape characters
 		formattedMessage, err := json.Marshal(aggregates)
 		if err != nil {
 			fmt.Println("[wsapi] - Failed to marshal message:", err)
 			return
 		}
-
 		// Send the properly formatted message to the player's WebSocket connection
 		err = player.Conn.WriteMessage(websocket.TextMessage, formattedMessage)
 		if err != nil {

@@ -37,19 +37,19 @@ func (r *RedisClient) CheckRoomAggregateExists(aggregateValue float64) (bool, er
 	key := fmt.Sprintf("RoomAgreagate:%f", aggregateValue)
 
 	// Check if the key exists in Redis
-	exists, err := r.Client.Exists(context.Background()	, key).Result()
+	exists, err := r.Client.Exists(context.Background(), key).Result()
 	if err != nil {
 		return false, fmt.Errorf("Error checking if room aggregate exists: %v", err)
 	}
 	return exists == 1, nil
 }
 
-func (r *RedisClient) GetRoomAggregates() (*models.RoomAggregatesResponse, error) {
+func (r *RedisClient) GetRoomAggregates() (*models.RoomAggregateResponse, error) {
 	keys, err := r.Client.Keys(context.Background(), "RoomAgreagate:*").Result()
 	if err != nil {
 		return nil, fmt.Errorf("Error retrieving room aggregates: %v", err)
 	}
-	var roomAggregates []models.RoomAggregate
+	var roomAggregate []models.RoomAggregate
 	var totalPlayers int
 	totalPlayers = 0
 	for _, key := range keys {
@@ -67,15 +67,15 @@ func (r *RedisClient) GetRoomAggregates() (*models.RoomAggregatesResponse, error
 		}
 
 		aggregate := models.RoomAggregate{
-			AggregateValue: aggregateValue, 	// The numeric part after the colon
+			AggregateValue: aggregateValue, // The numeric part after the colon
 			Count:          value,
 		}
-		roomAggregates = append(roomAggregates, aggregate)
+		roomAggregate = append(roomAggregate, aggregate)
 		totalPlayers += int(value)
 	}
 
-	return &models.RoomAggregatesResponse{
+	return &models.RoomAggregateResponse{
 		PlayersWaiting: totalPlayers,
-		RoomAggregates: roomAggregates,
+		RoomAggregate:  roomAggregate,
 	}, nil
 }
