@@ -42,8 +42,10 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		ID:        playerID,
 		Conn:      conn,
 		Token:     token,
+		Name:	   "PLACEHOLDER-SERVER",
 		SessionID: sessionID,
 		Currency:  currency,
+		CurrencyAmount: 999,
 		Status:    "connected",
 	}
 

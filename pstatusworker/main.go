@@ -40,7 +40,7 @@ func processPlayerOnline(){
 			fmt.Printf("[Worker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
 		}
-		fmt.Printf("[Worker-%d] - Player connected: %+v\n", pid,playerData)
+		fmt.Printf("[Worker-%d] - Player connected: %+v\n", pid, playerData)
 		handleNewPlayer(playerData)
 	}
 }

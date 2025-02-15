@@ -85,21 +85,17 @@ func handleCreateRoom(player *models.Player) {
 		fmt.Printf("[Worker-%d] - Failed to add room to Redis: %v\n", pid, err)
 		return
 	}
-
 	roomValue := models.RoomValue{
-    ID:          room.ID,
-    Player:      room.Player1.Name,
-    Currency:    room.Currency,
-    SelectedBid: room.BidAmount,
-}
-
+		ID:          room.ID,
+		Player:      room.Player1.Name,
+		Currency:    room.Currency,
+		SelectedBid: room.BidAmount,
+	}
 	messageJson := &models.CreateRoomMessage{
 		Command: "room_created",
 		Value: roomValue,
 	}
-
 	messageBytes, err := json.Marshal(messageJson)
-
 	if err != nil {
 		fmt.Printf("[Worker-%d] - Error marshalling message: %v\n", pid, err)
 		return
