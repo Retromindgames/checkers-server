@@ -8,7 +8,7 @@ import (
 
 type Message struct {
 	Command string          `json:"command"`
-	Value   json.RawMessage `json:"value,omitempty"` 
+	Value   json.RawMessage `json:"value,omitempty"`
 }
 
 type Position struct {
@@ -35,8 +35,15 @@ func ParseMessage(msg []byte) (*Message, error) {
 	// this way, the message is only hald decoded, and when we need the rest, we are pretty sure its the right type (hope).
 	switch message.Command {
 		case "leave_queue":
-			return &message, nil	
-			
+			return &message, nil
+
+		case "room_created":
+			var value string
+			if err := json.Unmarshal(message.Value, &value); err != nil {
+				return nil, fmt.Errorf("invalid value format for create_room: %v", err)
+			}
+			message.Value = json.RawMessage(message.Value)
+
 		case "create_room":
 			var value float64
 			if err := json.Unmarshal(message.Value, &value); err != nil {
@@ -50,14 +57,14 @@ func ParseMessage(msg []byte) (*Message, error) {
 			if err := json.Unmarshal(message.Value, &value); err != nil {
 				return nil, fmt.Errorf("invalid value format for send_message: %v", err)
 			}
-			message.Value = json.RawMessage(fmt.Sprintf("\"%s\"", value)) 		
+			message.Value = json.RawMessage(fmt.Sprintf("\"%s\"", value))
 
 		case "move_piece":
 			var value MovePieceMessage
 			if err := json.Unmarshal(message.Value, &value.Value); err != nil {
 				return nil, fmt.Errorf("invalid value format for move_piece: %v", err)
 			}
-			message.Value, _ = json.Marshal(message)											// ! For convinience we store the whole message in the value. To sendo it arround. 
+			message.Value, _ = json.Marshal(message)											// ! For convinience we store the whole message in the value. To sendo it arround.
 
 		case "custom_command":
 			// Expected to be an object or array
@@ -68,9 +75,9 @@ func ParseMessage(msg []byte) (*Message, error) {
 				if err := json.Unmarshal(message.Value, &valueArray); err != nil {
 					return nil, fmt.Errorf("invalid value format for custom_command: %v", err)
 				}
-				message.Value = json.RawMessage(fmt.Sprintf("%v", valueArray)) 					
+				message.Value = json.RawMessage(fmt.Sprintf("%v", valueArray))
 			} else {
-				message.Value = json.RawMessage(fmt.Sprintf("%v", value)) 						
+				message.Value = json.RawMessage(fmt.Sprintf("%v", value))
 			}
 		default:
 	}

@@ -23,7 +23,7 @@ func handleMessages(player *models.Player) {
 		// Process the received message (expecting JSON)
 		message, err := messages.ParseMessage(msg)
 		if err != nil {
-			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid message format."))
+			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid message format." + err.Error()))
 			continue
 		}
 		// We update the player bidValue. This is so our RPUSH seends the player setAmount.
