@@ -53,7 +53,8 @@ func processRoomJoin(){
 			fmt.Printf("[Worker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
 		}
-		fmt.Printf("[Worker-%d] - create join room!: %+v\n", pid, playerData)
+		fmt.Printf("[Worker-%d] - processing join room!: %+v\n", pid, playerData)
+		handleJoinRoom(playerData)
 	}
 }
 
@@ -106,6 +107,17 @@ func handleCreateRoom(player *models.Player) {
 		return
 	}
 	fmt.Printf("[Worker-%d] - Player successfully handled and notified, Room ID: %s\n", pid, room.ID)
+}
+
+func handleJoinRoom(player *models.Player) {
+	fmt.Printf("[Worker-%d] - Handling player (JOIN ROOM): %s (Session: %s, Currency: %s)\n",
+		pid, player.ID, player.SessionID, player.Currency)
+	//rooms, err := redisClient.GetEmptyRoomsByBidAmount(player.SelectedBid)
+	//if err != nil {
+	//	return
+	//}
+	//redisClient.PublishPlayerEvent(rooms[0].Player1, )
+
 }
 
 

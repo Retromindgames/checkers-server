@@ -62,21 +62,14 @@ func (r *RedisClient) BLPop(queue string, timeout int) (*models.Player, error) {
 	return nil, fmt.Errorf("no player found in queue")
 }
 
-func (rc *RedisClient) PublishPlayerEvent(player *models.Player, chanel string) error {
-	event := map[string]interface{}{
-		"ID":        player.ID,
-		"Token":     player.Token,
-		"SessionID": player.SessionID,
-		"Currency":  player.Currency,
-		"status":    player.Status,
-	}
+func (rc *RedisClient) PublishPlayerEvent(player *models.Player, message string) error {
 
-	data, err := json.Marshal(event)
+	data, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("[pkg/redisdb/cliente] - failed to marshal event data: %w", err)
 	}
 
-	err = rc.Client.Publish(context.Background(), chanel, data).Err()
+	err = rc.Client.Publish(context.Background(), GetPlayerPubSubChannel(*player), data).Err()
 	if err != nil {
 		return fmt.Errorf("[pkg/redisdb/cliente] - failed to publish player event: %w", err)
 	}

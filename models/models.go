@@ -11,6 +11,7 @@ type Player struct {
 	ID             string          `json:"id"`
 	Token          string          `json:"token"`
 	SessionID      string          `json:"sessionid"`
+	RoomID		   string		   `json:"room_id"`
 	Currency       string          `json:"currency"`
 	CurrencyAmount int             `json:"CurrencyAmount"`
 	Status         string          `json:"status"` // IN GAME! ONLINE! OFFLNE

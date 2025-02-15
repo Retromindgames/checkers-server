@@ -2,6 +2,7 @@ package main
 
 import (
 	"checkers-server/config"
+	"checkers-server/messages"
 	"checkers-server/redisdb"
 	"encoding/json"
 	"fmt"
@@ -37,13 +38,22 @@ func main() {
 			log.Printf("[Worker-%d] Error fetching room aggregates: %v\n", pid, err)
 			continue
 		}
-
-		messageBytes, err := json.Marshal(aggregates)
+		aggregatesBytes, err := json.Marshal(aggregates)
 		if err != nil {
 			log.Printf("[Worker-%d] Error marshalling message: %v\n", pid, err)
 			continue
 		}
-
+		// Wrap in Message struct
+		message := messages.Message{
+			Command: "game-info",
+			Value:   aggregatesBytes,
+		}
+		// Marshal final message
+		messageBytes, err := json.Marshal(message)
+		if err != nil {
+			log.Printf("[Worker-%d] Error marshalling message: %v\n", pid, err)
+			continue
+		}
 		err = redisClient.Publish("room-info", string(messageBytes))
 		if err != nil {
 			log.Printf("[Worker-%d] Error publishing message: %v\n", pid, err)

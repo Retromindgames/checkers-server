@@ -40,7 +40,7 @@ func ParseMessage(msg []byte) (*Message, error) {
 		case "room_created":
 			var value string
 			if err := json.Unmarshal(message.Value, &value); err != nil {
-				return nil, fmt.Errorf("invalid value format for create_room: %v", err)
+				return nil, fmt.Errorf("invalid value format for room_created: %v", err)
 			}
 			message.Value = json.RawMessage(message.Value)
 
@@ -48,6 +48,13 @@ func ParseMessage(msg []byte) (*Message, error) {
 			var value float64
 			if err := json.Unmarshal(message.Value, &value); err != nil {
 				return nil, fmt.Errorf("invalid value format for create_room: %v", err)
+			}
+			message.Value = json.RawMessage(message.Value) 							// Store it back as raw JSON
+
+		case "join_room":
+			var value float64
+			if err := json.Unmarshal(message.Value, &value); err != nil {
+				return nil, fmt.Errorf("invalid value format for join_room: %v", err)
 			}
 			message.Value = json.RawMessage(message.Value) 							// Store it back as raw JSON
 
