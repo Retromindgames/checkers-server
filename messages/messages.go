@@ -4,6 +4,8 @@ import (
 	"checkers-server/models"
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"time"
 )
 
 type Message struct {
@@ -111,12 +113,31 @@ func GenerateConnectedMessage(player *models.Player) (string, error) {
 	return string(jsonResponse), nil
 }
 
-func GeneratePairedMessage(player1, player2 *models.Player, color int) string {
-	return fmt.Sprintf(`{
-		"command": "paired",
-		"value": {
-			"color": %d,
-			"opponent": "%s"
-		}
-	}`, color, player2.Name)
+func GeneratePairedMessage(player1, player2 *models.Player) (string, error) {
+	rand.Seed(time.Now().UnixNano()) // Ensure randomness
+	color := rand.Intn(2)            // 0 or 1
+
+	message := Message{
+		Command: "paired",
+		Value: mustMarshal(struct {
+			Color    int    `json:"color"`
+			Opponent string `json:"opponent"`
+		}{
+			Color:    color,
+			Opponent: player2.Name,
+		}),
+	}
+
+	messageBytes, err := json.Marshal(message)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal paired message: %v", err)
+	}
+
+	return string(messageBytes), nil
+}
+
+// Helper function to marshal a value and ignore errors
+func mustMarshal(v interface{}) json.RawMessage {
+	bytes, _ := json.Marshal(v)
+	return bytes
 }

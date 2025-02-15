@@ -59,6 +59,12 @@ type CreateRoomMessage struct {
 	Value   RoomValue `json:"value"`
 }
 
+type PairedValue struct {
+	Color    int    `json:"color"`
+	Opponent string `json:"opponent"`
+	RoomID	 string `json:"room_id"`
+}
+
 func GenerateUUID() string {
 	return uuid.New().String() // Generates a new UUID and returns it as a string
 }

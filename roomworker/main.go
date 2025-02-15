@@ -2,6 +2,7 @@ package main
 
 import (
 	"checkers-server/config"
+	"checkers-server/messages"
 	"checkers-server/models"
 	"checkers-server/redisdb"
 	"encoding/json"
@@ -112,13 +113,16 @@ func handleCreateRoom(player *models.Player) {
 func handleJoinRoom(player *models.Player) {
 	fmt.Printf("[Worker-%d] - Handling player (JOIN ROOM): %s (Session: %s, Currency: %s)\n",
 		pid, player.ID, player.SessionID, player.Currency)
-	//rooms, err := redisClient.GetEmptyRoomsByBidAmount(player.SelectedBid)
-	//if err != nil {
-	//	return
-	//}
-	//redisClient.PublishPlayerEvent(rooms[0].Player1, )
-
+	rooms, err := redisClient.GetEmptyRoomsByBidAmount(player.SelectedBid)
+	if err != nil {
+		return
+	}
+	message, err := messages.GeneratePairedMessage(rooms[0].Player1, player)
+	redisClient.PublishPlayerEvent(rooms[0].Player1, message)
+	redisClient.PublishPlayerEvent(player, message)
 }
+
+
 
 
 
