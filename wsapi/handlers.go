@@ -26,7 +26,7 @@ func handleMessages(player *models.Player) {
 			continue
 		}
 		// We update the player bidValue. This is so our RPUSH seends the player setAmount.
-		if(message.Command == "create_room") {
+		if(message.Command == "create_room" || message.Command == "join_room") {
 			var bidValue float64
 			err := json.Unmarshal(message.Value, &bidValue)
 			if err != nil {

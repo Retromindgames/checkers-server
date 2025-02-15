@@ -46,7 +46,6 @@ func processRoomCreation(){
 	}
 }
 
-// TODO
 func processRoomJoin(){
 	for {
 		playerData, err := redisClient.BLPop("join_room", 0) // Block
