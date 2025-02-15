@@ -2,8 +2,10 @@ package wsapi
 
 import (
 	"checkers-server/config"
+	"checkers-server/messages"
 	"checkers-server/models"
 	"checkers-server/redisdb"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -83,34 +85,35 @@ func subscribeToBroadcastChannel(player *models.Player, ready chan bool) {
 	redisClient.Subscribe("room_info", func(message string) {
 		fmt.Println("[wsapi] - broadcast message:", message)
 		fmt.Printf("[wsapi] - Type of message: %T\n", message)
-		// First, unwrap the JSON string
-		//var rawString string
-		//err := json.Unmarshal([]byte(message), &rawString)
-		//if err != nil {
-		//	fmt.Println("[wsapi] - Failed to unmarshal outer string:", err)
-		//	return
-		//}
-		//// Unmarshal the received message from Redis (string) to the appropriate structure
-		//var aggregates models.RoomAggregateResponse
-		//err = json.Unmarshal([]byte(rawString), &aggregates)
-		//if err != nil {
-		//	fmt.Println("[wsapi] - Failed to unmarshal message:", err)
-		//	return
-		//}
-		//// Re-marshal the message to ensure it's properly formatted without unwanted escape characters
-		//formattedMessage, err := json.Marshal(aggregates)
-		//if err != nil {
-		//	fmt.Println("[wsapi] - Failed to marshal message:", err)
-		//	return
-		//}
+
+		// Unmarshal the received message into RoomAggregateResponse
+		var aggregates models.RoomAggregateResponse
+		err := json.Unmarshal([]byte(message), &aggregates)
+		if err != nil {
+			fmt.Println("[wsapi] - Failed to unmarshal message:", err)
+			return
+		}
+
+		// Wrap in Message struct
+		messageFinal := messages.Message{
+			Command: "game-info",
+			Value:   messages.MustMarshal(aggregates),
+		}
+
+		// Marshal final message
+		finalBytes, err := json.Marshal(messageFinal)
+		if err != nil {
+			fmt.Println("[wsapi] - Failed to marshal message:", err)
+			return
+		}
+
 		// Send the properly formatted message to the player's WebSocket connection
-		err := player.Conn.WriteMessage(websocket.TextMessage, []byte(message))
+		err = player.Conn.WriteMessage(websocket.TextMessage, finalBytes)
 		if err != nil {
 			fmt.Println("[wsapi] - Failed to send message to player:", err)
 			player.Conn.Close()
 		}
 	})
-	ready <- true // Notify that the subscription is ready
 }
 
 func unsubscribeFromPlayerChannel(player *models.Player) {

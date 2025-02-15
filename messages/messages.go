@@ -119,7 +119,7 @@ func GeneratePairedMessage(player1, player2 *models.Player) (string, error) {
 
 	message := Message{
 		Command: "paired",
-		Value: mustMarshal(struct {
+		Value: MustMarshal(struct {
 			Color    int    `json:"color"`
 			Opponent string `json:"opponent"`
 		}{
@@ -137,7 +137,7 @@ func GeneratePairedMessage(player1, player2 *models.Player) (string, error) {
 }
 
 // Helper function to marshal a value and ignore errors
-func mustMarshal(v interface{}) json.RawMessage {
+func MustMarshal(v interface{}) json.RawMessage {
 	bytes, _ := json.Marshal(v)
 	return bytes
 }
