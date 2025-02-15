@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
-	"strconv"
 	"sync"
 
 	"github.com/redis/go-redis/v9"
@@ -64,7 +62,6 @@ func (r *RedisClient) BLPop(queue string, timeout int) (*models.Player, error) {
 	return nil, fmt.Errorf("no player found in queue")
 }
 
-
 func (rc *RedisClient) PublishPlayerEvent(player *models.Player, chanel string) error {
 	event := map[string]interface{}{
 		"ID":        player.ID,
@@ -99,16 +96,6 @@ func (rc *RedisClient) Publish(channel string, message string) error {
 	return nil
 }
 
-//func (r *RedisClient) SubscribePlayerChannel(player models.Player, messageHandler func(string)) {
-//	pubsub := r.Client.Subscribe(context.Background(), GetPlayerPubSubChannel(player))
-//
-//	go func() {
-//		for msg := range pubsub.Channel() {
-//			messageHandler(msg.Payload) // Pass message to handler
-//		}
-//	}()
-//}
-
 func (r *RedisClient) SubscribePlayerChannel(player models.Player, messageHandler func(string)) {
 	channel := GetPlayerPubSubChannel(player) // Function to get player-specific channel
 	r.mu.Lock()
@@ -128,17 +115,6 @@ func (r *RedisClient) SubscribePlayerChannel(player models.Player, messageHandle
 	}()
 }
 
-
-//func (r *RedisClient) Subscribe(channel string, messageHandler func(string)) {
-//	pubsub := r.Client.Subscribe(context.Background(), channel)
-//
-//	go func() {
-//		for msg := range pubsub.Channel() {
-//			messageHandler(msg.Payload) // Pass message to handler
-//		}
-//	}()
-//}
-
 func (r *RedisClient) Subscribe(channel string, messageHandler func(string)) {
 	r.mu.Lock()
 	if _, exists := r.Subscriptions[channel]; exists {
@@ -156,7 +132,6 @@ func (r *RedisClient) Subscribe(channel string, messageHandler func(string)) {
 		}
 	}()
 }
-
 
 func (r *RedisClient) UnsubscribePlayerChannel(player models.Player) {
 	channel := GetPlayerPubSubChannel(player)
@@ -179,7 +154,6 @@ func (r *RedisClient) UnsubscribePlayerChannel(player models.Player) {
 	}
 }
 
-
 func (r *RedisClient) Unsubscribe(channel string) {
 	r.mu.Lock()
 	pubsub, exists := r.Subscriptions[channel]
@@ -198,100 +172,4 @@ func (r *RedisClient) Unsubscribe(channel string) {
 
 func (r *RedisClient) PublishToPlayer(player models.Player, message string) error {
 	return r.Client.Publish(context.Background(), GetPlayerPubSubChannel(player), message).Err()
-}
-
-func (r *RedisClient) AddPlayer(key string, player *models.Player) error {
-	data, err := json.Marshal(player)
-	if err != nil {
-		return fmt.Errorf("[RedisClient] - failed to serialize player: %v", err)
-	}
-
-	return r.Client.HSet(context.Background(), key, player.ID, data).Err()
-}
-
-func (r *RedisClient) GetPlayer(key string, playerID string) (*models.Player, error) {
-	data, err := r.Client.HGet(context.Background(), key, playerID).Result()
-	if err != nil {
-		return nil, err
-	}
-
-	var player models.Player
-	err = json.Unmarshal([]byte(data), &player)
-	if err != nil {
-		return nil, fmt.Errorf("[RedisClient] - failed to deserialize player: %v", err)
-	}
-
-	return &player, nil
-}
-
-func (r *RedisClient) RemovePlayer(key string, playerID string) error {
-	return r.Client.HDel(context.Background(), key, playerID).Err()
-}
-
-func (r *RedisClient) AddRoom(key string, room *models.Room) error {
-	data, err := json.Marshal(room)
-	if err != nil {
-		return fmt.Errorf("[RedisClient] - failed to serialize room: %v", err)
-	}
-
-	// Store the room using the roomID as the key
-	return r.Client.HSet(context.Background(), key, room.ID, data).Err()
-}
-
-func GetRoomAggregates(client *redis.Client) (map[string]*models.RoomAgregate, error) {
-	ctx := context.Background()
-	roomAggregates := make(map[string]*models.RoomAgregate)
-
-	var cursor uint64
-	for {
-		// Scan for keys matching "room:*"
-		keys, newCursor, err := client.Scan(ctx, cursor, "room:*", 100).Result()
-		if err != nil {
-			return nil, err
-		}
-		cursor = newCursor
-		for _, key := range keys {
-			// Check if IsRoomOpen exists
-			exists, err := client.HExists(ctx, key, "IsRoomOpen").Result()
-			if err != nil || !exists {
-				continue // Skip if the field doesn't exist
-			}
-			// Get the IsRoomOpen field
-			isRoomOpen, err := client.HGet(ctx, key, "IsRoomOpen").Result()
-			if err != nil {
-				log.Printf("Error retrieving IsRoomOpen for %s: %v", key, err)
-				continue
-			}
-			// Convert IsRoomOpen to bool
-			if isRoomOpen != "true" {
-				continue
-			}
-			// Fetch required fields
-			bidAmountStr, _ := client.HGet(ctx, key, "BidAmount").Result()
-			currency, _ := client.HGet(ctx, key, "Currency").Result()
-			gameStatus, _ := client.HGet(ctx, key, "GameStatus").Result()
-
-			bidAmount, err := strconv.ParseFloat(bidAmountStr, 64)
-			if err != nil {
-				log.Printf("Error parsing BidAmount for %s: %v", key, err)
-				continue
-			}
-			// Convert bidAmount to string for JSON compatibility
-			bidAmountKey := strconv.FormatFloat(bidAmount, 'f', -1, 64)
-			// Aggregate by BidAmount
-			if _, exists := roomAggregates[bidAmountKey]; !exists {
-				roomAggregates[bidAmountKey] = &models.RoomAgregate{
-					Currency:   currency,
-					BidAmount:  bidAmount,
-					GameStatus: gameStatus,
-				}
-			}
-		}
-		// If cursor is 0, we have scanned all keys
-		if cursor == 0 {
-			break
-		}
-	}
-
-	return roomAggregates, nil
 }

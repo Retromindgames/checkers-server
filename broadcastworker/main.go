@@ -32,7 +32,7 @@ func main() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		aggregates, err := redisdb.GetRoomAggregates(redisClient.Client)
+		aggregates, err := redisClient.GetRoomAggregates()
 		if err != nil {
 			log.Printf("[Worker-%d] Error fetching room aggregates: %v\n", pid, err)
 			continue

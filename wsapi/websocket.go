@@ -4,6 +4,7 @@ import (
 	"checkers-server/config"
 	"checkers-server/models"
 	"checkers-server/redisdb"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -80,11 +81,28 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	ready <- true // Notify that the subscription is ready
 }
 
-// Function to handle player channel subscription
 func subscribeToBroadcastChannel(player *models.Player, ready chan bool) {
 	redisClient.Subscribe("room-info", func(message string) {
-		// Send the received message to the player's WebSocket connection
-		err := player.Conn.WriteMessage(websocket.TextMessage, []byte(message))
+		fmt.Println("[wsapi] - broadcast message:", message)
+		fmt.Printf("[wsapi] - Type of message: %T\n", message)
+
+		// Unmarshal the received message from Redis (string) to the appropriate structure
+		var aggregates models.RoomAggregatesResponse // Assuming this is the structure you use
+		err := json.Unmarshal([]byte(message), &aggregates)
+		if err != nil {
+			fmt.Println("[wsapi] - Failed to unmarshal message:", err)
+			return
+		}
+
+		// Re-marshal the message to ensure it's properly formatted without unwanted escape characters
+		formattedMessage, err := json.Marshal(aggregates)
+		if err != nil {
+			fmt.Println("[wsapi] - Failed to marshal message:", err)
+			return
+		}
+
+		// Send the properly formatted message to the player's WebSocket connection
+		err = player.Conn.WriteMessage(websocket.TextMessage, formattedMessage)
 		if err != nil {
 			fmt.Println("[wsapi] - Failed to send message to player:", err)
 			player.Conn.Close()

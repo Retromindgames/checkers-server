@@ -36,13 +36,16 @@ type Room struct {
 	IsRoomOpen     	  bool       `json:"IsRoomOpen"`
 }
 
-type RoomAgregate struct {
-	Currency          string     `json:"Currency"`    		// Currency for the room
-	BidAmount         float64    `json:"BidAmount"`  		// Bet amount for the game
-	GameStatus        string     `json:"GameStatus"` 		// Status of the game (e.g., "waiting", "in_progress", "finished")
-	GameEndDate       *time.Time `json:"GameEndDate,omitempty"`
+
+type RoomAggregate struct {
+	AggregateValue float64 `json:"aggregateValue"`
+	Count          int64   `json:"count"`
 }
 
+type RoomAggregatesResponse struct {
+	PlayersWaiting int 				`json:"PlayersWaiting"`
+	RoomAggregates []RoomAggregate `json:"RoomAgreggate"`
+}
 
 type RoomValue struct {
 	ID        string `json:"id"`
