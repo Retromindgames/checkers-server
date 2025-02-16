@@ -5,12 +5,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"time"
 )
 
-type Message struct {
+
+
+type Message[T any] struct {
 	Command string          `json:"command"`
-	Value   json.RawMessage `json:"value,omitempty"`
+	Value   T 				`json:"value,omitempty"`
+}
+
+var validCommands = map[string]struct{}{
+	"create_room":    {},
+	"join_room":      {},
+	"leave_room":    {},
+	"game_info":    {},
+	//"room_created":   {},
+	//"send_message":   {},
+	//"move_piece":     {},
+	//"custom_command": {},
 }
 
 type Position struct {
@@ -18,122 +30,112 @@ type Position struct {
 	Y int `json:"y"`
 }
 
-type MovePieceMessage struct {
-	Command string `json:"command"`
-	Value   struct {
-		PreviousPosition Position   `json:"previous_position"`
-		NewPosition      Position   `json:"new_position"`
-		KilledPieces     []Position `json:"killed_pieces"`
-	} `json:"value"`
+type MovePieceValue struct {
+	PreviousPosition Position   `json:"previous_position"`
+	NewPosition      Position   `json:"new_position"`
+	KilledPieces     []Position `json:"killed_pieces"`
 }
 
-func ParseMessage(msg []byte) (*Message, error) {
-	var message Message
-	if err := json.Unmarshal(msg, &message); err != nil {
-		return nil, fmt.Errorf("invalid message format: %v", err)
-	}
-
-	// Parse based on command, this checks if the value of the command is the expected.
-	// this way, the message is only hald decoded, and when we need the rest, we are pretty sure its the right type (hope).
-	switch message.Command {
-		case "leave_queue":
-			return &message, nil
-
-		case "room_created":
-			var value string
-			if err := json.Unmarshal(message.Value, &value); err != nil {
-				return nil, fmt.Errorf("invalid value format for room_created: %v", err)
-			}
-			message.Value = json.RawMessage(message.Value)
-
-		case "create_room":
-			var value float64
-			if err := json.Unmarshal(message.Value, &value); err != nil {
-				return nil, fmt.Errorf("invalid value format for create_room: %v", err)
-			}
-			message.Value = json.RawMessage(message.Value) 							// Store it back as raw JSON
-
-		case "join_room":
-			var value float64
-			if err := json.Unmarshal(message.Value, &value); err != nil {
-				return nil, fmt.Errorf("invalid value format for join_room: %v", err)
-			}
-			message.Value = json.RawMessage(message.Value) 							// Store it back as raw JSON
-
-		case "send_message":
-			// not sure if we will need this.
-			var value string
-			if err := json.Unmarshal(message.Value, &value); err != nil {
-				return nil, fmt.Errorf("invalid value format for send_message: %v", err)
-			}
-			message.Value = json.RawMessage(fmt.Sprintf("\"%s\"", value))
-
-		case "move_piece":
-			var value MovePieceMessage
-			if err := json.Unmarshal(message.Value, &value.Value); err != nil {
-				return nil, fmt.Errorf("invalid value format for move_piece: %v", err)
-			}
-			message.Value, _ = json.Marshal(message)											// ! For convinience we store the whole message in the value. To sendo it arround.
-
-		case "custom_command":
-			// Expected to be an object or array
-			var value map[string]interface{}
-			if err := json.Unmarshal(message.Value, &value); err != nil {
-				// unmarshalling as an array if not an object, maybe redundant.
-				var valueArray []interface{}
-				if err := json.Unmarshal(message.Value, &valueArray); err != nil {
-					return nil, fmt.Errorf("invalid value format for custom_command: %v", err)
-				}
-				message.Value = json.RawMessage(fmt.Sprintf("%v", valueArray))
-			} else {
-				message.Value = json.RawMessage(fmt.Sprintf("%v", value))
-			}
-		default:
-	}
-
-	return &message, nil
+func EncodeMessage[T any](command string, value T) ([]byte, error) {
+	msg := Message[T]{Command: command, Value: value}
+	return json.Marshal(msg)
 }
+
+func DecodeRawMessage(data []byte) (*Message[json.RawMessage], error) {
+	var msg Message[json.RawMessage]
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return nil, fmt.Errorf("[Message Parser - DecodeRawMessage] invalid message format: %w", err)
+	}
+	return &msg, nil
+}
+
+// Decode a Fully Typed Message
+func DecodeTypedMessage[T any](data []byte) (*Message[T], error) {
+	var msg Message[T]
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return nil, fmt.Errorf("[Message Parser - DecodeTypedMessage] invalid message format: %w", err)
+	}
+	return &msg, nil
+}
+
+func NewMessage[T any](command string, value T) ([]byte, error) {
+	message := Message[T]{
+		Command: command,
+		Value:   value,
+	}
+	return json.Marshal(message)
+}
+
+// Add the new command handling
+func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
+	msg, err := DecodeRawMessage(msgBytes)
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := validCommands[msg.Command]; !ok {
+		return nil, fmt.Errorf("[Message Parser] invalid command: %s", msg.Command)
+	}
+
+	switch msg.Command {
+	case "create_room", "join_room":
+		var value float64
+		if err := json.Unmarshal(msg.Value, &value); err != nil {
+			return nil, fmt.Errorf("[Message Parser] invalid value format for %s: %w", msg.Command, err)
+		}
+
+	case "move_piece":
+		var value MovePieceValue
+		if err := json.Unmarshal(msg.Value, &value); err != nil {
+			return nil, fmt.Errorf("[Message Parser] invalid value format for move_piece: %w", err)
+		}
+
+	case "custom_command":
+		if !json.Valid(msg.Value) {
+			return nil, fmt.Errorf("[Message Parser] invalid JSON format for custom_command")
+		}
+
+	case "game_info":
+		var roomAggregateResponse models.RoomAggregateResponse
+		if err := json.Unmarshal(msg.Value, &roomAggregateResponse); err != nil {
+			return nil, fmt.Errorf("invalid value format for game_info: %w", err)
+		}
+		fmt.Printf("[Message Parser] Parsed game_info: %+v\n", roomAggregateResponse)
+	}
+
+	return msg, nil
+}
+
 
 func GenerateConnectedMessage(player *models.Player) (string, error) {
-	response := struct {
-		Command   string  `json:"command"`
-		Value     struct {
-			PlayerName string  `json:"player_name"`
-			Money      float64 `json:"money"`
-		} `json:"value"`
+	msg, err := EncodeMessage("connected", struct {
+		PlayerName string  `json:"player_name"`
+		Money      float64 `json:"money"`
 	}{
-		Command: "connected",
-	}
-	response.Value.PlayerName = "Player_" + player.Name
-	response.Value.Money = float64(player.CurrencyAmount)
-	jsonResponse, err := json.Marshal(response)
+		PlayerName: "Player_" + player.Name,
+		Money:      float64(player.CurrencyAmount),
+	})
+
 	if err != nil {
 		return "", err
 	}
-	return string(jsonResponse), nil
+	return string(msg), nil
 }
 
 func GeneratePairedMessage(player1, player2 *models.Player) (string, error) {
-	rand.Seed(time.Now().UnixNano()) // Ensure randomness
-	color := rand.Intn(2)            // 0 or 1
+	color := rand.Intn(2)
 
-	message := Message{
-		Command: "paired",
-		Value: MustMarshal(struct {
-			Color    int    `json:"color"`
-			Opponent string `json:"opponent"`
-		}{
-			Color:    color,
-			Opponent: player2.Name,
-		}),
-	}
+	msg, err := EncodeMessage("paired", struct {
+		Color    int    `json:"color"`
+		Opponent string `json:"opponent"`
+	}{
+		Color:    color,
+		Opponent: player2.Name,
+	})
 
-	messageBytes, err := json.Marshal(message)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal paired message: %v", err)
+		return "", fmt.Errorf("[Message Parser] failed to marshal paired message: %w", err)
 	}
-
-	return string(messageBytes), nil
+	return string(msg), nil
 }
 
 // Helper function to marshal a value and ignore errors

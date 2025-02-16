@@ -37,6 +37,12 @@ func handleMessages(player *models.Player) {
 		}
 		// Now we push the command to our worker, he will determine if we can start a match
 		err = redisClient.RPush(message.Command, player)
+		if err != nil {
+			fmt.Printf("Error pushing message to Redis: %v\n", err)
+		} else {
+			// Print what we're sending to Redis
+			fmt.Printf("Sending message to Redis - Command: %s, Player: %s, Bid: %f\n", message.Command, player.ID, player.SelectedBid)
+		}
 	}
 }
 

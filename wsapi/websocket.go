@@ -89,58 +89,24 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	ready <- true // Notify that the subscription is ready
 }
 
-//func subscribeToBroadcastChannel(player *models.Player, ready chan bool) {
-//	redisClient.Subscribe("room_info", func(message string) {
-//		fmt.Println("[wsapi] - broadcast message:", message)
-//		fmt.Printf("[wsapi] - Type of message: %T\n", message)
-//
-//		// Step 1: Unmarshal the outer message (it's a string, so we need to parse it)
-//		var msg messages.Message
-//		err := json.Unmarshal([]byte(message), &msg)
-//		if err != nil {
-//			fmt.Println("[wsapi] - Failed to unmarshal message:\n", err)
-//			return
-//		}
-//
-//		// Step 2: msg.Value is already JSON (since we used json.RawMessage in the producer)
-//		// Convert it to a clean JSON string
-//		finalBytes, err := json.Marshal(msg)
-//		if err != nil {
-//			fmt.Println("[wsapi] - Failed to marshal final message:\n", err)
-//			return
-//		}
-//
-//		// Step 3: Send the properly formatted JSON to WebSocket
-//		err = player.Conn.WriteMessage(websocket.TextMessage, finalBytes)
-//		if err != nil {
-//			fmt.Println("[wsapi] - Failed to send message to player:\n", err)
-//			player.Conn.Close()
-//		}
-//	})
-//	ready <- true // Notify that the subscription is ready
-//}
-
 func subscribeToBroadcastChannel() {
-	redisClient.Subscribe("room_info", func(message string) {
+	redisClient.Subscribe("game_info", func(message string) {
 		fmt.Println("[wsapi] - Received broadcast message:", message)
-
-		// Step 1: Unmarshal the message
-		var msg messages.Message
-		err := json.Unmarshal([]byte(message), &msg)
+		// Step 1: Parse the message using messages.ParseMessage
+		msg, err := messages.ParseMessage([]byte(message))
 		if err != nil {
-			fmt.Println("[wsapi] - Failed to unmarshal message:", err)
+			fmt.Println("[wsapi] - Failed to parse message:", err)
 			return
 		}
-
-		// Step 2: Format the message properly
+		// Step 2: Marshal the message back to JSON
 		finalBytes, err := json.Marshal(msg)
 		if err != nil {
 			fmt.Println("[wsapi] - Failed to marshal final message:", err)
 			return
 		}
-
 		// Step 3: Send the message to all connected players
 		playersMutex.Lock()
+		defer playersMutex.Unlock() 	// Ensures mutex is unlocked even if an error occurs
 		for _, player := range players {
 			err := player.Conn.WriteMessage(websocket.TextMessage, finalBytes)
 			if err != nil {
@@ -148,14 +114,14 @@ func subscribeToBroadcastChannel() {
 				player.Conn.Close()
 			}
 		}
-		playersMutex.Unlock()
 	})
 }
+
 
 func unsubscribeFromPlayerChannel(player *models.Player) {
 	redisClient.UnsubscribePlayerChannel(*player)
 }
 
 func unsubscribeFromBroadcastChannel(player *models.Player) {
-	redisClient.Unsubscribe("room_info")
+	redisClient.Unsubscribe("game_info")
 }
