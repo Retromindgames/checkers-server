@@ -12,13 +12,15 @@ import (
 func handleMessages(player *models.Player) {
 	defer player.Conn.Close()
 	for {
+		
 		_, msg, err := player.Conn.ReadMessage()
 		if err != nil {
+			UpdatePlayerDataFromRedis(player)		// We are updating our player only when there are any new messages... Not sure if its the best aproach.
 			handlePlayerDisconnect(player)
 			break
 		}
-		UpdatePlayerDataFromRedis(player)
 		fmt.Printf("Message from %s: %s\n", player.ID, string(msg))
+		UpdatePlayerDataFromRedis(player)
 
 		// Process the received message (expecting JSON)
 		message, err := messages.ParseMessage(msg)
@@ -61,7 +63,7 @@ func handlePlayerDisconnect(player *models.Player) {
 func UpdatePlayerDataFromRedis(player *models.Player) {
 	playerData, err := redisClient.GetPlayer(string(player.ID))
 	if err != nil {
-		fmt.Printf("[Handlers] -Failed to update player data from redis!: Player: %s", player.ID)
+		fmt.Printf("[Handlers] - Failed to update player data from redis!: Player: %s", player.ID)
 		return
 	}
 	player.Currency = playerData.Currency

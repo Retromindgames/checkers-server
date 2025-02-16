@@ -11,3 +11,6 @@ func GeneratePlayerRedisKey(player models.Player) (string) {
 func GenerateRoomRedisKey(room models.Room) (string) {
 	return "room:"+string(room.ID)
 }
+func GenerateRoomRedisKeyById(roomId string) (string) {
+	return "room:"+string(roomId)
+}

@@ -5,6 +5,7 @@ import (
 	"checkers-server/messages"
 	"checkers-server/models"
 	"checkers-server/redisdb"
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -57,7 +58,6 @@ func processRoomJoin(){
 	}
 }
 
-//TODO!!!
 func processRoomEnding(){
 	for {
 		playerData, err := redisClient.BLPop("leave_room", 0) // Block
@@ -65,7 +65,11 @@ func processRoomEnding(){
 			fmt.Printf("[RoomWorker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
 		}
-		fmt.Printf("[RoomWorker-%d] - end room!: %+v\n", pid, playerData)
+		fmt.Printf("[RoomWorker-%d] - Processing the end of room: %+v\n", pid, playerData)
+		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(playerData.RoomID))
+		redisClient.DecrementRoomAggregate(playerData.SelectedBid)
+		// TODO: We gotta notify the other player that the room has ended.
+		redisClient.Client.RPush(context.Background(), "player_update", string("opponent_disconnected")).Err()
 	}
 }
 
