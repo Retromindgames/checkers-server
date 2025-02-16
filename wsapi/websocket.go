@@ -86,34 +86,30 @@ func subscribeToBroadcastChannel(player *models.Player, ready chan bool) {
 		fmt.Println("[wsapi] - broadcast message:", message)
 		fmt.Printf("[wsapi] - Type of message: %T\n", message)
 
-		// Unmarshal the received message into RoomAggregateResponse
-		var aggregates models.RoomAggregateResponse
-		err := json.Unmarshal([]byte(message), &aggregates)
+		// Step 1: Unmarshal the outer message (it's a string, so we need to parse it)
+		var msg messages.Message
+		err := json.Unmarshal([]byte(message), &msg)
 		if err != nil {
-			fmt.Println("[wsapi] - Failed to unmarshal message:", err)
+			fmt.Println("[wsapi] - Failed to unmarshal message:\n", err)
 			return
 		}
 
-		// Wrap in Message struct
-		messageFinal := messages.Message{
-			Command: "game-info",
-			Value:   messages.MustMarshal(aggregates),
-		}
-
-		// Marshal final message
-		finalBytes, err := json.Marshal(messageFinal)
+		// Step 2: msg.Value is already JSON (since we used json.RawMessage in the producer)
+		// Convert it to a clean JSON string
+		finalBytes, err := json.Marshal(msg)
 		if err != nil {
-			fmt.Println("[wsapi] - Failed to marshal message:", err)
+			fmt.Println("[wsapi] - Failed to marshal final message:\n", err)
 			return
 		}
 
-		// Send the properly formatted message to the player's WebSocket connection
+		// Step 3: Send the properly formatted JSON to WebSocket
 		err = player.Conn.WriteMessage(websocket.TextMessage, finalBytes)
 		if err != nil {
-			fmt.Println("[wsapi] - Failed to send message to player:", err)
+			fmt.Println("[wsapi] - Failed to send message to player:\n", err)
 			player.Conn.Close()
 		}
 	})
+	ready <- true // Notify that the subscription is ready
 }
 
 func unsubscribeFromPlayerChannel(player *models.Player) {

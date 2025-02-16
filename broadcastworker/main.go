@@ -21,13 +21,13 @@ func init() {
 	redisAddr := config.Cfg.Redis.Addr
 	client, err := redisdb.NewRedisClient(redisAddr)
 	if err != nil {
-		log.Fatalf("[%d][Redis] Error initializing Redis client: %v", name, err)
+		log.Fatalf("[%d][BroadcastWorker-%d][Redis] Error initializing Redis client: %v", name, err)
 	}
 	redisClient = client
 }
 
 func main() {
-	fmt.Printf("[Worker-%d] - Broadcasting room stats...\n", pid)
+	fmt.Printf("[BroadcastWorker-%d] - Broadcasting room stats...\n", pid)
 
 	ticker := time.NewTicker(5 * time.Second) // Adjust interval as needed
 	defer ticker.Stop()
@@ -35,31 +35,31 @@ func main() {
 	for range ticker.C {
 		aggregates, err := redisClient.GetRoomAggregates()
 		if err != nil {
-			log.Printf("[Worker-%d] Error fetching room aggregates: %v\n", pid, err)
+			log.Printf("[BroadcastWorker-%d] Error fetching room aggregates: %v\n", pid, err)
 			continue
 		}
 		aggregatesBytes, err := json.Marshal(aggregates)
 		if err != nil {
-			log.Printf("[Worker-%d] Error marshalling message: %v\n", pid, err)
+			log.Printf("[BroadcastWorker-%d] Error marshalling message: %v\n", pid, err)
 			continue
 		}
 		// Wrap in Message struct
 		message := messages.Message{
 			Command: "game-info",
-			Value:   aggregatesBytes,
+			Value:   json.RawMessage(aggregatesBytes),
 		}
 		// Marshal final message
 		messageBytes, err := json.Marshal(message)
 		if err != nil {
-			log.Printf("[Worker-%d] Error marshalling message: %v\n", pid, err)
+			log.Printf("[BroadcastWorker-%d] Error marshalling message: %v\n", pid, err)
 			continue
 		}
 
-		err = redisClient.Publish("room_info", string(messageBytes))
+		err = redisClient.Publish("room_info", messageBytes)
 		if err != nil {
-			log.Printf("[Worker-%d] Error publishing message: %v\n", pid, err)
+			log.Printf("[BroadcastWorker-%d] Error publishing message: %v\n", pid, err)
 		} else {
-			fmt.Printf("[Worker-%d] Published room aggregates\n", pid)
+			fmt.Printf("[BroadcastWorker-%d] Published room aggregates\n", pid)
 		}
 	}
 }

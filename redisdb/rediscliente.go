@@ -11,10 +11,10 @@ import (
 )
 
 type RedisClient struct {
-	Client *redis.Client
-	Ctx    context.Context
-	Subscriptions   map[string]*redis.PubSub // Stores active subscriptions per channel
-	mu             sync.Mutex
+	Client        *redis.Client
+	Ctx           context.Context
+	Subscriptions map[string]*redis.PubSub // Stores active subscriptions per channel
+	mu            sync.Mutex
 }
 
 func NewRedisClient(addr string) (*RedisClient, error) {
@@ -76,13 +76,8 @@ func (rc *RedisClient) PublishPlayerEvent(player *models.Player, message string)
 	return nil
 }
 
-func (rc *RedisClient) Publish(channel string, message string) error {
-	data, err := json.Marshal(message)
-	if err != nil {
-		return fmt.Errorf("[RedisClient] - failed to marshal message data: %w", err)
-	}
-
-	err = rc.Client.Publish(context.Background(), channel, data).Err()
+func (rc *RedisClient) Publish(channel string, message []byte) error {
+	err := rc.Client.Publish(context.Background(), channel, message).Err()
 	if err != nil {
 		return fmt.Errorf("[RedisClient] - failed to publish message: %w", err)
 	}
@@ -137,7 +132,7 @@ func (r *RedisClient) UnsubscribePlayerChannel(player models.Player) {
 		return
 	}
 	delete(r.Subscriptions, channel)
-	fmt.Printf ("[RedisClii] (UnsubscribePlayerChannel) - Deleted subscription of [%d] and [%v]\n", player.Name, channel)
+	fmt.Printf("[RedisClii] (UnsubscribePlayerChannel) - Deleted subscription of [%d] and [%v]\n", player.Name, channel)
 	r.mu.Unlock()
 
 	if err := pubsub.Unsubscribe(context.Background(), channel); err != nil {
