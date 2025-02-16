@@ -14,7 +14,7 @@ func main() {
 	if len(ports) == 0 {
 		log.Fatal("[wsapi] - No ports defined for wsapi\n")
 	}
-	port := ports[0] 				// Select first available port (modify as needed)
+	port := ports[0] // Select first available port
 	http.HandleFunc("/ws", wsapi.HandleConnection)
 	addr := fmt.Sprintf(":%d", port)
 	fmt.Printf("[wsapi] - WebSocket server started on %s\n", addr)
