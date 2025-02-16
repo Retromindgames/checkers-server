@@ -17,6 +17,7 @@ func handleMessages(player *models.Player) {
 			handlePlayerDisconnect(player)
 			break
 		}
+		UpdatePlayerDataFromRedis(player)
 		fmt.Printf("Message from %s: %s\n", player.ID, string(msg))
 
 		// Process the received message (expecting JSON)
@@ -35,7 +36,7 @@ func handleMessages(player *models.Player) {
 			}
 			player.SelectedBid = bidValue
 		}
-		// Now we push the command to our worker, he will determine if we can start a match
+		// Now we push the command to our worker, he will determine what to do with the message.
 		err = redisClient.RPush(message.Command, player)
 		if err != nil {
 			fmt.Printf("Error pushing message to Redis: %v\n", err)
@@ -55,4 +56,17 @@ func handlePlayerDisconnect(player *models.Player) {
 	unsubscribeFromPlayerChannel(player)
 	// Notify worker of disconnection
 	redisClient.RPush("player_offline", player)
+}
+
+func UpdatePlayerDataFromRedis(player *models.Player) {
+	playerData, err := redisClient.GetPlayer(string(player.ID))
+	if err != nil {
+		fmt.Printf("[Handlers] -Failed to update player data from redis!: Player: %s", player.ID)
+		return
+	}
+	player.Currency = playerData.Currency
+	player.CurrencyAmount = playerData.CurrencyAmount
+	player.Status = playerData.Status
+	player.SelectedBid = playerData.SelectedBid
+	player.RoomID = playerData.RoomID
 }

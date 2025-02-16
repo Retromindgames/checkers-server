@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-func (r *RedisClient) AddPlayer(key string, player *models.Player) error {
+func (r *RedisClient) AddPlayerDeprecated(key string, player *models.Player) error {
 	data, err := json.Marshal(player)
 	if err != nil {
 		return fmt.Errorf("[RedisClient] - failed to serialize player: %v", err)
@@ -16,7 +16,17 @@ func (r *RedisClient) AddPlayer(key string, player *models.Player) error {
 	return r.Client.HSet(context.Background(), key, player.ID, data).Err()
 }
 
-func (r *RedisClient) GetPlayer(key string, playerID string) (*models.Player, error) {
+func (r *RedisClient) AddPlayer(player *models.Player) error {
+	data, err := json.Marshal(player)
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - failed to serialize player: %v", err)
+	}
+	// Uses a shared key ("players") , store the player data under their ID
+	return r.Client.HSet(context.Background(), "players", player.ID, data).Err()
+}
+
+
+func (r *RedisClient) GetPlayerDeprecated(key string, playerID string) (*models.Player, error) {
 	data, err := r.Client.HGet(context.Background(), key, playerID).Result()
 	if err != nil {
 		return nil, err
@@ -31,6 +41,29 @@ func (r *RedisClient) GetPlayer(key string, playerID string) (*models.Player, er
 	return &player, nil
 }
 
-func (r *RedisClient) RemovePlayer(key string, playerID string) error {
-	return r.Client.HDel(context.Background(), key, playerID).Err()
+func (r *RedisClient) GetPlayer(playerID string) (*models.Player, error) {
+	data, err := r.Client.HGet(context.Background(), "players", playerID).Result()
+	if err != nil {
+		return nil, fmt.Errorf("[RedisClient] - failed to get player: %v", err)
+	}
+
+	var player models.Player
+	err = json.Unmarshal([]byte(data), &player)
+	if err != nil {
+		return nil, fmt.Errorf("[RedisClient] - failed to deserialize player: %v", err)
+	}
+	return &player, nil
 }
+
+func (r *RedisClient) RemovePlayer(playerID string) error {
+	exists, err := r.Client.HExists(context.Background(), "players", playerID).Result()
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - failed to check if player exists: %v", err)
+	}
+
+	if !exists {
+		return fmt.Errorf("[RedisClient] - atempting to delete player that does not exist: %s", playerID)
+	}
+	return r.Client.HDel(context.Background(), "players", playerID).Err()
+}
+

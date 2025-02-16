@@ -72,7 +72,7 @@ func handleRemovePlayer(player *models.Player) {
 	fmt.Printf("[Worker-%d] - Removing player: %s (Session: %s, Currency: %s)\n",
 		pid, player.ID, player.SessionID, player.Currency)
 
-	err := redisClient.RemovePlayer("player:"+player.ID, player.ID)
+	err := redisClient.RemovePlayer(string(player.ID))
 	if err != nil {
 		fmt.Printf("[Worker-%d] - Failed to remove player: %v\n", pid, err)
 		return
@@ -89,7 +89,7 @@ func handleNewPlayer(player *models.Player) {
 	fmt.Printf("[Worker-%d] - Handling player: %s (Session: %s, Currency: %s)\n",
 		pid, player.ID, player.SessionID, player.Currency)
 
-	err := redisClient.AddPlayer(redisdb.GetPlayerPubSubChannel(*player), player)
+	err := redisClient.AddPlayer(player)
 	if err != nil {
 		fmt.Printf("[Worker-%d] - Failed to add player: %v\n", pid, err)
 		return
@@ -105,7 +105,7 @@ func handleNewPlayer(player *models.Player) {
 
 func updatePlayer(player *models.Player) {
 	
-	err := redisClient.AddPlayer(redisdb.GetPlayerPubSubChannel(*player), player)
+	err := redisClient.AddPlayer(player)
 	if err != nil {
 		fmt.Printf("[Worker-%d] - Failed to add player: %v\n", pid, err)
 		return

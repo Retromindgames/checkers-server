@@ -79,6 +79,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 // Function to handle player channel subscription
 func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	redisClient.SubscribePlayerChannel(*player, func(message string) {
+		fmt.Println("[wsapi] - Received PLAYER message:", message)
 		// Send the received message to the player's WebSocket connection
 		err := player.Conn.WriteMessage(websocket.TextMessage, []byte(message))
 		if err != nil {
@@ -91,7 +92,7 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 
 func subscribeToBroadcastChannel() {
 	redisClient.Subscribe("game_info", func(message string) {
-		fmt.Println("[wsapi] - Received broadcast message:", message)
+		fmt.Println("[wsapi] - Received BROADCAST message:", message)
 		// Step 1: Parse the message using messages.ParseMessage
 		msg, err := messages.ParseMessage([]byte(message))
 		if err != nil {

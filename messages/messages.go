@@ -7,22 +7,9 @@ import (
 	"math/rand"
 )
 
-
-
 type Message[T any] struct {
 	Command string          `json:"command"`
 	Value   T 				`json:"value,omitempty"`
-}
-
-var validCommands = map[string]struct{}{
-	"create_room":    {},
-	"join_room":      {},
-	"leave_room":    {},
-	"game_info":    {},
-	//"room_created":   {},
-	//"send_message":   {},
-	//"move_piece":     {},
-	//"custom_command": {},
 }
 
 type Position struct {
@@ -59,6 +46,9 @@ func DecodeTypedMessage[T any](data []byte) (*Message[T], error) {
 }
 
 func NewMessage[T any](command string, value T) ([]byte, error) {
+	if _, ok := validCommands[command]; !ok {
+		return nil, fmt.Errorf("[Message Parser - New Message] invalid command: %s", command)
+	}
 	message := Message[T]{
 		Command: command,
 		Value:   value,
@@ -66,12 +56,12 @@ func NewMessage[T any](command string, value T) ([]byte, error) {
 	return json.Marshal(message)
 }
 
-// Add the new command handling
 func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 	msg, err := DecodeRawMessage(msgBytes)
 	if err != nil {
 		return nil, err
 	}
+	// Check if the command is in our map
 	if _, ok := validCommands[msg.Command]; !ok {
 		return nil, fmt.Errorf("[Message Parser] invalid command: %s", msg.Command)
 	}
@@ -83,6 +73,9 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 			return nil, fmt.Errorf("[Message Parser] invalid value format for %s: %w", msg.Command, err)
 		}
 
+	case "leave_room":
+		return nil, nil
+	
 	case "move_piece":
 		var value MovePieceValue
 		if err := json.Unmarshal(msg.Value, &value); err != nil {
@@ -105,7 +98,7 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 	return msg, nil
 }
 
-
+// TODO:: Make this use the new message foramt / parser
 func GenerateConnectedMessage(player *models.Player) (string, error) {
 	msg, err := EncodeMessage("connected", struct {
 		PlayerName string  `json:"player_name"`
@@ -121,6 +114,7 @@ func GenerateConnectedMessage(player *models.Player) (string, error) {
 	return string(msg), nil
 }
 
+// TODO:: Make this use the new message foramt / parser
 func GeneratePairedMessage(player1, player2 *models.Player) (string, error) {
 	color := rand.Intn(2)
 
@@ -136,6 +130,16 @@ func GeneratePairedMessage(player1, player2 *models.Player) (string, error) {
 		return "", fmt.Errorf("[Message Parser] failed to marshal paired message: %w", err)
 	}
 	return string(msg), nil
+}
+
+func GenerateRoomCreatedMessage(room models.Room)([]byte, error) {
+	roomValue := models.RoomValue{
+		ID:          room.ID,
+		Player:      room.Player1.Name,
+		Currency:    room.Currency,
+		SelectedBid: room.BidAmount,
+	}
+	return NewMessage("room_created", roomValue)
 }
 
 // Helper function to marshal a value and ignore errors

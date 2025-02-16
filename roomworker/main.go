@@ -5,7 +5,6 @@ import (
 	"checkers-server/messages"
 	"checkers-server/models"
 	"checkers-server/redisdb"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -58,15 +57,15 @@ func processRoomJoin(){
 	}
 }
 
-// TODO
+//TODO!!!
 func processRoomEnding(){
 	for {
-		playerData, err := redisClient.BLPop("end_room", 0) // Block
+		playerData, err := redisClient.BLPop("leave_room", 0) // Block
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
 		}
-		fmt.Printf("[RoomWorker-%d] - end room!: %+v\n", pid,playerData)
+		fmt.Printf("[RoomWorker-%d] - end room!: %+v\n", pid, playerData)
 	}
 }
 
@@ -86,25 +85,12 @@ func handleCreateRoom(player *models.Player) {
 		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
 		return
 	}
+
 	player.RoomID = room.ID
-	redisClient.AddPlayer(redisdb.GeneratePlayerRedisKey(*player), player)		// This should update out player room info.
-	roomValue := models.RoomValue{
-		ID:          room.ID,
-		Player:      room.Player1.Name,
-		Currency:    room.Currency,
-		SelectedBid: room.BidAmount,
-	}
-	messageJson := &messages.Message[models.RoomValue]{
-		Command: "room_created", 
-		Value:   roomValue,      
-	}
-	// Marshal the message into JSON
-	messageBytes, err := json.Marshal(messageJson)
-	if err != nil {
-		fmt.Printf("[RoomWorker-%d] - Error marshalling message: %v\n", pid, err)
-		return
-	}
-	_, err = messages.ParseMessage(messageBytes) // Will validate if the command is correct
+	player.Status = "waiting_oponente"
+	redisClient.AddPlayer(player)		// This should update out player room info.
+	
+	messageBytes, err := messages.GenerateRoomCreatedMessage(*room)
 	if err != nil {
 		fmt.Printf("[RoomWorker-%d] - Invalid message format: %v\n", pid, err)
 		return
@@ -115,7 +101,7 @@ func handleCreateRoom(player *models.Player) {
 		fmt.Printf("[RoomWorker-%d] - Failed to publish message to player: %v\n", pid, err)
 		return
 	}
-	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, Room ID: %s\n", pid, room.ID)
+	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
 }
 
 
