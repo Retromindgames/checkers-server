@@ -81,7 +81,7 @@ func handleCreateRoom(player *models.Player) {
 		Currency:  player.Currency,
 		BidAmount: player.SelectedBid,
 	}
-	err := redisClient.AddRoom("room:"+room.ID, room)
+	err := redisClient.AddRoom2(room)
 	if err != nil {
 		fmt.Printf("[Worker-%d] - Failed to add room to Redis: %v\n", pid, err)
 		return

@@ -64,12 +64,12 @@ func (r *RedisClient) BLPop(queue string, timeout int) (*models.Player, error) {
 
 func (rc *RedisClient) PublishPlayerEvent(player *models.Player, message string) error {
 
-	data, err := json.Marshal(message)
-	if err != nil {
-		return fmt.Errorf("[pkg/redisdb/cliente] - failed to marshal event data: %w", err)
-	}
+	//data, err := json.Marshal(message)
+	//if err != nil {
+	//	return fmt.Errorf("[pkg/redisdb/cliente] - failed to marshal event data: %w", err)
+	//}
 
-	err = rc.Client.Publish(context.Background(), GetPlayerPubSubChannel(*player), data).Err()
+	err := rc.Client.Publish(context.Background(), GetPlayerPubSubChannel(*player), message).Err()
 	if err != nil {
 		return fmt.Errorf("[pkg/redisdb/cliente] - failed to publish player event: %w", err)
 	}
