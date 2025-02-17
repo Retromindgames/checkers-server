@@ -30,7 +30,7 @@ func init() {
 func main() {
 	fmt.Printf("[RoomWorker-%d] - Waiting for room messages...\n", pid)
 	go processRoomCreation()
-	go processRoomJoin()
+	//go processRoomJoin()
 	go processRoomReady()
 	go processRoomEnding()
 	go processQueue()
@@ -68,6 +68,7 @@ func processQueue() {
 			fmt.Printf("[RoomWorker-%d] - Error retrieving player 1: %v\n", pid, err)
 			continue
 		}
+		fmt.Printf("[RoomWorker-%d] - retrieved player 1: %v\n", pid, err)
 		// Try fetching the second player with a timeout
 		player2, err := redisClient.BLPop("queue", 5)
 		if err != nil {
@@ -76,6 +77,7 @@ func processQueue() {
 			redisClient.RPush("queue", player1)
 			continue
 		}
+		fmt.Printf("[RoomWorker-%d] - retrieved player 2: %v\n", pid, err)
 
 		// Process both players
 		fmt.Printf("[RoomWorker-%d] - Pairing players: %s and %s\n", pid, player1, player2)
@@ -156,6 +158,7 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	room := &models.Room{
 		ID:        models.GenerateUUID(),
 		Player1:   player1,
+		Player2:   player2,
 		StartDate: time.Now(),
 		Currency:  player1.Currency,
 		BetValue:  player1.SelectedBet,
