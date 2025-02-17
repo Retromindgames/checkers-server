@@ -33,6 +33,7 @@ func main() {
 	go processRoomJoin()
 	go processRoomReady()
 	go processRoomEnding()
+	go processQueue()
 	select {}
 }
 
@@ -60,6 +61,30 @@ func processRoomJoin() {
 	}
 }
 
+func processQueue() {
+	for {
+		player1, err := redisClient.BLPop("queue", 0)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error retrieving player 1: %v\n", pid, err)
+			continue
+		}
+		// Try fetching the second player with a timeout
+		player2, err := redisClient.BLPop("queue", 5)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - No second player found, re-queueing player 1.\n", pid)
+			// Re-add player1 back to the queue
+			redisClient.RPush("queue", player1)
+			continue
+		}
+
+		// Process both players
+		fmt.Printf("[RoomWorker-%d] - Pairing players: %s and %s\n", pid, player1, player2)
+		handleQueuePaired(player1, player2)
+	}
+}
+
+
+
 func processRoomReady() {
 	for {
 		playerData, err := redisClient.BLPop("ready_room", 0) // Block
@@ -81,7 +106,7 @@ func processRoomEnding() {
 		}
 		fmt.Printf("[RoomWorker-%d] - Processing the end of room: %+v\n", pid, playerData)
 		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(playerData.RoomID))
-		redisClient.DecrementRoomAggregate(playerData.SelectedBid)
+		redisClient.DecrementRoomAggregate(playerData.SelectedBet)
 		// TODO: We gotta notify the other player that the room has ended.
 		redisClient.Client.RPush(context.Background(), "player_update", string("opponent_disconnected")).Err()
 	}
@@ -96,7 +121,7 @@ func handleCreateRoom(player *models.Player) {
 		Player1:   player,
 		StartDate: time.Now(),
 		Currency:  player.Currency,
-		BidAmount: player.SelectedBid,
+		BetValue: player.SelectedBet,
 	}
 	err := redisClient.AddRoom2(room)
 	if err != nil {
@@ -122,10 +147,66 @@ func handleCreateRoom(player *models.Player) {
 	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
 }
 
+func handleQueuePaired(player1, player2 *models.Player) {
+	fmt.Printf("[RoomWorker-%d] - Handling player1 (CREATE ROOM): %s (Session: %s, Currency: %s)\n",
+		pid, player1.ID, player1.SessionID, player1.Currency)
+	fmt.Printf("[RoomWorker-%d] - Handling player2 (CREATE ROOM): %s (Session: %s, Currency: %s)\n",
+		pid, player2.ID, player2.SessionID, player2.Currency)
+
+	room := &models.Room{
+		ID:        models.GenerateUUID(),
+		Player1:   player1,
+		StartDate: time.Now(),
+		Currency:  player1.Currency,
+		BetValue:  player1.SelectedBet,
+	}
+	err := redisClient.AddRoom2(room)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
+		return
+	}
+	player1.RoomID = room.ID
+	player2.RoomID = room.ID
+	player1.Status = "awaiting_ready"
+	player2.Status = "awaiting_ready"
+	redisClient.AddPlayer(player1) 
+	redisClient.AddPlayer(player2) 
+	//messageBytes, err := messages.GenerateRoomCreatedMessage(*room)
+	colorp1 := rand.Intn(2)
+	colorp2 := 1
+	if colorp1 == 1 {
+		colorp2 = 0
+	}
+	message1, err := messages.GeneratePairedMessage(room.Player1, room.Player2, room.ID, colorp1)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handling paired message1 for p1: %s\n", pid, err)
+		return
+	}
+	message2, err2 := messages.GeneratePairedMessage(room.Player2, room.Player1, room.ID, colorp2)
+	if err2 != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handling paired message1 for p2:%s\n", pid, err2)
+		return
+	}
+	fmt.Printf("[RoomWorker-%d] - Handling player (JOIN ROOM) - Message1 for player1: %s\n", pid, message1)
+	fmt.Printf("[RoomWorker-%d] - Handling player (JOIN ROOM) - Message2 for player2: %s\n", pid, message2)
+	// Publish the validated message to Redis
+	err = redisClient.PublishToPlayer(*player1, string(message1))
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Failed to publish message1 to player1: %v\n", pid, err)
+		return
+	}
+	err = redisClient.PublishToPlayer(*player2, string(message2))
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Failed to publish message2 to player2: %v\n", pid, err)
+		return
+	}
+	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, of room pairing.\n", pid)
+}
+
 func handleJoinRoom(player *models.Player) {
 	fmt.Printf("[RoomWorker-%d] - Handling player (JOIN ROOM): %s (Session: %s, Currency: %s)\n",
 		pid, player.ID, player.SessionID, player.Currency)
-	rooms, err := redisClient.GetEmptyRoomsByBidAmount(player.SelectedBid)
+	rooms, err := redisClient.GetEmptyRoomsByBetValue(player.SelectedBet)
 	if err != nil {
 		return
 	}

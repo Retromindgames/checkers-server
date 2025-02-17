@@ -12,7 +12,7 @@ var MockPlayers = map[string]models.Player{
 		Currency:       "USD",
 		CurrencyAmount: 1000,
 		Status:         "OFFLINE",
-		SelectedBid:    50,
+		SelectedBet:    50,
 		Name:           "PlayerOne",
 	},
 	"token456": {
@@ -23,7 +23,7 @@ var MockPlayers = map[string]models.Player{
 		Currency:       "EUR",
 		CurrencyAmount: 500,
 		Status:         "OFFLINE",
-		SelectedBid:    20,
+		SelectedBet:    20,
 		Name:           "PlayerTwo",
 	},
 	"token789": {
@@ -34,7 +34,7 @@ var MockPlayers = map[string]models.Player{
 		Currency:       "GBP",
 		CurrencyAmount: 1200,
 		Status:         "OFFLINE",
-		SelectedBid:    150,
+		SelectedBet:    150,
 		Name:           "PlayerThree",
 	},
 	"token101": {
@@ -45,7 +45,7 @@ var MockPlayers = map[string]models.Player{
 		Currency:       "USD",
 		CurrencyAmount: 2000,
 		Status:         "OFFLINE",
-		SelectedBid:    100,
+		SelectedBet:    100,
 		Name:           "PlayerFour",
 	},
 	"token102": {
@@ -56,7 +56,7 @@ var MockPlayers = map[string]models.Player{
 		Currency:       "EUR",
 		CurrencyAmount: 700,
 		Status:         "OFFLINE",
-		SelectedBid:    80,
+		SelectedBet:    80,
 		Name:           "PlayerFive",
 	},
 	"token103": {
@@ -67,7 +67,7 @@ var MockPlayers = map[string]models.Player{
 		Currency:       "JPY",
 		CurrencyAmount: 300,
 		Status:         "OFFLINE",
-		SelectedBid:    30,
+		SelectedBet:    30,
 		Name:           "PlayerSix",
 	},
 	"token104": {
@@ -78,7 +78,7 @@ var MockPlayers = map[string]models.Player{
 		Currency:       "AUD",
 		CurrencyAmount: 900,
 		Status:         "OFFLINE",
-		SelectedBid:    25,
+		SelectedBet:    25,
 		Name:           "PlayerSeven",
 	},
 	"token105": {
@@ -89,7 +89,7 @@ var MockPlayers = map[string]models.Player{
 		Currency:       "CAD",
 		CurrencyAmount: 1100,
 		Status:         "OFFLINE",
-		SelectedBid:    200,
+		SelectedBet:    200,
 		Name:           "PlayerEight",
 	},
 	"token106": {
@@ -100,7 +100,7 @@ var MockPlayers = map[string]models.Player{
 		Currency:       "USD",
 		CurrencyAmount: 1500,
 		Status:         "OFFLINE",
-		SelectedBid:    60,
+		SelectedBet:    60,
 		Name:           "PlayerNine",
 	},
 	"token107": {
@@ -111,7 +111,7 @@ var MockPlayers = map[string]models.Player{
 		Currency:       "GBP",
 		CurrencyAmount: 1300,
 		Status:         "OFFLINE",
-		SelectedBid:    90,
+		SelectedBet:    90,
 		Name:           "PlayerTen",
 	},
 }

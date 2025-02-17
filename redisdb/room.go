@@ -14,12 +14,12 @@ func (r *RedisClient) AddRoom(key string, room *models.Room) error {
 	if err != nil {
 		return fmt.Errorf("[RedisClient] (Room) - failed to serialize room: %v", err)
 	}
-	exists, err := r.CheckRoomAggregateExists(room.BidAmount)
+	exists, err := r.CheckRoomAggregateExists(room.BetValue)
 	if err == nil {
 		if exists {
-			r.IncrementRoomAggregate(room.BidAmount)
+			r.IncrementRoomAggregate(room.BetValue)
 		} else {
-			r.CreateRoomAggregate(room.BidAmount)
+			r.CreateRoomAggregate(room.BetValue)
 		}
 	}
 	return r.Client.HSet(context.Background(), key, room.ID, data).Err()
@@ -38,7 +38,7 @@ func (r *RedisClient) AddRoom2(room *models.Room) error {
 	roomKey := fmt.Sprintf("room:%s", room.ID)
 	err = r.Client.HSet(ctx, roomKey, map[string]interface{}{
 		"id":        room.ID,
-		"bidAmount": room.BidAmount,
+		"BetValue": room.BetValue,
 		"data":      string(data), // Store full room JSON
 	}).Err()
 	if err != nil {
@@ -48,7 +48,7 @@ func (r *RedisClient) AddRoom2(room *models.Room) error {
 	// Add room ID to sorted set, indexed by bid amount, this will help us get the rooms by bid amount
 	zsetKey := "rooms_by_bid"
 	err = r.Client.ZAdd(ctx, zsetKey, redis.Z{
-		Score:  room.BidAmount,
+		Score:  room.BetValue,
 		Member: room.ID,
 	}).Err()
 	if err != nil {
@@ -56,12 +56,12 @@ func (r *RedisClient) AddRoom2(room *models.Room) error {
 	}
 
 	// Manage Room Aggregate
-	exists, err := r.CheckRoomAggregateExists(room.BidAmount)
+	exists, err := r.CheckRoomAggregateExists(room.BetValue)
 	if err == nil {
 		if exists {
-			r.IncrementRoomAggregate(room.BidAmount)
+			r.IncrementRoomAggregate(room.BetValue)
 		} else {
-			r.CreateRoomAggregate(room.BidAmount)
+			r.CreateRoomAggregate(room.BetValue)
 		}
 	}
 
@@ -72,14 +72,14 @@ func (r *RedisClient) RemoveRoom(key string) error {
 	return r.Client.HDel(context.Background(), key).Err()
 }
 
-func (r *RedisClient) GetRoomsByBidAmount(bidAmount float64) ([]models.Room, error) {
+func (r *RedisClient) GetRoomsByBetValue(BetValue float64) ([]models.Room, error) {
 	ctx := context.Background()
 	zsetKey := "rooms_by_bid"
 
 	// Get room IDs in the given bid amount range
 	roomIDs, err := r.Client.ZRangeByScore(ctx, zsetKey, &redis.ZRangeBy{
-		Min: fmt.Sprintf("%f", bidAmount),
-		Max: fmt.Sprintf("%f", bidAmount),
+		Min: fmt.Sprintf("%f", BetValue),
+		Max: fmt.Sprintf("%f", BetValue),
 	}).Result()
 	if err != nil {
 		return nil, fmt.Errorf("[RedisClient] - failed to retrieve rooms: %v", err)
@@ -103,15 +103,15 @@ func (r *RedisClient) GetRoomsByBidAmount(bidAmount float64) ([]models.Room, err
 	return rooms, nil
 }
 
-func (r *RedisClient) GetEmptyRoomsByBidAmount(bidAmount float64) ([]models.Room, error) {
+func (r *RedisClient) GetEmptyRoomsByBetValue(BetValue float64) ([]models.Room, error) {
 	ctx := context.Background()
 	zsetKey := "rooms_by_bid"
 
 	// Get room IDs in the given bid amount range
 	// TODO: This is bugged, its not procuding the riight results.
 	roomIDs, err := r.Client.ZRangeByScore(ctx, zsetKey, &redis.ZRangeBy{
-		Min: fmt.Sprintf("%f", bidAmount),
-		Max: fmt.Sprintf("%f", bidAmount),
+		Min: fmt.Sprintf("%f", BetValue),
+		Max: fmt.Sprintf("%f", BetValue),
 	}).Result()
 	if err != nil {
 		return nil, fmt.Errorf("[RedisClient] - failed to retrieve rooms: %v", err)

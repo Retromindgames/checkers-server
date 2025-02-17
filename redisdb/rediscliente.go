@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -44,8 +45,8 @@ func (r *RedisClient) RPush(queue string, player *models.Player) error {
 }
 
 // BLPop - Retrieve a player from Redis queue
-func (r *RedisClient) BLPop(queue string, timeout int) (*models.Player, error) {
-	result, err := r.Client.BLPop(context.Background(), 0, queue).Result()
+func (r *RedisClient) BLPop(queue string, timeoutSecond int) (*models.Player, error) {
+	result, err := r.Client.BLPop(context.Background(), time.Duration(timeoutSecond)*time.Second, queue).Result()
 	if err != nil {
 		return nil, err
 	}

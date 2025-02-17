@@ -15,7 +15,7 @@ type Player struct {
 	Currency       string          `json:"currency"`
 	CurrencyAmount int             `json:"currency_amount"`
 	Status         string          `json:"status"` // IN GAME! ONLINE! OFFLNE
-	SelectedBid    float64         `json:"selected_bid"`
+	SelectedBet    float64         `json:"selected_bet"`
 	Name           string          `json:"name"`
 	Conn           *websocket.Conn `json:"-"` // Exclude Conn from JSON
 }
@@ -27,7 +27,7 @@ type Room struct {
 	Player2           *Player    `json:"player_2"`
 	StartDate         time.Time  `json:"start_date"`
 	Currency          string     `json:"currency"`  // Currency for the room
-	BidAmount         float64    `json:"bid_amount"` // Bet amount for the game
+	BetValue         float64     `json:"bet_value"` // Bet amount for the game
 	Turn              int        `json:"turn"`
 	CurrentTurnPlayer *Player    `json:"current_turn_player"`
 	GameBoard         string     `json:"game_board"`  // TODO: Representation of the game board (could be a string of board state?)
@@ -51,7 +51,7 @@ type RoomValue struct {
 	ID          string  `json:"id"`
 	Player      string  `json:"name"`
 	Currency    string  `json:"currency"`
-	SelectedBid float64 `json:"selected_bid"`
+	BetValue    float64 `json:"bet_value"`
 }
 
 type CreateRoomMessage struct {
@@ -63,6 +63,10 @@ type PairedValue struct {
 	Color    int    `json:"color"`
 	Opponent string `json:"opponent"`
 	RoomID	 string `json:"room_id"`
+}
+
+type QueueConfirmation struct {
+	IsConfirmed    bool    `json:"is_confirmed"`
 }
 
 func GenerateUUID() string {

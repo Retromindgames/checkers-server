@@ -130,9 +130,13 @@ func GenerateRoomCreatedMessage(room models.Room) ([]byte, error) {
 		ID:          room.ID,
 		Player:      room.Player1.Name,
 		Currency:    room.Currency,
-		SelectedBid: room.BidAmount,
+		BetValue: 	 room.BetValue,
 	}
 	return NewMessage("room_created", roomValue)
+}
+
+func GenerateQueueConfirmationMessage(value bool) ([]byte, error) {
+	return NewMessage("queue_confirmation", value)
 }
 
 // Helper function to marshal a value and ignore errors
