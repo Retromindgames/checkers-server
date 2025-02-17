@@ -4,12 +4,11 @@ import (
 	"checkers-server/models"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 )
 
 type Message[T any] struct {
-	Command string          `json:"command"`
-	Value   T 				`json:"value,omitempty"`
+	Command string `json:"command"`
+	Value   T      `json:"value,omitempty"`
 }
 
 type Position struct {
@@ -75,7 +74,7 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 
 	case "leave_room":
 		return nil, nil
-	
+
 	case "move_piece":
 		var value MovePieceValue
 		if err := json.Unmarshal(msg.Value, &value); err != nil {
@@ -114,25 +113,16 @@ func GenerateConnectedMessage(player *models.Player) (string, error) {
 	return string(msg), nil
 }
 
-// TODO:: Make this use the new message foramt / parser
-func GeneratePairedMessage(player1, player2 *models.Player) (string, error) {
-	color := rand.Intn(2)
-
-	msg, err := EncodeMessage("paired", struct {
-		Color    int    `json:"color"`
-		Opponent string `json:"opponent"`
-	}{
+func GeneratePairedMessage(player1, player2 *models.Player, roomID string, color int) ([]byte, error) {
+	pairedValue := models.PairedValue{
 		Color:    color,
 		Opponent: player2.Name,
-	})
-
-	if err != nil {
-		return "", fmt.Errorf("[Message Parser] failed to marshal paired message: %w", err)
+		RoomID:   roomID,
 	}
-	return string(msg), nil
+	return NewMessage("paired", pairedValue)
 }
 
-func GenerateRoomCreatedMessage(room models.Room)([]byte, error) {
+func GenerateRoomCreatedMessage(room models.Room) ([]byte, error) {
 	roomValue := models.RoomValue{
 		ID:          room.ID,
 		Player:      room.Player1.Name,

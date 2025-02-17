@@ -15,6 +15,7 @@ type CommandInfo struct {
 var validCommands = map[string]CommandInfo{
 	"create_room":  {Type: ClientCommand},
 	"room_created": {Type: ServerCommand},
+	"paired":       {Type: ServerCommand},
 	"join_room":    {Type: ClientCommand},
 	"leave_room":   {Type: ClientCommand},
 	"game_info":    {Type: BroadcastCommand},

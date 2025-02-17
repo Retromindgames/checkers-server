@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"time"
 )
@@ -34,7 +35,7 @@ func main() {
 	select {}
 }
 
-func processRoomCreation(){
+func processRoomCreation() {
 	for {
 		playerData, err := redisClient.BLPop("create_room", 0) // Block
 		if err != nil {
@@ -46,7 +47,7 @@ func processRoomCreation(){
 	}
 }
 
-func processRoomJoin(){
+func processRoomJoin() {
 	for {
 		playerData, err := redisClient.BLPop("join_room", 0) // Block
 		if err != nil {
@@ -58,7 +59,7 @@ func processRoomJoin(){
 	}
 }
 
-func processRoomEnding(){
+func processRoomEnding() {
 	for {
 		playerData, err := redisClient.BLPop("leave_room", 0) // Block
 		if err != nil {
@@ -92,8 +93,8 @@ func handleCreateRoom(player *models.Player) {
 
 	player.RoomID = room.ID
 	player.Status = "waiting_oponente"
-	redisClient.AddPlayer(player)		// This should update out player room info.
-	
+	redisClient.AddPlayer(player) // This should update out player room info.
+
 	messageBytes, err := messages.GenerateRoomCreatedMessage(*room)
 	if err != nil {
 		fmt.Printf("[RoomWorker-%d] - Invalid message format: %v\n", pid, err)
@@ -108,7 +109,6 @@ func handleCreateRoom(player *models.Player) {
 	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
 }
 
-
 func handleJoinRoom(player *models.Player) {
 	fmt.Printf("[RoomWorker-%d] - Handling player (JOIN ROOM): %s (Session: %s, Currency: %s)\n",
 		pid, player.ID, player.SessionID, player.Currency)
@@ -116,13 +116,24 @@ func handleJoinRoom(player *models.Player) {
 	if err != nil {
 		return
 	}
-	message, err := messages.GeneratePairedMessage(rooms[0].Player1, player)
-	redisClient.PublishPlayerEvent(rooms[0].Player1, message)
-	redisClient.PublishPlayerEvent(player, message)
+	colorp1 := rand.Intn(2)
+	colorp2 := 1
+	if colorp1 == 1 {
+		colorp2 = 0
+	}
+	message, err := messages.GeneratePairedMessage(rooms[0].Player1, player, rooms[0].ID, colorp1)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handling paired message for p1: %s\n", pid, err)
+		return
+	}
+	message2, err2 := messages.GeneratePairedMessage(player, rooms[0].Player1, rooms[0].ID, colorp2)
+	if err2 != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handling paired message for p2:%s\n", pid, err2)
+		return
+	}
+	fmt.Printf("[RoomWorker-%d] - Handling player (JOIN ROOM) - Message for player1: %s\n", pid, message)
+	fmt.Printf("[RoomWorker-%d] - Handling player (JOIN ROOM) - Message for player2: %s\n", pid, message2)
 
+	redisClient.PublishPlayerEvent(rooms[0].Player1, string(message))
+	redisClient.PublishPlayerEvent(player, string(message2))
 }
-
-
-
-
-
