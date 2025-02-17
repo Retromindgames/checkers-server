@@ -27,7 +27,7 @@ func init() {
 
 func main() {
 	fmt.Printf("[BroadcastWorker-%d] - Broadcasting room stats...\n", pid)
-	ticker := time.NewTicker(5 * time.Second) // Adjust interval as needed
+	ticker := time.NewTicker(50000 * time.Second) // Adjust interval as needed
 	defer ticker.Stop()
 
 	for range ticker.C {
