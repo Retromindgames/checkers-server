@@ -42,22 +42,30 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.URL.Query().Get("sessionid")
 	currency := r.URL.Query().Get("currency")
 
+	valid, playerData := IsUserValid(token, sessionID) // TODO: Have this check against a valid DB
+	if !valid {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println("Failed to upgrade:", err)
 		return
 	}
+
 	playerID := r.RemoteAddr
 	player := &models.Player{
 		ID:             playerID,
 		Conn:           conn,
-		Token:          token,
-		Name:           "PLACEHOLDER-SERVER",
-		SessionID:      sessionID,
+		Token:          playerData.Token,
+		Name:           playerData.Name,
+		SessionID:      playerData.SessionID,
 		Currency:       currency,
-		CurrencyAmount: 999,
+		CurrencyAmount: playerData.CurrencyAmount,
 		Status:         "connected",
 	}
+
 	// We add the player to our player map.
 	playersMutex.Lock()
 	players[playerID] = player
@@ -107,7 +115,7 @@ func subscribeToBroadcastChannel() {
 		}
 		// Step 3: Send the message to all connected players
 		playersMutex.Lock()
-		defer playersMutex.Unlock() 	// Ensures mutex is unlocked even if an error occurs
+		defer playersMutex.Unlock() // Ensures mutex is unlocked even if an error occurs
 		for _, player := range players {
 			err := player.Conn.WriteMessage(websocket.TextMessage, finalBytes)
 			if err != nil {
@@ -118,11 +126,19 @@ func subscribeToBroadcastChannel() {
 	})
 }
 
-
 func unsubscribeFromPlayerChannel(player *models.Player) {
 	redisClient.UnsubscribePlayerChannel(*player)
 }
 
 func unsubscribeFromBroadcastChannel(player *models.Player) {
 	redisClient.Unsubscribe("game_info")
+}
+
+// Mock user validation
+func IsUserValid(token string, sessionID string) (bool, models.Player) {
+	player, exists := redisdb.MockPlayers[token]
+	if exists && player.SessionID == sessionID {
+		return true, player
+	}
+	return false, models.Player{} // Invalid user
 }
