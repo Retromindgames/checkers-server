@@ -73,7 +73,10 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 		}
 
 	case "leave_room":
-		return nil, nil
+		return msg, nil
+
+	case "ready_room":
+		return msg, nil
 
 	case "move_piece":
 		var value MovePieceValue

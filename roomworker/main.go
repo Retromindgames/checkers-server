@@ -31,6 +31,7 @@ func main() {
 	fmt.Printf("[RoomWorker-%d] - Waiting for room messages...\n", pid)
 	go processRoomCreation()
 	go processRoomJoin()
+	go processRoomReady()
 	go processRoomEnding()
 	select {}
 }
@@ -56,6 +57,18 @@ func processRoomJoin() {
 		}
 		fmt.Printf("[RoomWorker-%d] - processing join room!: %+v\n", pid, playerData)
 		handleJoinRoom(playerData)
+	}
+}
+
+func processRoomReady() {
+	for {
+		playerData, err := redisClient.BLPop("ready_room", 0) // Block
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error retrieving player:%v\n", pid, err)
+			continue
+		}
+		fmt.Printf("[RoomWorker-%d] - processing ready room!: %+v\n", pid, playerData)
+		// TODO: handle ready room message.
 	}
 }
 
