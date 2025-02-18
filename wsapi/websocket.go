@@ -63,7 +63,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		SessionID:      playerData.SessionID,
 		Currency:       currency,
 		CurrencyAmount: playerData.CurrencyAmount,
-		Status:         "connected",
+		Status:         models.StatusOnline,
 	}
 
 	// We add the player to our player map.

@@ -29,7 +29,7 @@ func init() {
 
 func main() {
 	fmt.Printf("[RoomWorker-%d] - Waiting for room messages...\n", pid)
-	go processRoomCreation()
+	//go processRoomCreation()
 	//go processRoomJoin()
 	go processRoomReady()
 	go processRoomEnding()
@@ -85,8 +85,6 @@ func processQueue() {
 	}
 }
 
-
-
 func processRoomReady() {
 	for {
 		playerData, err := redisClient.BLPop("ready_room", 0) // Block
@@ -123,7 +121,7 @@ func handleCreateRoom(player *models.Player) {
 		Player1:   player,
 		StartDate: time.Now(),
 		Currency:  player.Currency,
-		BetValue: player.SelectedBet,
+		BetValue:  player.SelectedBet,
 	}
 	err := redisClient.AddRoom2(room)
 	if err != nil {
@@ -170,11 +168,11 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	}
 	player1.RoomID = room.ID
 	player2.RoomID = room.ID
-	player1.Status = "awaiting_ready"
-	player2.Status = "awaiting_ready"
-	redisClient.AddPlayer(player1) 
-	redisClient.AddPlayer(player2) 
-	//messageBytes, err := messages.GenerateRoomCreatedMessage(*room)
+	player1.Status = models.StatusAwaitingReady
+	player2.Status = models.StatusAwaitingReady
+	redisClient.AddPlayer(player1)
+	redisClient.AddPlayer(player2)
+	// Now we set the player colors.
 	colorp1 := rand.Intn(2)
 	colorp2 := 1
 	if colorp1 == 1 {

@@ -4,21 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 )
-
-type Player struct {
-	ID             string          `json:"id"`
-	Token          string          `json:"token"`
-	RoomID		   string		   `json:"room_id"`
-	SessionID      string          `json:"session_id"`
-	Currency       string          `json:"currency"`
-	CurrencyAmount int             `json:"currency_amount"`
-	Status         string          `json:"status"` // IN GAME! ONLINE! OFFLNE
-	SelectedBet    float64         `json:"selected_bet"`
-	Name           string          `json:"name"`
-	Conn           *websocket.Conn `json:"-"` // Exclude Conn from JSON
-}
 
 // Room represents the data for a game room, containing two players and game details
 type Room struct {
@@ -27,7 +13,7 @@ type Room struct {
 	Player2           *Player    `json:"player_2"`
 	StartDate         time.Time  `json:"start_date"`
 	Currency          string     `json:"currency"`  // Currency for the room
-	BetValue         float64     `json:"bet_value"` // Bet amount for the game
+	BetValue          float64    `json:"bet_value"` // Bet amount for the game
 	Turn              int        `json:"turn"`
 	CurrentTurnPlayer *Player    `json:"current_turn_player"`
 	GameBoard         string     `json:"game_board"`  // TODO: Representation of the game board (could be a string of board state?)
@@ -48,10 +34,10 @@ type RoomAggregateResponse struct {
 }
 
 type RoomValue struct {
-	ID          string  `json:"id"`
-	Player      string  `json:"name"`
-	Currency    string  `json:"currency"`
-	BetValue    float64 `json:"bet_value"`
+	ID       string  `json:"id"`
+	Player   string  `json:"name"`
+	Currency string  `json:"currency"`
+	BetValue float64 `json:"bet_value"`
 }
 
 type CreateRoomMessage struct {
@@ -62,11 +48,11 @@ type CreateRoomMessage struct {
 type PairedValue struct {
 	Color    int    `json:"color"`
 	Opponent string `json:"opponent"`
-	RoomID	 string `json:"room_id"`
+	RoomID   string `json:"room_id"`
 }
 
 type QueueConfirmation struct {
-	IsConfirmed    bool    `json:"is_confirmed"`
+	IsConfirmed bool `json:"is_confirmed"`
 }
 
 func GenerateUUID() string {

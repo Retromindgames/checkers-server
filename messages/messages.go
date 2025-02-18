@@ -106,7 +106,7 @@ func GenerateConnectedMessage(player *models.Player) (string, error) {
 		PlayerName string  `json:"player_name"`
 		Money      float64 `json:"money"`
 	}{
-		PlayerName: "Player_" + player.Name,
+		PlayerName: player.Name,
 		Money:      float64(player.CurrencyAmount),
 	})
 
@@ -127,10 +127,10 @@ func GeneratePairedMessage(player1, player2 *models.Player, roomID string, color
 
 func GenerateRoomCreatedMessage(room models.Room) ([]byte, error) {
 	roomValue := models.RoomValue{
-		ID:          room.ID,
-		Player:      room.Player1.Name,
-		Currency:    room.Currency,
-		BetValue: 	 room.BetValue,
+		ID:       room.ID,
+		Player:   room.Player1.Name,
+		Currency: room.Currency,
+		BetValue: room.BetValue,
 	}
 	return NewMessage("room_created", roomValue)
 }
