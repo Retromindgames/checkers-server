@@ -204,13 +204,49 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, of room pairing.\n", pid)
 }
 
-// TODO: This should just check if both players are ready. And tell the client the match is starting.
 func handleReadyQueue(player *models.Player) {
 	fmt.Printf("[RoomWorker-%d] - Handling player (READY QUEUE): %s (Session: %s, Currency: %s)\n",
 		pid, player.ID, player.SessionID, player.Currency)
 
-	redisClient.get
+	proom, err := redisClient.GetRoomByID(player.RoomID)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue getting player room:%s\n", pid, err)
+		return
+	}
 
+	player2ID, err := proom.GetOpponentPlayerID(player.ID)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue getting player opponent ID:%s\n", pid, err)
+		return
+	}
+
+	player2, err := redisClient.GetPlayer(player2ID)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue getting opponent player:%s\n", pid, err)
+		return
+	}
+
+	// We will always notify the opponent the we are ready.
+	msg, err := messages.GenerateOpponentReadyMessage(true)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue getting GenerateOpponentReadyMessage(true) for opponent:%s\n", pid, err)
+		return
+	}
+	redisClient.PublishPlayerEvent(player2, string(msg))
+	
+	// now we tell our player that is ready if the opponent is ready or not.
+	if player2.Status != models.StatusAwaitingOponenteReady {
+		fmt.Printf("[RoomWorker-%d] - handleReadyQueue Opponent aint ready yet!:%s\n", pid, err)
+		msg, err := messages.GenerateOpponentReadyMessage(false)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue getting GenerateOpponentReadyMessage(false) for player:%s\n", pid, err)
+		}
+		redisClient.PublishPlayerEvent(player, string(msg))
+		return
+	}
+
+	// Now! If both players are ready...!!
+	// TODO:We are ready to start a match!!
 }
 
 func handleJoinRoom(player *models.Player) {
