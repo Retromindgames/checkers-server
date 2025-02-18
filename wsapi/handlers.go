@@ -12,57 +12,80 @@ import (
 func handleMessages(player *models.Player) {
 	defer player.Conn.Close()
 	for {
-		
 		_, msg, err := player.Conn.ReadMessage()
 		if err != nil {
-			UpdatePlayerDataFromRedis(player)		// We are updating our player only when there are any new messages... Not sure if its the best aproach.
+			UpdatePlayerDataFromRedis(player)
 			handlePlayerDisconnect(player)
 			break
 		}
 		fmt.Printf("Message from %s: %s\n", player.ID, string(msg))
 		UpdatePlayerDataFromRedis(player)
 
-		// Process the received message (expecting JSON)
+		// Process the received message (expecting JSON), this will read the command but leave the value.
 		message, err := messages.ParseMessage(msg)
 		if err != nil {
 			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid message format."+err.Error()))
 			continue
 		}
-		// We update the player betValue. This is so our RPUSH seends the player setAmount.
-		if message.Command == "create_room" || message.Command == "join_room" {
-			var betValue float64
-			err := json.Unmarshal(message.Value, &betValue)
-			if err != nil {
-				fmt.Println("Error unmarshaling bid value:", err)
-				return
-			}
-			player.SelectedBet = betValue
-		}
-		// Now we push the command to our worker, he will determine what to do with the message.
-		err = redisClient.RPush(message.Command, player)
-		if err != nil {
-			fmt.Printf("Error pushing message to Redis: %v\n", err)
-			// We also let the player know it was placed in queue	(was not here)
-			m, err := messages.GenerateQueueConfirmationMessage(false)	
-			if err != nil {
-				fmt.Println("Error GenerateQueueConfirmationMessage:", err)
-				return
-			}
-			player.Conn.WriteMessage(websocket.TextMessage, m)
-		} else {
-			// Print what we're sending to Redis
-			fmt.Printf("Sending message to Redis - Command: %s, Player: %s, Bid: %f\n", message.Command, player.ID, player.SelectedBet)
-			if message.Command == "join_room" {
-				// We also let the player know it was placed in queue	(was here)
-				m, err := messages.GenerateQueueConfirmationMessage(true)	
-				if err != nil {
-					fmt.Println("Error GenerateQueueConfirmationMessage:", err)
-					return
-				}
-				player.Conn.WriteMessage(websocket.TextMessage, m)
-			}
+
+		// Directly route to the right handler based on the command
+		switch message.Command {
+		case "queue":
+			handleQueue(message, player)
+
+		case "ready_queue":
+			handleReadyQueue(message, player)
 		}
 	}
+}
+
+func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) {
+	if player.UpdatePlayerStatus(models.StatusInQueue) != nil {
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'queue'"))
+		return
+	}
+	// update the player bet and push it to Redis
+	var betValue float64
+	err := json.Unmarshal(msg.Value, &betValue)
+	player.SelectedBet = betValue
+	player.Status = models.StatusInQueue
+	// Pushing the player to the "queue" Redis list
+	err = redisClient.RPush("queue", player) // Assuming "queue" is the appropriate Redis list
+	if err != nil {
+		fmt.Printf("Error pushing player to Redis queue: %v\n", err)
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
+		return
+	}
+	// we update out player status.
+	redisClient.AddPlayer(player)
+	// send a confirmation message back to the player
+	m, err := messages.GenerateQueueConfirmationMessage(true)
+	if err != nil {
+		fmt.Println("Error generating queue confirmation:", err)
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error generating confirmation"))
+		return
+	}
+	player.Conn.WriteMessage(websocket.TextMessage, m)
+	// Pushing the player to the "ready" Redis list, as to be processed by the room worker.
+	err = redisClient.RPush("ready_queue", player) // Assuming "queue" is the appropriate Redis list
+	if err != nil {
+		fmt.Printf("Error pushing player to Redis queue: %v\n", err)
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
+		return
+	}
+}
+
+func handleReadyQueue(msg *messages.Message[json.RawMessage], player *models.Player) {
+	if player.UpdatePlayerStatus(models.StatusAwaitingOponenteReady) != nil {
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'ready_queue'"))
+		return
+	}
+	player.Conn.WriteMessage(websocket.TextMessage, []byte("processing 'ready_queue'"))
+	// update the player status
+	player.Status = models.StatusAwaitingOponenteReady
+	// we update out player status.
+	redisClient.AddPlayer(player)
+
 }
 
 func handlePlayerDisconnect(player *models.Player) {
