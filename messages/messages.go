@@ -22,6 +22,10 @@ type MovePieceValue struct {
 	KilledPieces     []Position `json:"killed_pieces"`
 }
 
+type OpponentReady struct {
+	IsReady	bool	`json:"is_ready"`
+}
+
 func EncodeMessage[T any](command string, value T) ([]byte, error) {
 	msg := Message[T]{Command: command, Value: value}
 	return json.Marshal(msg)
@@ -134,6 +138,11 @@ func GenerateRoomCreatedMessage(room models.Room) ([]byte, error) {
 		BetValue: room.BetValue,
 	}
 	return NewMessage("room_created", roomValue)
+}
+
+func GenerateOpponentReadyMessage(isReady bool) ([]byte, error) {
+	opponentReady := OpponentReady{IsReady: isReady}
+	return NewMessage("opponent_ready", opponentReady)
 }
 
 func GenerateQueueConfirmationMessage(value bool) ([]byte, error) {

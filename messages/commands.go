@@ -19,6 +19,7 @@ var validCommands = map[string]CommandInfo{
 	"room_created":       {Type: ServerCommand},
 	"paired":             {Type: ServerCommand},
 	"ready_queue":        {Type: ClientCommand},
+	"opponent_ready":     {Type: ServerCommand},
 	"join_room":          {Type: ClientCommand},
 	"leave_room":         {Type: ClientCommand},
 	"game_info":          {Type: BroadcastCommand},

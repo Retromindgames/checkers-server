@@ -56,6 +56,24 @@ func (r *RedisClient) RemoveRoom(key string) error {
 	return r.Client.HDel(context.Background(), key).Err()
 }
 
+
+func (r *RedisClient) GetRoomByID(roomID string) (*models.Room, error) {
+	ctx := context.Background()
+	roomKey := fmt.Sprintf("room:%s", roomID)
+
+	data, err := r.Client.HGet(ctx, roomKey, "data").Result()
+	if err != nil {
+		return nil, fmt.Errorf("[RedisClient] - failed to retrieve room %s: %v", roomID, err)
+	}
+
+	var room models.Room
+	if err := json.Unmarshal([]byte(data), &room); err != nil {
+		return nil, fmt.Errorf("[RedisClient] - failed to unmarshal room data: %v", err)
+	}
+
+	return &room, nil
+}
+
 func (r *RedisClient) GetRoomsByBetValue(BetValue float64) ([]models.Room, error) {
 	ctx := context.Background()
 	zsetKey := "rooms_by_bid"
