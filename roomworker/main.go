@@ -123,7 +123,7 @@ func handleCreateRoom(player *models.Player) {
 		Currency:  player.Currency,
 		BetValue:  player.SelectedBet,
 	}
-	err := redisClient.AddRoom2(room)
+	err := redisClient.AddRoom(room)
 	if err != nil {
 		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
 		return
@@ -161,7 +161,7 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		Currency:  player1.Currency,
 		BetValue:  player1.SelectedBet,
 	}
-	err := redisClient.AddRoom2(room)
+	err := redisClient.AddRoom(room)
 	if err != nil {
 		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
 		return
@@ -204,10 +204,12 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, of room pairing.\n", pid)
 }
 
-// TODO: This should just check if both players are ready. And tell the cliente the match is starting.
+// TODO: This should just check if both players are ready. And tell the client the match is starting.
 func handleReadyQueue(player *models.Player) {
 	fmt.Printf("[RoomWorker-%d] - Handling player (READY QUEUE): %s (Session: %s, Currency: %s)\n",
 		pid, player.ID, player.SessionID, player.Currency)
+
+	redisClient.get
 
 }
 
