@@ -31,7 +31,7 @@ func main() {
 	fmt.Printf("[RoomWorker-%d] - Waiting for room messages...\n", pid)
 	//go processRoomCreation()
 	//go processRoomJoin()
-	go processRoomReady()
+	go processReadyQueue()
 	go processRoomEnding()
 	go processQueue()
 	select {}
@@ -85,15 +85,15 @@ func processQueue() {
 	}
 }
 
-func processRoomReady() {
+func processReadyQueue() {
 	for {
-		playerData, err := redisClient.BLPop("ready_room", 0) // Block
+		playerData, err := redisClient.BLPop("ready_queue", 0) // Block
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - processing ready room!: %+v\n", pid, playerData)
-		// TODO: handle ready room message.
+		handleReadyQueue(playerData)
 	}
 }
 
@@ -202,6 +202,13 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		return
 	}
 	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, of room pairing.\n", pid)
+}
+
+// TODO: This should just check if both players are ready. And tell the cliente the match is starting.
+func handleReadyQueue(player *models.Player) {
+	fmt.Printf("[RoomWorker-%d] - Handling player (READY QUEUE): %s (Session: %s, Currency: %s)\n",
+		pid, player.ID, player.SessionID, player.Currency)
+
 }
 
 func handleJoinRoom(player *models.Player) {

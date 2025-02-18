@@ -56,6 +56,7 @@ var validStatusTransitions = map[PlayerStatus]map[PlayerStatus]bool{
 	},
 }
 
+// This updates and checks that our player status is the right one.
 func (p *Player) UpdatePlayerStatus(newStatus PlayerStatus) error {
 	if p.Status == newStatus {
 		return fmt.Errorf("player is already in status %s", newStatus)

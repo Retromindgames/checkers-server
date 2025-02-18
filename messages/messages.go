@@ -65,6 +65,7 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 		return nil, fmt.Errorf("[Message Parser] invalid command: %s", msg.Command)
 	}
 
+	// This switch is just to make sure we propperly serialize our value.
 	switch msg.Command {
 	case "create_room", "join_room":
 		var value float64
