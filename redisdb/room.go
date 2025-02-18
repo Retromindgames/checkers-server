@@ -9,23 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func (r *RedisClient) AddRoom(key string, room *models.Room) error {
-	data, err := json.Marshal(room)
-	if err != nil {
-		return fmt.Errorf("[RedisClient] (Room) - failed to serialize room: %v", err)
-	}
-	exists, err := r.CheckRoomAggregateExists(room.BetValue)
-	if err == nil {
-		if exists {
-			r.IncrementRoomAggregate(room.BetValue)
-		} else {
-			r.CreateRoomAggregate(room.BetValue)
-		}
-	}
-	return r.Client.HSet(context.Background(), key, room.ID, data).Err()
-}
-
-func (r *RedisClient) AddRoom2(room *models.Room) error {
+func (r *RedisClient) AddRoom(room *models.Room) error {
 	ctx := context.Background()
 
 	// Serialize the full room object
@@ -70,6 +54,24 @@ func (r *RedisClient) AddRoom2(room *models.Room) error {
 
 func (r *RedisClient) RemoveRoom(key string) error {
 	return r.Client.HDel(context.Background(), key).Err()
+}
+
+
+func (r *RedisClient) GetRoomByID(roomID string) (*models.Room, error) {
+	ctx := context.Background()
+	roomKey := fmt.Sprintf("room:%s", roomID)
+
+	data, err := r.Client.HGet(ctx, roomKey, "data").Result()
+	if err != nil {
+		return nil, fmt.Errorf("[RedisClient] - failed to retrieve room %s: %v", roomID, err)
+	}
+
+	var room models.Room
+	if err := json.Unmarshal([]byte(data), &room); err != nil {
+		return nil, fmt.Errorf("[RedisClient] - failed to unmarshal room data: %v", err)
+	}
+
+	return &room, nil
 }
 
 func (r *RedisClient) GetRoomsByBetValue(BetValue float64) ([]models.Room, error) {

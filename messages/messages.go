@@ -22,6 +22,10 @@ type MovePieceValue struct {
 	KilledPieces     []Position `json:"killed_pieces"`
 }
 
+type OpponentReady struct {
+	IsReady	bool	`json:"is_ready"`
+}
+
 func EncodeMessage[T any](command string, value T) ([]byte, error) {
 	msg := Message[T]{Command: command, Value: value}
 	return json.Marshal(msg)
@@ -65,6 +69,7 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 		return nil, fmt.Errorf("[Message Parser] invalid command: %s", msg.Command)
 	}
 
+	// This switch is just to make sure we propperly serialize our value.
 	switch msg.Command {
 	case "create_room", "join_room":
 		var value float64
@@ -106,7 +111,7 @@ func GenerateConnectedMessage(player *models.Player) (string, error) {
 		PlayerName string  `json:"player_name"`
 		Money      float64 `json:"money"`
 	}{
-		PlayerName: "Player_" + player.Name,
+		PlayerName: player.Name,
 		Money:      float64(player.CurrencyAmount),
 	})
 
@@ -127,12 +132,17 @@ func GeneratePairedMessage(player1, player2 *models.Player, roomID string, color
 
 func GenerateRoomCreatedMessage(room models.Room) ([]byte, error) {
 	roomValue := models.RoomValue{
-		ID:          room.ID,
-		Player:      room.Player1.Name,
-		Currency:    room.Currency,
-		BetValue: 	 room.BetValue,
+		ID:       room.ID,
+		Player:   room.Player1.Name,
+		Currency: room.Currency,
+		BetValue: room.BetValue,
 	}
 	return NewMessage("room_created", roomValue)
+}
+
+func GenerateOpponentReadyMessage(isReady bool) ([]byte, error) {
+	opponentReady := OpponentReady{IsReady: isReady}
+	return NewMessage("opponent_ready", opponentReady)
 }
 
 func GenerateQueueConfirmationMessage(value bool) ([]byte, error) {
