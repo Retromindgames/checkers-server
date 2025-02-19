@@ -261,6 +261,7 @@ func handleReadyQueue(player *models.Player) {
 
 	// Now! If both players are ready...!!
 	// We are ready to start a match!!
+	proom.NewGame()
 	roomdata, err := json.Marshal(proom)
 	err = redisClient.RPushGeneric("create_game", roomdata)
 	if err != nil {

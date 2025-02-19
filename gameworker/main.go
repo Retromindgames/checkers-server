@@ -36,8 +36,9 @@ func processGameCreation() {
 			fmt.Printf("[RoomWorker-%d] - (Process Game Creation) -  Error retrieving room data:%v\n", pid, err)
 			continue
 		}
+
 		fmt.Printf("[RoomWorker-%d] - (Process Game Creation)  - create room!: %+v\n", pid, roomData)
 		//TODO: Generate game!
-
+		//roomData.NewGame()
 	}
 }

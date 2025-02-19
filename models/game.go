@@ -52,7 +52,7 @@ import (
 // ? - Update validSquares at game start?
 // ? - Move it to redis??
 var validSquares = map[string]bool{
-	"A1": true, "A3": true, "A5": true, "A7": true,
+	"A1": false, "A3": true, "A5": true, "A7": true,
 	"B2": true, "B4": true, "B6": true, "B8": true,
 	"C1": true, "C3": true, "C5": true, "C7": true,
 	"D2": true, "D4": true, "D6": true, "D8": true,
@@ -158,7 +158,7 @@ type Kinged struct {
 // Move represents a single move in the game
 type Move struct {
 	PlayerID  string `json:"player_id"`  // The player making the move
-	PieceID   string `json:"piece_id"`  
+	PieceID   string `json:"piece_id"`  // Will be given to clientes by the server.
 	From      string `json:"from"`      // e.g., "A1"
 	To        string `json:"to"`        // e.g., "B2"
 	IsCapture bool   `json:"is_capture"` // Whether the move captured an opponent's piece
@@ -188,10 +188,11 @@ func mapPlayers(r *Room) []GamePlayer {
 }
 
 func (r *Room) NewGame() Game {
+	// TODO: map player id to generated pieces.
 	game := Game{
 		GameID:    r.ID,
 		Board:     generateInitialBoard(),
-		Players:   mapPlayers(r), // TODO:
+		Players:   mapPlayers(r), 
 		Turn:      r.Turn,
 		Kinged:    Kinged{W: []string{}, B: []string{}},
 		Moves:     []string{},
