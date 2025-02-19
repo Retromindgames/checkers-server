@@ -140,7 +140,7 @@ func (r *Room) NewGame() Game {
 	return Game{
 		GameID:    r.ID,
 		Board:     initialBoard,
-		Players:   mapPlayers(r),
+		Players:   mapPlayers(r), // TODO:
 		Turn:      r.Turn,
 		Kinged:    Kinged{W: []string{}, B: []string{}},
 		Moves:     []string{},
