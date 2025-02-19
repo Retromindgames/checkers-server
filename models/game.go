@@ -41,6 +41,7 @@ package models
 */
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -77,19 +78,55 @@ var validSquares = map[string]bool{
 	}
 */
 
-var initialBoard = map[string]*string{
-	"A1": getPieceUUID(), "A3": getPieceUUID(), "A5": getPieceUUID(), "A7": getPieceUUID(),
-	"B2": getPieceUUID(), "B4": getPieceUUID(), "B6": getPieceUUID(), "B8": getPieceUUID(),
-	"C1": nil, "C3": nil, "C5": nil, "C7": nil,
-	"D2": nil, "D4": nil, "D6": nil, "D8": nil,
-	"E1": nil, "E3": nil, "E5": nil, "E7": nil,
-	"F2": nil, "F4": nil, "F6": nil, "F8": nil,
-	"G1": getPieceUUID(), "G3": getPieceUUID(), "G5": getPieceUUID(), "G7": getPieceUUID(),
-	"H2": getPieceUUID(), "H4": getPieceUUID(), "H6": getPieceUUID(), "H8": getPieceUUID(),
+type Piece struct {
+	Type    string `json:"type"`
+	PlayerID string `json:"player_id"`
+	PieceID string `json:"piece_id"`
+}
+
+func generateInitialBoard() map[string]*Piece {
+	board := make(map[string]*Piece)
+	rows := []string{"A", "B", "C", "D", "E", "F", "G", "H"}
+
+	for i, row := range rows {
+		for col := 1; col <= 8; col++ {
+			pos := fmt.Sprintf("%s%d", row, col)
+
+			// Only place pieces on dark squares
+			if (i+col)%2 == 1 {
+				if i < 3 { // Top 3 rows for black pieces
+					board[pos] = &Piece{Type: "b", PieceID: uuid.New().String()}
+				} else if i > 4 { // Bottom 3 rows for white pieces
+					board[pos] = &Piece{Type: "w", PieceID: uuid.New().String()}
+				} else {
+					board[pos] = nil // Empty middle rows
+				}
+			}
+		}
+	}
+	return board
+}
+
+func printBoard(board map[string]*Piece) {
+	rows := []string{"A", "B", "C", "D", "E", "F", "G", "H"}
+	fmt.Println("  1 2 3 4 5 6 7 8")
+	for _, row := range rows {
+		fmt.Print(row + " ")
+		for col := 1; col <= 8; col++ {
+			pos := fmt.Sprintf("%s%d", row, col)
+			if piece, exists := board[pos]; exists && piece != nil {
+				fmt.Print(piece.Type + " ")
+			} else {
+				fmt.Print(". ")
+			}
+		}
+		fmt.Println()
+	}
+	fmt.Println()
 }
 
 func getPieceUUID() *string {
-	id := uuid.New().String() // Generate a UUID
+	id := uuid.New().String() 
 	return &id
 }
 
@@ -98,18 +135,18 @@ type GamePlayer struct {
 	Token     string `json:"token"`
 	Name      string `json:"name"`
 	Color     string `json:"color"`
-	SessionID string `json:"sessionId"`
+	SessionID string `json:"session_id"`
 }
 
 type Game struct {
-	GameID    string       `json:"gameId"`
-	Board     [8][8]string `json:"board"`
+	GameID    string       `json:"game_id"`
+	Board     map[string]*Piece `json:"board"`
 	Players   []GamePlayer `json:"players"`
 	Turn      int          `json:"turn"`
 	Kinged    Kinged       `json:"kinged"`
 	Moves     []string     `json:"moves"`
-	StartTime time.Time    `json:"startTime"`
-	EndTime   time.Time    `json:"endTime"`
+	StartTime time.Time    `json:"start_time"`
+	EndTime   time.Time    `json:"end_time"`
 	Winner    string       `json:"winner"`
 }
 
@@ -120,11 +157,12 @@ type Kinged struct {
 
 // Move represents a single move in the game
 type Move struct {
-	PlayerID  string `json:"playerId"`  // The player making the move
+	PlayerID  string `json:"player_id"`  // The player making the move
+	PieceID   string `json:"piece_id"`  
 	From      string `json:"from"`      // e.g., "A1"
 	To        string `json:"to"`        // e.g., "B2"
-	IsCapture bool   `json:"isCapture"` // Whether the move captured an opponent's piece
-	IsKinged  bool   `json:"isKinged"`  // Whether the piece was kinged after the move
+	IsCapture bool   `json:"is_capture"` // Whether the move captured an opponent's piece
+	IsKinged  bool   `json:"is_kinged"`  // Whether the piece was kinged after the move
 }
 
 func MapPlayerToGamePlayer(player Player) GamePlayer {
@@ -136,10 +174,23 @@ func MapPlayerToGamePlayer(player Player) GamePlayer {
 	}
 }
 
+func mapPlayers(r *Room) []GamePlayer {
+	players := []GamePlayer{}
+
+	if r.Player1 != nil {
+		players = append(players, MapPlayerToGamePlayer(*r.Player1))
+	}
+	if r.Player2 != nil {
+		players = append(players, MapPlayerToGamePlayer(*r.Player2))
+	}
+
+	return players
+}
+
 func (r *Room) NewGame() Game {
-	return Game{
+	game := Game{
 		GameID:    r.ID,
-		Board:     initialBoard,
+		Board:     generateInitialBoard(),
 		Players:   mapPlayers(r), // TODO:
 		Turn:      r.Turn,
 		Kinged:    Kinged{W: []string{}, B: []string{}},
@@ -147,4 +198,6 @@ func (r *Room) NewGame() Game {
 		StartTime: r.StartDate,
 		Winner:    "",
 	}
+	printBoard(game.Board) 
+	return game
 }
