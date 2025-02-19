@@ -23,7 +23,7 @@ type Player struct {
 	RoomID         string          `json:"room_id"`
 	SessionID      string          `json:"session_id"`
 	Currency       string          `json:"currency"`
-	CurrencyAmount int             `json:"currency_amount"`
+	CurrencyAmount float64         `json:"currency_amount"`
 	Status         PlayerStatus    `json:"status"`
 	SelectedBet    float64         `json:"selected_bet"`
 	Name           string          `json:"name"`

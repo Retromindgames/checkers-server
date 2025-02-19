@@ -11,19 +11,33 @@ type Message[T any] struct {
 	Value   T      `json:"value,omitempty"`
 }
 
-type Position struct {
-	X int `json:"x"`
-	Y int `json:"y"`
-}
-
-type MovePieceValue struct {
-	PreviousPosition Position   `json:"previous_position"`
-	NewPosition      Position   `json:"new_position"`
-	KilledPieces     []Position `json:"killed_pieces"`
-}
-
 type OpponentReady struct {
 	IsReady	bool	`json:"is_ready"`
+}
+
+type GameConnectedMessage struct {
+	PlayerID	string	`json:"player_id"`   
+	PlayerName  string	`json:"player_name"`
+	Money      	float64	`json:"money"`
+	Status		string  `json:"status"`		// TODO: send as a string.
+}
+
+// TODO: Send on game_starting command
+type GameStartMessage struct {
+	Board map[string]*models.Piece
+	CurrentPlayerID string
+	GamePlayers []models.GamePlayer
+}
+
+type GameUpdatetMessage struct {
+	Board map[string]*models.Piece
+	CurrentPlayerID string `json:"current_player_id"`
+	CurrentTurn int `json:"current_turn"`
+}
+
+type GameTimer struct {
+	PlayerTimer float64 `json:"player_timer"`
+	CurrentPlayerID string `json:"current_player_id"`
 }
 
 func EncodeMessage[T any](command string, value T) ([]byte, error) {
@@ -83,12 +97,6 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 	case "ready_room":
 		return msg, nil
 
-	case "move_piece":
-		var value MovePieceValue
-		if err := json.Unmarshal(msg.Value, &value); err != nil {
-			return nil, fmt.Errorf("[Message Parser] invalid value format for move_piece: %w", err)
-		}
-
 	case "custom_command":
 		if !json.Valid(msg.Value) {
 			return nil, fmt.Errorf("[Message Parser] invalid JSON format for custom_command")
@@ -105,20 +113,14 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 	return msg, nil
 }
 
-// TODO:: Make this use the new message foramt / parser
-func GenerateConnectedMessage(player *models.Player) (string, error) {
-	msg, err := EncodeMessage("connected", struct {
-		PlayerName string  `json:"player_name"`
-		Money      float64 `json:"money"`
-	}{
-		PlayerName: player.Name,
-		Money:      float64(player.CurrencyAmount),
-	})
-
-	if err != nil {
-		return "", err
+func GenerateConnectedMessage(player models.Player) ([]byte, error) {
+	connectInfo := GameConnectedMessage{
+		PlayerID:    	player.ID,
+		PlayerName: 	player.Name,
+		Money:   		player.CurrencyAmount,
+		Status:			string(player.Status),
 	}
-	return string(msg), nil
+	return NewMessage("connected", connectInfo)
 }
 
 func GeneratePairedMessage(player1, player2 *models.Player, roomID string, color int) ([]byte, error) {

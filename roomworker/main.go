@@ -6,6 +6,7 @@ import (
 	"checkers-server/models"
 	"checkers-server/redisdb"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
@@ -46,6 +47,19 @@ func processRoomCreation() {
 		}
 		fmt.Printf("[RoomWorker-%d] - create room!: %+v\n", pid, playerData)
 		handleCreateRoom(playerData)
+	}
+}
+
+func processGameCreation() {
+	for {
+		roomData, err := redisClient.BLPopGeneric("create_game", 0) // Block
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - (Process Game Creation) -  Error retrieving room data:%v\n", pid, err)
+			continue
+		}
+		fmt.Printf("[RoomWorker-%d] - (Process Game Creation)  - create room!: %+v\n", pid, roomData)
+		//TODO: Generate game!
+
 	}
 }
 
@@ -233,7 +247,7 @@ func handleReadyQueue(player *models.Player) {
 		return
 	}
 	redisClient.PublishPlayerEvent(player2, string(msg))
-	
+
 	// now we tell our player that is ready if the opponent is ready or not.
 	if player2.Status != models.StatusAwaitingOponenteReady {
 		fmt.Printf("[RoomWorker-%d] - handleReadyQueue Opponent aint ready yet!:%s\n", pid, err)
@@ -246,7 +260,13 @@ func handleReadyQueue(player *models.Player) {
 	}
 
 	// Now! If both players are ready...!!
-	// TODO:We are ready to start a match!!
+	// We are ready to start a match!!
+	proom.NewGame()
+	roomdata, err := json.Marshal(proom)
+	err = redisClient.RPushGeneric("create_game", roomdata)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue Creating Game RPushGeneric:%s\n", pid, err)
+	}
 }
 
 func handleJoinRoom(player *models.Player) {

@@ -32,6 +32,14 @@ services:
       dockerfile: broadcastworker.dockerfile
     depends_on:
       - redis
+  
+  gameworker:
+    container_name: gameworker
+    build:
+      context: .
+      dockerfile: gameworker.dockerfile
+    depends_on:
+      - redis
 
   redis:
     container_name: redis

@@ -95,8 +95,8 @@ func handleNewPlayer(player *models.Player) {
 		fmt.Printf("[PStatus Worker-%d] - Failed to add player: %v\n", pid, err)
 		return
 	}
-	jsonMessage, err := messages.GenerateConnectedMessage(player)
-	err = redisClient.PublishToPlayer(*player, jsonMessage)
+	jsonMessage, err := messages.GenerateConnectedMessage(*player)
+	err = redisClient.PublishToPlayer(*player, string(jsonMessage))
 	if err != nil {
 		fmt.Printf("[PStatus Worker-%d] - Failed to publish message to player: %v\n", pid, err)
 		return
@@ -111,8 +111,8 @@ func updatePlayerToRedis(player *models.Player) {
 		fmt.Printf("[PStatus Worker-%d] - Failed to add player: %v\n", pid, err)
 		return
 	}
-	jsonMessage, err := messages.GenerateConnectedMessage(player)
-	err = redisClient.PublishToPlayer(*player, jsonMessage)
+	jsonMessage, err := messages.GenerateConnectedMessage(*player)
+	err = redisClient.PublishToPlayer(*player, string(jsonMessage))
 	if err != nil {
 		fmt.Printf("[PStatus Worker-%d] - Failed to publish message to player: %v\n", pid, err)
 		return
