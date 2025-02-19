@@ -35,7 +35,6 @@ func main() {
 	go processReadyQueue()
 	go processRoomEnding()
 	go processQueue()
-	go processGameCreation()
 	select {}
 }
 
@@ -60,7 +59,7 @@ func processGameCreation() {
 		}
 		fmt.Printf("[RoomWorker-%d] - (Process Game Creation)  - create room!: %+v\n", pid, roomData)
 		//TODO: Generate game!
-		
+
 	}
 }
 
@@ -248,7 +247,7 @@ func handleReadyQueue(player *models.Player) {
 		return
 	}
 	redisClient.PublishPlayerEvent(player2, string(msg))
-	
+
 	// now we tell our player that is ready if the opponent is ready or not.
 	if player2.Status != models.StatusAwaitingOponenteReady {
 		fmt.Printf("[RoomWorker-%d] - handleReadyQueue Opponent aint ready yet!:%s\n", pid, err)
@@ -262,7 +261,7 @@ func handleReadyQueue(player *models.Player) {
 
 	// Now! If both players are ready...!!
 	// We are ready to start a match!!
-	roomdata, err :=json.Marshal(proom)
+	roomdata, err := json.Marshal(proom)
 	err = redisClient.RPushGeneric("create_game", roomdata)
 	if err != nil {
 		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue Creating Game RPushGeneric:%s\n", pid, err)

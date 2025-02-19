@@ -11,7 +11,7 @@ import (
 )
 
 var pid int
-var name = "Broadcaster"
+var name = "BroadCastWorker"
 var redisClient *redisdb.RedisClient
 
 func init() {

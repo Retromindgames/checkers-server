@@ -42,6 +42,8 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // TODO: Have this expanded upon.
@@ -59,7 +61,6 @@ var validSquares = map[string]bool{
 	"H2": true, "H4": true, "H6": true, "H8": true,
 }
 
-
 /*
 	? - Check if a square is valid
 	square := "A3"
@@ -76,6 +77,21 @@ var validSquares = map[string]bool{
 	}
 */
 
+var initialBoard = map[string]*string{
+	"A1": getPieceUUID(), "A3": getPieceUUID(), "A5": getPieceUUID(), "A7": getPieceUUID(),
+	"B2": getPieceUUID(), "B4": getPieceUUID(), "B6": getPieceUUID(), "B8": getPieceUUID(),
+	"C1": nil, "C3": nil, "C5": nil, "C7": nil,
+	"D2": nil, "D4": nil, "D6": nil, "D8": nil,
+	"E1": nil, "E3": nil, "E5": nil, "E7": nil,
+	"F2": nil, "F4": nil, "F6": nil, "F8": nil,
+	"G1": getPieceUUID(), "G3": getPieceUUID(), "G5": getPieceUUID(), "G7": getPieceUUID(),
+	"H2": getPieceUUID(), "H4": getPieceUUID(), "H6": getPieceUUID(), "H8": getPieceUUID(),
+}
+
+func getPieceUUID() *string {
+	id := uuid.New().String() // Generate a UUID
+	return &id
+}
 
 type GamePlayer struct {
 	ID        string `json:"id"`
@@ -86,15 +102,15 @@ type GamePlayer struct {
 }
 
 type Game struct {
-	GameID   string    `json:"gameId"`
-	Board    [8][8]string `json:"board"`
-	Players  []Player  `json:"players"`
-	Turn     int       `json:"turn"`
-	Kinged   Kinged    `json:"kinged"`
-	Moves    []string  `json:"moves"`
-	StartTime time.Time `json:"startTime"`
-	EndTime   time.Time `json:"endTime"`
-	Winner    string    `json:"winner"`
+	GameID    string       `json:"gameId"`
+	Board     [8][8]string `json:"board"`
+	Players   []GamePlayer `json:"players"`
+	Turn      int          `json:"turn"`
+	Kinged    Kinged       `json:"kinged"`
+	Moves     []string     `json:"moves"`
+	StartTime time.Time    `json:"startTime"`
+	EndTime   time.Time    `json:"endTime"`
+	Winner    string       `json:"winner"`
 }
 
 type Kinged struct {
@@ -104,20 +120,31 @@ type Kinged struct {
 
 // Move represents a single move in the game
 type Move struct {
-	PlayerID  string    `json:"playerId"`  // The player making the move
+	PlayerID  string `json:"playerId"`  // The player making the move
 	From      string `json:"from"`      // e.g., "A1"
 	To        string `json:"to"`        // e.g., "B2"
 	IsCapture bool   `json:"isCapture"` // Whether the move captured an opponent's piece
 	IsKinged  bool   `json:"isKinged"`  // Whether the piece was kinged after the move
 }
 
-// Mapper function to convert OldPlayer to NewPlayer
 func MapPlayerToGamePlayer(player Player) GamePlayer {
-	// Returning a NewPlayer object mapped from OldPlayer
 	return GamePlayer{
-		ID:             player.ID, 				
-		Name:           player.Name,       
-		Token:          player.Token,                
-		SessionID:      player.SessionID,  
+		ID:        player.ID,
+		Name:      player.Name,
+		Token:     player.Token,
+		SessionID: player.SessionID,
+	}
+}
+
+func (r *Room) NewGame() Game {
+	return Game{
+		GameID:    r.ID,
+		Board:     initialBoard,
+		Players:   mapPlayers(r),
+		Turn:      r.Turn,
+		Kinged:    Kinged{W: []string{}, B: []string{}},
+		Moves:     []string{},
+		StartTime: r.StartDate,
+		Winner:    "",
 	}
 }
