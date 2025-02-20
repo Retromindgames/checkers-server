@@ -15,6 +15,7 @@ type CommandInfo struct {
 var validCommands = map[string]CommandInfo{
 	"queue":       {Type: ClientCommand}, // This adds the player to a queue.
 	"ready_queue": {Type: ClientCommand}, // This allows the player to issue a ready when in a room.
+	"leave_queue": {Type: ClientCommand}, // This allows the player to leave the queue.
 	"leave_room":  {Type: ClientCommand}, // This allows the player to leave the room.
 	"join_room":   {Type: ClientCommand}, // DEPRECATED
 	"create_room": {Type: ClientCommand}, // DEPRECATED

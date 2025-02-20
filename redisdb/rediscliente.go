@@ -175,3 +175,24 @@ func (r *RedisClient) Unsubscribe(channel string) {
 func (r *RedisClient) PublishToPlayer(player models.Player, message string) error {
 	return r.Client.Publish(context.Background(), GetPlayerPubSubChannel(player), message).Err()
 }
+
+func (r *RedisClient) RemovePlayerFromQueue(queueName string, player *models.Player) error {
+	ctx := context.Background()
+
+	// Serialize the player to match stored format
+	data, err := json.Marshal(player)
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - failed to serialize player: %v", err)
+	}
+
+	// Remove the exact serialized JSON string from the queue
+	removed, err := r.Client.LRem(ctx, queueName, 1, string(data)).Result()
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - failed to remove player: %v", err)
+	}
+	if removed == 0 {
+		return fmt.Errorf("[RedisClient] - player not found in queue %s", queueName)
+	}
+
+	return nil
+}

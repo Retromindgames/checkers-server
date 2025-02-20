@@ -83,12 +83,17 @@ func processQueue() {
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - retrieved player 1: %v\n", pid, err)
+
 		// Try fetching the second player with a timeout
 		player2, err := redisClient.BLPop("queue", 5)
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - No second player found, re-queueing player 1.\n", pid)
+			// before we add the player back we have to get it from the players and check if its still in queue.
+			player1, err = redisClient.GetPlayer(player1.ID)
 			// Re-add player1 back to the queue
-			redisClient.RPush("queue", player1)
+			if player1.Status == models.StatusInQueue{
+				redisClient.RPush("queue", player1)
+			}
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - retrieved player 2: %v\n", pid, err)
