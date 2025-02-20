@@ -44,7 +44,8 @@ var validStatusTransitions = map[PlayerStatus]map[PlayerStatus]bool{
 		StatusAwaitingReady: true,
 	},
 	StatusAwaitingReady: {
-		StatusInQueue:               true,
+		//StatusInQueue:               true,
+		StatusOnline:                true,
 		StatusAwaitingOponenteReady: true,
 	},
 	StatusAwaitingOponenteReady: {

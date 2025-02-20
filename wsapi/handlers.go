@@ -35,6 +35,9 @@ func handleMessages(player *models.Player) {
 
 		case "ready_queue":
 			handleReadyQueue(message, player)
+
+		case "leave_room":
+			handleLeaveRoom(player)
 		}
 	}
 }
@@ -111,6 +114,29 @@ func handleReadyQueue(msg *messages.Message[json.RawMessage], player *models.Pla
 		return
 	}
 	err = redisClient.RPush("ready_queue", player) // now we tell roomworker to process this player ready.
+	if err != nil {
+		fmt.Printf("Error pushing player to Redis queue: %v\n", err)
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
+		return
+	}
+
+}
+
+func handleLeaveRoom(player *models.Player) {
+	// update the player status
+	if player.UpdatePlayerStatus(models.StatusOnline) != nil {
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'leave_room'"))
+		return
+	}
+	player.Conn.WriteMessage(websocket.TextMessage, []byte("processing 'leave_room'"))
+	// we update our player to redis.
+	err := redisClient.AddPlayer(player)
+	if err != nil {
+		fmt.Printf("Error adding player to Redis: %v\n", err)
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player"))
+		return
+	}
+	err = redisClient.RPush("leave_room", player) // now we tell roomworker to process this player ready.
 	if err != nil {
 		fmt.Printf("Error pushing player to Redis queue: %v\n", err)
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
