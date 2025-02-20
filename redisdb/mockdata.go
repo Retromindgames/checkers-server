@@ -2,7 +2,7 @@ package redisdb
 
 import "checkers-server/models"
 
-// Mock players data TODO: Move this to the propper DB.
+// Mock players data
 var MockPlayers = map[string]models.Player{
 	"token123": {
 		ID:             "1",

@@ -94,13 +94,13 @@ func handleReadyQueue(msg *messages.Message[json.RawMessage], player *models.Pla
 	json.Unmarshal(msg.Value, &value)
 	if value {
 		// update the player status to ready / awaiting opponent.
-		if player.UpdatePlayerStatus(models.StatusAwaitingOponenteReady) != nil {
+		if player.UpdatePlayerStatus(models.StatusInRoomReady) != nil {
 			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'ready_queue'"))
 			return
 		}
 	} else {
 		// update the player status, to unready / waiting ready.
-		if player.UpdatePlayerStatus(models.StatusAwaitingReady) != nil {
+		if player.UpdatePlayerStatus(models.StatusInRoom) != nil {
 			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'ready_queue'"))
 			return
 		}
@@ -136,7 +136,7 @@ func handleLeaveRoom(player *models.Player) {
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player"))
 		return
 	}
-	err = redisClient.RPush("leave_room", player) // now we tell roomworker to process this player ready.
+	err = redisClient.RPush("leave_room", player) 
 	if err != nil {
 		fmt.Printf("Error pushing player to Redis queue: %v\n", err)
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))

@@ -53,8 +53,26 @@ func (r *RedisClient) AddRoom(room *models.Room) error {
 }
 
 func (r *RedisClient) RemoveRoom(key string) error {
-	return r.Client.HDel(context.Background(), key).Err()
+	ctx := context.Background()
+
+	// Check if room exists correctly
+	exists, err := r.Client.HExists(ctx, key, "id").Result()
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - failed to check if room exists: %v", err)
+	}
+
+	if !exists {
+		return fmt.Errorf("[RedisClient] - attempting to delete room that does not exist: %s", key)
+	}
+
+	// Delete the entire room hash
+	if err := r.Client.Del(ctx, key).Err(); err != nil {
+		return fmt.Errorf("[RedisClient] - failed to delete room: %v", err)
+	}
+
+	return nil
 }
+
 
 
 func (r *RedisClient) GetRoomByID(roomID string) (*models.Room, error) {
