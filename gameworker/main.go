@@ -2,7 +2,9 @@ package main
 
 import (
 	"checkers-server/config"
+	"checkers-server/models"
 	"checkers-server/redisdb"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -18,13 +20,13 @@ func init() {
 	redisAddr := config.Cfg.Redis.Addr
 	client, err := redisdb.NewRedisClient(redisAddr)
 	if err != nil {
-		log.Fatalf("[Redis] Error initializing Redis client: %v\n", err)
+		log.Fatalf("[%s-Redis] Error initializing Redis client: %v\n", name, err)
 	}
 	redisClient = client
 }
 
 func main() {
-	fmt.Printf("[%s-%d] - Waiting for room messages...\n", name, pid)
+	fmt.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
 	go processGameCreation()
 	select {}
 }
@@ -33,12 +35,24 @@ func processGameCreation() {
 	for {
 		roomData, err := redisClient.BLPopGeneric("create_game", 0) // Block
 		if err != nil {
-			fmt.Printf("[RoomWorker-%d] - (Process Game Creation) -  Error retrieving room data:%v\n", pid, err)
+			fmt.Printf("[%s-%d] - (Process Game Creation) - Error retrieving room data: %v\n", name, pid, err)
 			continue
 		}
 
-		fmt.Printf("[RoomWorker-%d] - (Process Game Creation)  - create room!: %+v\n", pid, roomData)
-		//TODO: Generate game!
-		//roomData.NewGame()
+		if len(roomData) < 2 {
+			fmt.Printf("[%s-%d] - (Process Game Creation) - Unexpected BLPop result: %+v\n", name, pid, roomData)
+			continue
+		}
+		fmt.Printf("[%s-%d] - (Process Game Creation) - create game!: %+v\n", name, pid, roomData)
+		
+		var room models.Room 
+		err = json.Unmarshal([]byte(roomData[1]), &room) // Extract second element
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Game Creation) - JSON Unmarshal Error: %v\n", name, pid, err)
+			continue
+		}
+
+		// TODO: Generate game!
+		room.NewGame()
 	}
 }

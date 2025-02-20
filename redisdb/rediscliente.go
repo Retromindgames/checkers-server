@@ -68,12 +68,12 @@ func (r *RedisClient) BLPop(queue string, timeoutSecond int) (*models.Player, er
 	return nil, fmt.Errorf("no player found in queue")
 }
 // BLPop - Retrieve a player from Redis queue
-func (r *RedisClient) BLPopGeneric(queue string, timeoutSecond int) (*[]string, error) {
+func (r *RedisClient) BLPopGeneric(queue string, timeoutSecond int) ([]string, error) {
 	result, err := r.Client.BLPop(context.Background(), time.Duration(timeoutSecond)*time.Second, queue).Result()
 	if err != nil {
 		return nil, err
 	}
-	return &result, nil
+	return result, nil
 }
 
 func (rc *RedisClient) PublishPlayerEvent(player *models.Player, message string) error {
