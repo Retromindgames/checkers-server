@@ -113,10 +113,10 @@ func processReadyQueue() {
 		}
 		fmt.Printf("[RoomWorker-%d] - processing ready room!: %+v\n", pid, playerData)
 		// Aqui ou damos handle do ready queue ou handle do unreadyqueue
-		if playerData.Status == models.StatusInRoom {
+		if playerData.Status == models.StatusInRoomReady {
 			handleReadyQueue(playerData)
 		}
-		if playerData.Status == models.StatusInRoomReady {
+		if playerData.Status == models.StatusInRoom {
 			handleUnReadyQueue(playerData)
 		}
 	}

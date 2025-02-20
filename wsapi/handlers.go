@@ -113,13 +113,13 @@ func handleReadyQueue(msg *messages.Message[json.RawMessage], player *models.Pla
 	if value {
 		// update the player status to ready / awaiting opponent.
 		if player.UpdatePlayerStatus(models.StatusInRoomReady) != nil {
-			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'ready_queue'"))
+			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'ready_queue true'"))
 			return
 		}
 	} else {
 		// update the player status, to unready / waiting ready.
 		if player.UpdatePlayerStatus(models.StatusInRoom) != nil {
-			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'ready_queue'"))
+			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'ready_queue false'"))
 			return
 		}
 	}
