@@ -13,17 +13,17 @@ type CommandInfo struct {
 }
 
 var validCommands = map[string]CommandInfo{
-	"queue":              {Type: ClientCommand},
-	"queue_confirmation": {Type: ClientCommand},
-	"create_room":        {Type: ClientCommand},
-	"ready_queue":        {Type: ClientCommand},
-	"join_room":          {Type: ClientCommand},
-	"leave_room":         {Type: ClientCommand},
+	"queue":       {Type: ClientCommand}, // This adds the player to a queue.
+	"ready_queue": {Type: ClientCommand}, // This allows the player to issue a ready when in a room.
+	"leave_room":  {Type: ClientCommand}, // This allows the player to leave the room.
+	"join_room":   {Type: ClientCommand}, // DEPRECATED
+	"create_room": {Type: ClientCommand}, // DEPRECATED
 
-	"connected":      {Type: ServerCommand},
-	"room_created":   {Type: ServerCommand},
-	"paired":         {Type: ServerCommand},
-	"opponent_ready": {Type: ServerCommand},
+	"connected":          {Type: ServerCommand},
+	"queue_confirmation": {Type: ServerCommand}, // This confirms that the player was placed in Queue.
+	"room_created":       {Type: ServerCommand},
+	"paired":             {Type: ServerCommand}, // This lets players know they were paired.
+	"opponent_ready":     {Type: ServerCommand}, // This lets the player know if the opponent is ready.
 
 	"game_info": {Type: BroadcastCommand},
 }
