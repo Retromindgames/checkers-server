@@ -83,12 +83,17 @@ func processQueue() {
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - retrieved player 1: %v\n", pid, err)
+
 		// Try fetching the second player with a timeout
 		player2, err := redisClient.BLPop("queue", 5)
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - No second player found, re-queueing player 1.\n", pid)
+			// before we add the player back we have to get it from the players and check if its still in queue.
+			player1, err = redisClient.GetPlayer(player1.ID)
 			// Re-add player1 back to the queue
-			redisClient.RPush("queue", player1)
+			if player1.Status == models.StatusInQueue{
+				redisClient.RPush("queue", player1)
+			}
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - retrieved player 2: %v\n", pid, err)
@@ -108,10 +113,10 @@ func processReadyQueue() {
 		}
 		fmt.Printf("[RoomWorker-%d] - processing ready room!: %+v\n", pid, playerData)
 		// Aqui ou damos handle do ready queue ou handle do unreadyqueue
-		if playerData.Status == models.StatusAwaitingOponenteReady {
+		if playerData.Status == models.StatusInRoom {
 			handleReadyQueue(playerData)
 		}
-		if playerData.Status == models.StatusAwaitingReady {
+		if playerData.Status == models.StatusInRoomReady {
 			handleUnReadyQueue(playerData)
 		}
 	}
@@ -125,10 +130,24 @@ func processRoomEnding() {
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - Processing the end of room: %+v\n", pid, playerData)
-		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(playerData.RoomID))
+		err = redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(playerData.RoomID))
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error removing room: %v\n", pid, err)
+			continue
+		}
+		
 		redisClient.DecrementRoomAggregate(playerData.SelectedBet)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error decrementing aggregate room: %v\n", pid, err)
+			continue
+		}
+		err = redisClient.Client.RPush(context.Background(), "player_update", string("opponent_disconnected")).Err()
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error pushing player_update: %v\n", pid, err)
+			continue
+		}
+		fmt.Printf("[RoomWorker-%d] - End of room ending: %v\n", pid, err)
 		// TODO: We gotta notify the other player that the room has ended.
-		redisClient.Client.RPush(context.Background(), "player_update", string("opponent_disconnected")).Err()
 	}
 }
 
@@ -188,8 +207,9 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	}
 	player1.RoomID = room.ID
 	player2.RoomID = room.ID
-	player1.Status = models.StatusAwaitingReady
-	player2.Status = models.StatusAwaitingReady
+	// TODO: review this 
+	player1.Status = models.StatusInRoom
+	player2.Status = models.StatusInRoom
 	redisClient.AddPlayer(player1)
 	redisClient.AddPlayer(player2)
 	// Now we set the player colors.
@@ -255,7 +275,7 @@ func handleReadyQueue(player *models.Player) {
 	redisClient.PublishPlayerEvent(player2, string(msg))
 
 	// now we tell our player that is ready if the opponent is ready or not.
-	if player2.Status != models.StatusAwaitingOponenteReady {
+	if player2.Status != models.StatusInRoomReady {
 		fmt.Printf("[RoomWorker-%d] - handleReadyQueue Opponent aint ready yet!:%s\n", pid, err)
 		msg, err := messages.GenerateOpponentReadyMessage(false)
 		if err != nil {
@@ -306,7 +326,7 @@ func handleUnReadyQueue(player *models.Player) {
 	redisClient.PublishPlayerEvent(player2, string(msg))
 
 	// now we tell our player that is ready if the opponent is ready or not.
-	if player2.Status != models.StatusAwaitingOponenteReady {
+	if player2.Status != models.StatusInRoomReady {
 		fmt.Printf("[RoomWorker-%d] - handleUnReadyQueue Opponent aint ready yet!:%s\n", pid, err)
 		msg, err := messages.GenerateOpponentReadyMessage(false)
 		if err != nil {

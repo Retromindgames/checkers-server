@@ -12,8 +12,8 @@ const (
 	StatusOffline               PlayerStatus = "OFFLINE"
 	StatusOnline                PlayerStatus = "ONLINE"
 	StatusInQueue               PlayerStatus = "IN_QUEUE"
-	StatusAwaitingReady         PlayerStatus = "AWAITING_READY"
-	StatusAwaitingOponenteReady PlayerStatus = "AWAITING_OPONENTE_READY"
+	StatusInRoom	            PlayerStatus = "IN_ROOM"
+	StatusInRoomReady			PlayerStatus = "IN_ROOM_READY"
 	StatusInGame                PlayerStatus = "IN_GAME"
 )
 
@@ -41,15 +41,15 @@ var validStatusTransitions = map[PlayerStatus]map[PlayerStatus]bool{
 	},
 	StatusInQueue: {
 		StatusOnline:        true,
-		StatusAwaitingReady: true,
+		StatusInRoom: true,
 	},
-	StatusAwaitingReady: {
+	StatusInRoom: {
 		//StatusInQueue:               true,
 		StatusOnline:                true,
-		StatusAwaitingOponenteReady: true,
+		StatusInRoomReady: true,
 	},
-	StatusAwaitingOponenteReady: {
-		StatusAwaitingReady: true,
+	StatusInRoomReady: {
+		StatusInRoom: 		 true,
 		StatusInGame:        true,
 	},
 	StatusInGame: {
