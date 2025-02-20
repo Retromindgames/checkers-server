@@ -107,7 +107,13 @@ func processReadyQueue() {
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - processing ready room!: %+v\n", pid, playerData)
-		handleReadyQueue(playerData)
+		// Aqui ou damos handle do ready queue ou handle do unreadyqueue
+		if playerData.Status == models.StatusAwaitingOponenteReady {
+			handleReadyQueue(playerData)
+		}
+		if playerData.Status == models.StatusAwaitingReady {
+			handleUnReadyQueue(playerData)
+		}
 	}
 }
 
@@ -266,6 +272,48 @@ func handleReadyQueue(player *models.Player) {
 	err = redisClient.RPushGeneric("create_game", roomdata)
 	if err != nil {
 		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue Creating Game RPushGeneric:%s\n", pid, err)
+	}
+}
+
+func handleUnReadyQueue(player *models.Player) {
+	fmt.Printf("[RoomWorker-%d] - Handling player (UN-READY QUEUE): %s (Session: %s, Currency: %s)\n",
+		pid, player.ID, player.SessionID, player.Currency)
+
+	proom, err := redisClient.GetRoomByID(player.RoomID)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleUnReadyQueue getting player room:%s\n", pid, err)
+		return
+	}
+
+	player2ID, err := proom.GetOpponentPlayerID(player.ID)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleUnReadyQueue getting player opponent ID:%s\n", pid, err)
+		return
+	}
+
+	player2, err := redisClient.GetPlayer(player2ID)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleUnReadyQueue getting opponent player:%s\n", pid, err)
+		return
+	}
+
+	// We will always notify the opponent the we are no longer ready.
+	msg, err := messages.GenerateOpponentReadyMessage(false)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleUnReadyQueue getting GenerateOpponentReadyMessage(false) for opponent:%s\n", pid, err)
+		return
+	}
+	redisClient.PublishPlayerEvent(player2, string(msg))
+
+	// now we tell our player that is ready if the opponent is ready or not.
+	if player2.Status != models.StatusAwaitingOponenteReady {
+		fmt.Printf("[RoomWorker-%d] - handleUnReadyQueue Opponent aint ready yet!:%s\n", pid, err)
+		msg, err := messages.GenerateOpponentReadyMessage(false)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error handleUnReadyQueue getting GenerateOpponentReadyMessage(false) for player:%s\n", pid, err)
+		}
+		redisClient.PublishPlayerEvent(player, string(msg))
+		return
 	}
 }
 

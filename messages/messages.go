@@ -12,32 +12,32 @@ type Message[T any] struct {
 }
 
 type OpponentReady struct {
-	IsReady	bool	`json:"is_ready"`
+	IsReady bool `json:"is_ready"`
 }
 
 type GameConnectedMessage struct {
-	PlayerID	string	`json:"player_id"`   
-	PlayerName  string	`json:"player_name"`
-	Money      	float64	`json:"money"`
-	Status		string  `json:"status"`		// TODO: send as a string.
+	PlayerID   string  `json:"player_id"`
+	PlayerName string  `json:"player_name"`
+	Money      float64 `json:"money"`
+	Status     string  `json:"status"` // TODO: send as a string.
 }
 
 // TODO: Send on game_starting command
 type GameStartMessage struct {
-	Board map[string]*models.Piece
+	Board           map[string]*models.Piece
 	CurrentPlayerID string
-	GamePlayers []models.GamePlayer
+	GamePlayers     []models.GamePlayer
 }
 
 type GameUpdatetMessage struct {
-	Board map[string]*models.Piece
+	Board           map[string]*models.Piece
 	CurrentPlayerID string `json:"current_player_id"`
-	CurrentTurn int `json:"current_turn"`
+	CurrentTurn     int    `json:"current_turn"`
 }
 
 type GameTimer struct {
-	PlayerTimer float64 `json:"player_timer"`
-	CurrentPlayerID string `json:"current_player_id"`
+	PlayerTimer     float64 `json:"player_timer"`
+	CurrentPlayerID string  `json:"current_player_id"`
 }
 
 func EncodeMessage[T any](command string, value T) ([]byte, error) {
@@ -91,16 +91,12 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 			return nil, fmt.Errorf("[Message Parser] invalid value format for %s: %w", msg.Command, err)
 		}
 
-	case "leave_room":
-		return msg, nil
-
 	case "ready_room":
-		return msg, nil
-
-	case "custom_command":
-		if !json.Valid(msg.Value) {
-			return nil, fmt.Errorf("[Message Parser] invalid JSON format for custom_command")
+		var value bool
+		if err := json.Unmarshal(msg.Value, &value); err != nil {
+			return nil, fmt.Errorf("[Message Parser] invalid value format for %s: %w", msg.Command, err)
 		}
+		return msg, nil
 
 	case "game_info":
 		var roomAggregateResponse models.RoomAggregateResponse
@@ -115,10 +111,10 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 
 func GenerateConnectedMessage(player models.Player) ([]byte, error) {
 	connectInfo := GameConnectedMessage{
-		PlayerID:    	player.ID,
-		PlayerName: 	player.Name,
-		Money:   		player.CurrencyAmount,
-		Status:			string(player.Status),
+		PlayerID:   player.ID,
+		PlayerName: player.Name,
+		Money:      player.CurrencyAmount,
+		Status:     string(player.Status),
 	}
 	return NewMessage("connected", connectInfo)
 }
