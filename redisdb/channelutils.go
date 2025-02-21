@@ -5,6 +5,9 @@ import "checkers-server/models"
 func GetPlayerPubSubChannel(player models.Player) (string) {
 	return "player:"+string(player.ID)
 }
+func GetGamePlayerPubSubChannel(player models.GamePlayer) (string) {
+	return "player:"+string(player.ID)
+}
 func GeneratePlayerRedisKey(player models.Player) (string) {
 	return GetPlayerPubSubChannel(player)
 }

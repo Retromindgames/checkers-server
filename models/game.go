@@ -139,9 +139,10 @@ type GamePlayer struct {
 }
 
 type Game struct {
-	GameID    string       `json:"game_id"`
+	ID    string       `json:"id"`
 	Board     map[string]*Piece `json:"board"`
 	Players   []GamePlayer `json:"players"`
+	CurrentPlayerID string `json:"current_player_id"`
 	Turn      int          `json:"turn"`
 	Kinged    Kinged       `json:"kinged"`
 	Moves     []string     `json:"moves"`
@@ -187,10 +188,10 @@ func mapPlayers(r *Room) []GamePlayer {
 	return players
 }
 
-func (r *Room) NewGame() Game {
+func (r *Room) NewGame() *Game {
 	// TODO: map player id to generated pieces.
 	game := Game{
-		GameID:    r.ID,
+		ID:     r.ID,
 		Board:     generateInitialBoard(),
 		Players:   mapPlayers(r), 
 		Turn:      r.Turn,
@@ -200,5 +201,5 @@ func (r *Room) NewGame() Game {
 		Winner:    "",
 	}
 	printBoard(game.Board) 
-	return game
+	return &game
 }

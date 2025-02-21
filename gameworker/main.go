@@ -2,6 +2,7 @@ package main
 
 import (
 	"checkers-server/config"
+	"checkers-server/messages"
 	"checkers-server/models"
 	"checkers-server/redisdb"
 	"encoding/json"
@@ -53,6 +54,10 @@ func processGameCreation() {
 		}
 
 		// TODO: Generate game!
-		room.NewGame()
+		game := room.NewGame()
+		err = redisClient.AddGame(game)
+		msg, err := messages.GenerateGameStartMessage(*game)
+		redisClient.PublishToGamePlayer(game.Players[0], string(msg))
+		redisClient.PublishToGamePlayer(game.Players[1], string(msg))
 	}
 }
