@@ -68,7 +68,7 @@ func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) 
 	player.Status = models.StatusInQueue
 
 	// Pushing the player to the "queue" Redis list
-	err = redisClient.RPush("queue", player) // Assuming "queue" is the appropriate Redis list
+	err = redisClient.RPush("queue", player) //
 	if err != nil {
 		fmt.Printf("Error pushing player to Redis queue: %v\n", err)
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))

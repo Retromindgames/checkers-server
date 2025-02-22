@@ -93,7 +93,7 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 		if err != nil {
 			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid message format."+err.Error()))
 		}
-		if messagedecoded.Command == "game_start" {
+		if messagedecoded.Command == "game_start" {	// TODO: Rethink this, the idea was to create a channel for game mesasges.
 			var game models.Game
 			err = json.Unmarshal(messagedecoded.Value, &game)
 			subscriptionReady := make(chan bool)
