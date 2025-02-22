@@ -151,6 +151,7 @@ type Game struct {
 	Winner    string       `json:"winner"`
 }
 
+
 type Kinged struct {
 	W []string `json:"w"`
 	B []string `json:"b"`
@@ -208,3 +209,31 @@ func (r *Room) NewGame() *Game {
 	printBoard(game.Board) 
 	return &game
 }
+
+func (g *Game) GetOpponentPlayerID(playerID string) (string, error) {
+	if len(g.Players) != 2 {
+		return "", fmt.Errorf("invalid number of players in game")
+	}
+
+	for _, player := range g.Players {
+		if player.ID != playerID {
+			return player.ID, nil
+		}
+	}
+	return "", fmt.Errorf("opponent not found for player ID: %s", playerID)
+}
+
+func (g *Game) GetOpponentGamePlayer(playerID string) (*GamePlayer, error) {
+	if len(g.Players) != 2 {
+		return nil, fmt.Errorf("invalid number of players in game")
+	}
+
+	for _, player := range g.Players {
+		if player.ID != playerID {
+			return &player, nil
+		}
+	}
+
+	return nil, fmt.Errorf("opponent not found for player ID: %s", playerID)
+}
+

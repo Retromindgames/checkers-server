@@ -41,7 +41,12 @@ func handleMessages(player *models.Player) {
 
 		case "leave_room":
 			handleLeaveRoom(player)
+		
+		case "move_piece":
+			handleMovePiece(message, player)
 		}
+		
+		
 	}
 }
 
@@ -161,6 +166,17 @@ func handleLeaveRoom(player *models.Player) {
 		return
 	}
 
+}
+
+func handleMovePiece(message *messages.Message[json.RawMessage], player *models.Player) {
+	// TODO: Validate we can move. 
+	// Currently the movement message is just being sent to the game worker
+	err := redisClient.RPushGeneric("move_piece", message.Value) 
+	if err != nil {
+		fmt.Printf("Error pushing move to Redis handleMovePiece queue: %v\n", err)
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
+		return
+	}
 }
 
 func handlePlayerDisconnect(player *models.Player) {

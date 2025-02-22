@@ -88,8 +88,44 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	redisClient.SubscribePlayerChannel(*player, func(message string) {
 		fmt.Println("[wsapi] - Received PLAYER message:", message)
+		// We need to check the message, to see if we need to subscribe to the game channel.
+		messagedecoded, err := messages.DecodeRawMessage([]byte(message))
+		if err != nil {
+			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid message format."+err.Error()))
+		}
+		if messagedecoded.Command == "game_start" {
+			var game models.Game
+			err = json.Unmarshal(messagedecoded.Value, &game)
+			subscriptionReady := make(chan bool)
+			go subscribeToGameChannel(*player, game.ID, subscriptionReady)
+			<-subscriptionReady // Wait for the subscription to be ready
+		}
 		// Send the received message to the player's WebSocket connection
-		err := player.Conn.WriteMessage(websocket.TextMessage, []byte(message))
+		err = player.Conn.WriteMessage(websocket.TextMessage, []byte(message))
+		if err != nil {
+			fmt.Println("[wsapi] - Failed to send message to player:", err)
+			player.Conn.Close()
+		}
+	})
+	ready <- true // Notify that the subscription is ready
+}
+
+func subscribeToGameChannel(player models.Player, gameID string, ready chan bool) {
+	redisClient.Subscribe("game:"+gameID, func(message string) {
+		// TODO: This should just return messaged to player.
+		// Step 1: Parse the message using messages.ParseMessage
+		msg, err := messages.ParseMessage([]byte(message))
+		if err != nil {
+			fmt.Println("[wsapi] - Failed to parse message:", err)
+			return
+		}
+		// Step 2: Marshal the message back to JSON
+		finalBytes, err := json.Marshal(msg)
+		if err != nil {
+			fmt.Println("[wsapi] - Failed to marshal final message:", err)
+			return
+		}
+		err = player.Conn.WriteMessage(websocket.TextMessage, finalBytes)
 		if err != nil {
 			fmt.Println("[wsapi] - Failed to send message to player:", err)
 			player.Conn.Close()
