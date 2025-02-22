@@ -161,7 +161,7 @@ func GenerateGameTimerMessage(game models.Game, timer int) ([]byte, error) {
 		PlayerTimer: timer,
 		CurrentPlayerID: game.CurrentPlayerID,
 	}
-	return NewMessage("game_start", gamestart)
+	return NewMessage("game_timer", gamestart)
 }
 
 func GenerateMoveMessage(move models.Move) ([]byte, error) {
