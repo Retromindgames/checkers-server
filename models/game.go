@@ -84,7 +84,7 @@ type Piece struct {
 	PieceID string `json:"piece_id"`
 }
 
-func generateInitialBoard() map[string]*Piece {
+func generateInitialBoard(blackID, whiteID string) map[string]*Piece {
 	board := make(map[string]*Piece)
 	rows := []string{"A", "B", "C", "D", "E", "F", "G", "H"}
 
@@ -95,9 +95,9 @@ func generateInitialBoard() map[string]*Piece {
 			// Only place pieces on dark squares
 			if (i+col)%2 == 1 {
 				if i < 3 { // Top 3 rows for black pieces
-					board[pos] = &Piece{Type: "b", PieceID: uuid.New().String()}
+					board[pos] = &Piece{Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}
 				} else if i > 4 { // Bottom 3 rows for white pieces
-					board[pos] = &Piece{Type: "w", PieceID: uuid.New().String()}
+					board[pos] = &Piece{Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID}
 				} else {
 					board[pos] = nil // Empty middle rows
 				}
@@ -189,11 +189,16 @@ func mapPlayers(r *Room) []GamePlayer {
 }
 
 func (r *Room) NewGame() *Game {
-	// TODO: map player id to generated pieces.
+	whiteID , err := r.GetOpponentPlayerID(r.CurrentPlayerID)
+	if err != nil {
+		// TODO: Return an error?
+	}
+
 	game := Game{
 		ID:     r.ID,
-		Board:     generateInitialBoard(),
+		Board:     generateInitialBoard(r.CurrentPlayerID, whiteID),
 		Players:   mapPlayers(r), 
+		CurrentPlayerID: r.CurrentPlayerID,
 		Turn:      r.Turn,
 		Kinged:    Kinged{W: []string{}, B: []string{}},
 		Moves:     []string{},

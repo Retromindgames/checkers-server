@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// TODO: Review this
 // Room represents the data for a game room, containing two players and game details
 type Room struct {
 	ID                string     `json:"id"`
@@ -14,7 +15,7 @@ type Room struct {
 	Currency          string     `json:"currency"`  // Currency for the room
 	BetValue          float64    `json:"bet_value"` // Bet amount for the game
 	Turn              int        `json:"turn"`
-	CurrentTurnPlayer *Player    `json:"current_turn_player"`
+	CurrentPlayerID   string    `json:"current_player_id"`
 	GameBoard         string     `json:"game_board"`  // TODO: Representation of the game board (could be a string of board state?)
 	GameStatus        string     `json:"game_status"` // Status of the game (e.g., "waiting", "in_progress", "finished")
 	GameEndDate       *time.Time `json:"game_end_date,omitempty"`
