@@ -27,8 +27,9 @@ var validCommands = map[string]CommandInfo{
 	"room_created":       {Type: ServerCommand},
 	"paired":             {Type: ServerCommand}, // This lets players know they were paired.
 	"opponent_ready":     {Type: ServerCommand}, // This lets the player know if the opponent is ready.
-	"game_start":         {Type: ServerCommand},
 	"opponent_left_room": {Type: ServerCommand},
+	"game_start":         {Type: ServerCommand},
+	"game_timer":         {Type: ServerCommand},
 
 	"game_info": {Type: BroadcastCommand},
 }
