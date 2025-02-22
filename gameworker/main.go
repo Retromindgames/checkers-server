@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 var pid int
@@ -67,6 +68,8 @@ func processGameCreation() {
 		fmt.Printf("[%s-%d] - (Process Game Creation) - Message to publish: %v\n", name, pid, msg)
 		redisClient.PublishToGamePlayer(game.Players[0], string(msg))
 		redisClient.PublishToGamePlayer(game.Players[1], string(msg))
+		go startTurnTimer(game) // Start turn timer
+
 	}
 }
 
@@ -109,7 +112,34 @@ func processGameMoves() {
 		fmt.Printf("[%s-%d] - (Process Game Moves) - Message to publish: %v\n", name, pid, msg)
 		//redisClient.PublishToGame(*game, string(msg)) This wasnt working...
 		redisClient.PublishToGamePlayer(*opponent, string(msg))
-	
+		go startTurnTimer(game) // Restart turn timer
 		
 	}
+}
+
+
+func startTurnTimer(game *models.Game) {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	timer := 30 // seconds
+	for timer > 0 {
+		select {
+		case <-ticker.C:
+			// TODO: Maybe I'l need to fetch game from redis?
+			msg, err := messages.GenerateGameTimerMessage(*game, timer)
+			if err != nil {
+				fmt.Printf("[%s-%d] - (Process Game Moves) - Failed to generate message: %v\n", name, pid, msg)
+			}
+			// Publish countdown update to Redis
+			redisClient.PublishToGamePlayer(game.Players[0], string(msg))
+			redisClient.PublishToGamePlayer(game.Players[1], string(msg))
+
+			timer--
+		}
+	}
+
+	// TODO: Handle timeout (e.g., force turn switch)
+	//timeoutMsg := fmt.Sprintf(`{"game_id":"%s", "timeout":true, "current_player":"%s"}`, game.ID, game.CurrentPlayerID)
+	//redisClient.Publish("TIME_OUT", timeoutMsg)
 }

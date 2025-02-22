@@ -36,7 +36,7 @@ type GameUpdatetMessage struct {
 }
 
 type GameTimer struct {
-	PlayerTimer     float64 `json:"player_timer"`
+	PlayerTimer     int `json:"player_timer"`
 	CurrentPlayerID string  `json:"current_player_id"`
 }
 
@@ -152,6 +152,14 @@ func GenerateGameStartMessage(game models.Game) ([]byte, error) {
 		Board: game.Board,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers: game.Players,
+	}
+	return NewMessage("game_start", gamestart)
+}
+
+func GenerateGameTimerMessage(game models.Game, timer int) ([]byte, error) {
+	gamestart := GameTimer {
+		PlayerTimer: timer,
+		CurrentPlayerID: game.CurrentPlayerID,
 	}
 	return NewMessage("game_start", gamestart)
 }
