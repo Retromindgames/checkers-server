@@ -147,6 +147,19 @@ func GenerateQueueConfirmationMessage(value bool) ([]byte, error) {
 	return NewMessage("queue_confirmation", value)
 }
 
+func GenerateGameStartMessage(game models.Game) ([]byte, error) {
+	gamestart := GameStartMessage {
+		Board: game.Board,
+		CurrentPlayerID: game.CurrentPlayerID,
+		GamePlayers: game.Players,
+	}
+	return NewMessage("game_start", gamestart)
+}
+
+
+
+
+
 // Helper function to marshal a value and ignore errors
 func MustMarshal(v interface{}) json.RawMessage {
 	bytes, _ := json.Marshal(v)

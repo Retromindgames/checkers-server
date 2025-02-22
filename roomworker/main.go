@@ -30,8 +30,7 @@ func init() {
 
 func main() {
 	fmt.Printf("[RoomWorker-%d] - Waiting for room messages...\n", pid)
-	//go processRoomCreation()
-	//go processRoomJoin()
+
 	go processReadyQueue()
 	go processRoomEnding()
 	go processQueue()
@@ -47,19 +46,6 @@ func processRoomCreation() {
 		}
 		fmt.Printf("[RoomWorker-%d] - create room!: %+v\n", pid, playerData)
 		handleCreateRoom(playerData)
-	}
-}
-
-func processGameCreation() {
-	for {
-		roomData, err := redisClient.BLPopGeneric("create_game", 0) // Block
-		if err != nil {
-			fmt.Printf("[RoomWorker-%d] - (Process Game Creation) -  Error retrieving room data:%v\n", pid, err)
-			continue
-		}
-		fmt.Printf("[RoomWorker-%d] - (Process Game Creation)  - create room!: %+v\n", pid, roomData)
-		//TODO: Generate game!
-
 	}
 }
 
@@ -212,11 +198,20 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	player2.Status = models.StatusInRoom
 	redisClient.AddPlayer(player1)
 	redisClient.AddPlayer(player2)
-	// Now we set the player colors.
+	// Now we set the player colors. TODO: This is ugly, this should be changed.
 	colorp1 := rand.Intn(2)
 	colorp2 := 1
 	if colorp1 == 1 {
+		room.CurrentPlayerID = player1.ID
 		colorp2 = 0
+	} else {
+		room.CurrentPlayerID = player2.ID
+	}
+	// we save the room again since we made changed to it.
+	err = redisClient.AddRoom(room)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
+		return
 	}
 	message1, err := messages.GeneratePairedMessage(room.Player1, room.Player2, room.ID, colorp1)
 	if err != nil {
@@ -287,7 +282,6 @@ func handleReadyQueue(player *models.Player) {
 
 	// Now! If both players are ready...!!
 	// We are ready to start a match!!
-	proom.NewGame()
 	roomdata, err := json.Marshal(proom)
 	err = redisClient.RPushGeneric("create_game", roomdata)
 	if err != nil {

@@ -175,6 +175,9 @@ func (r *RedisClient) Unsubscribe(channel string) {
 func (r *RedisClient) PublishToPlayer(player models.Player, message string) error {
 	return r.Client.Publish(context.Background(), GetPlayerPubSubChannel(player), message).Err()
 }
+func (r *RedisClient) PublishToGamePlayer(player models.GamePlayer, message string) error {
+	return r.Client.Publish(context.Background(), GetGamePlayerPubSubChannel(player), message).Err()
+}
 
 func (r *RedisClient) RemovePlayerFromQueue(queueName string, player *models.Player) error {
 	ctx := context.Background()

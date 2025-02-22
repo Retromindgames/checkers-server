@@ -84,20 +84,20 @@ type Piece struct {
 	PieceID string `json:"piece_id"`
 }
 
-func generateInitialBoard() map[string]*Piece {
+func generateInitialBoard(blackID, whiteID string) map[string]*Piece {
 	board := make(map[string]*Piece)
 	rows := []string{"A", "B", "C", "D", "E", "F", "G", "H"}
 
 	for i, row := range rows {
 		for col := 1; col <= 8; col++ {
 			pos := fmt.Sprintf("%s%d", row, col)
-
+			board[pos] = nil
 			// Only place pieces on dark squares
 			if (i+col)%2 == 1 {
 				if i < 3 { // Top 3 rows for black pieces
-					board[pos] = &Piece{Type: "b", PieceID: uuid.New().String()}
+					board[pos] = &Piece{Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}
 				} else if i > 4 { // Bottom 3 rows for white pieces
-					board[pos] = &Piece{Type: "w", PieceID: uuid.New().String()}
+					board[pos] = &Piece{Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID}
 				} else {
 					board[pos] = nil // Empty middle rows
 				}
@@ -139,9 +139,10 @@ type GamePlayer struct {
 }
 
 type Game struct {
-	GameID    string       `json:"game_id"`
+	ID    string       `json:"id"`
 	Board     map[string]*Piece `json:"board"`
 	Players   []GamePlayer `json:"players"`
+	CurrentPlayerID string `json:"current_player_id"`
 	Turn      int          `json:"turn"`
 	Kinged    Kinged       `json:"kinged"`
 	Moves     []string     `json:"moves"`
@@ -187,12 +188,17 @@ func mapPlayers(r *Room) []GamePlayer {
 	return players
 }
 
-func (r *Room) NewGame() Game {
-	// TODO: map player id to generated pieces.
+func (r *Room) NewGame() *Game {
+	whiteID , err := r.GetOpponentPlayerID(r.CurrentPlayerID)
+	if err != nil {
+		// TODO: Return an error?
+	}
+
 	game := Game{
-		GameID:    r.ID,
-		Board:     generateInitialBoard(),
+		ID:     r.ID,
+		Board:     generateInitialBoard(r.CurrentPlayerID, whiteID),
 		Players:   mapPlayers(r), 
+		CurrentPlayerID: r.CurrentPlayerID,
 		Turn:      r.Turn,
 		Kinged:    Kinged{W: []string{}, B: []string{}},
 		Moves:     []string{},
@@ -200,5 +206,5 @@ func (r *Room) NewGame() Game {
 		Winner:    "",
 	}
 	printBoard(game.Board) 
-	return game
+	return &game
 }
