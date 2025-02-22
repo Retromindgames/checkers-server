@@ -5,7 +5,6 @@ import (
 	"checkers-server/messages"
 	"checkers-server/models"
 	"checkers-server/redisdb"
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -110,30 +109,55 @@ func processReadyQueue() {
 
 func processRoomEnding() {
 	for {
-		playerData, err := redisClient.BLPop("leave_room", 0) // Block
+		playerData, err := redisClient.BLPop("leave_room", 0) 
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - Processing the end of room: %+v\n", pid, playerData)
-		err = redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(playerData.RoomID))
+		room, err := redisClient.GetRoomByID(playerData.RoomID)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error retrieving room:%v\n", pid, err)
+			continue
+		}
+		player2ID, err := room.GetOpponentPlayerID(playerData.ID)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error retrieving opponent id:%v\n", pid, err)
+			continue
+		}
+		player2, err := redisClient.GetPlayer(player2ID)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error retrieving opponent player:%v\n", pid, err)
+			continue
+		}
+		msg, err := messages.NewMessage("opponent_left_room", true)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error generating message:%v\n", pid, err)
+			continue
+		}
+		redisClient.PublishToPlayer(*player2, string(msg))
+		// Reset both player data.
+		playerData.RoomID = ""
+		playerData.Status = models.StatusOnline
+		player2.RoomID = ""
+		player2.Status = models.StatusInQueue
+		redisClient.AddPlayer(playerData)
+		redisClient.AddPlayer(player2)
+		
+		// Pushing the player to the "queue" Redis list
+		err = redisClient.RPush("queue", player2) 
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Placing player back on queue:%v\n", pid, err)
+			return
+		}
+
+		err = redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - Error removing room: %v\n", pid, err)
 			continue
 		}
-		
 		redisClient.DecrementRoomAggregate(playerData.SelectedBet)
-		if err != nil {
-			fmt.Printf("[RoomWorker-%d] - Error decrementing aggregate room: %v\n", pid, err)
-			continue
-		}
-		err = redisClient.Client.RPush(context.Background(), "player_update", string("opponent_disconnected")).Err()
-		if err != nil {
-			fmt.Printf("[RoomWorker-%d] - Error pushing player_update: %v\n", pid, err)
-			continue
-		}
 		fmt.Printf("[RoomWorker-%d] - End of room ending: %v\n", pid, err)
-		// TODO: We gotta notify the other player that the room has ended.
 	}
 }
 
