@@ -91,7 +91,7 @@ func generateInitialBoard(blackID, whiteID string) map[string]*Piece {
 	for i, row := range rows {
 		for col := 1; col <= 8; col++ {
 			pos := fmt.Sprintf("%s%d", row, col)
-
+			board[pos] = nil
 			// Only place pieces on dark squares
 			if (i+col)%2 == 1 {
 				if i < 3 { // Top 3 rows for black pieces
