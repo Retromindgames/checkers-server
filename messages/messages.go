@@ -19,10 +19,10 @@ type GameConnectedMessage struct {
 	PlayerID   string  `json:"player_id"`
 	PlayerName string  `json:"player_name"`
 	Money      float64 `json:"money"`
-	Status     string  `json:"status"` // TODO: send as a string.
+	Status     string  `json:"status"`
 }
 
-// TODO: Send on game_starting command
+// This one missed the json code, the FE is already working wth this... dont CHANGE
 type GameStartMessage struct {
 	Board           map[string]*models.Piece
 	CurrentPlayerID string
@@ -156,6 +156,9 @@ func GenerateGameStartMessage(game models.Game) ([]byte, error) {
 	return NewMessage("game_start", gamestart)
 }
 
+func GenerateMoveMessage(move models.Move) ([]byte, error) {
+	return NewMessage("move_piece", move)
+}
 
 
 

@@ -29,6 +29,7 @@ func init() {
 func main() {
 	fmt.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
 	go processGameCreation()
+	go processGameMoves()
 	select {}
 }
 
@@ -52,13 +53,63 @@ func processGameCreation() {
 			fmt.Printf("[%s-%d] - (Process Game Creation) - JSON Unmarshal Error: %v\n", name, pid, err)
 			continue
 		}
-	
-		// TODO: Generate game!
+		
+		player1, err := redisClient.GetPlayer(room.Player1.ID)
+		player2, err := redisClient.GetPlayer(room.Player2.ID)
 		game := room.NewGame()
+		// we need to update our players with a game ID.
+		player1.GameID = game.ID
+		player2.GameID = game.ID
+		err = redisClient.AddPlayer(player1)
+		err = redisClient.AddPlayer(player2)
 		err = redisClient.AddGame(game)
 		msg, err := messages.GenerateGameStartMessage(*game)
 		fmt.Printf("[%s-%d] - (Process Game Creation) - Message to publish: %v\n", name, pid, msg)
 		redisClient.PublishToGamePlayer(game.Players[0], string(msg))
 		redisClient.PublishToGamePlayer(game.Players[1], string(msg))
+	}
+}
+
+func processGameMoves() {
+	for {
+		moveData, err := redisClient.BLPopGeneric("move_piece", 0) // Block
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Game Moves) - Error retrieving move data: %v\n", name, pid, err)
+			continue
+		}
+
+		fmt.Printf("[%s-%d] - (Process Game Moves) - processing move DATA!: %+v\n", name, pid, moveData)
+		
+		var move models.Move 
+		err = json.Unmarshal([]byte(moveData[1]), &move) // Extract second element
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Game Moves) - JSON Unmarshal Error: %v\n", name, pid, err)
+			continue
+		}		
+		player, err := redisClient.GetPlayer(move.PlayerID)
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Game Moves) - Failed to get player!: %v\n", name, pid, err)
+			continue
+		}
+		game, err := redisClient.GetGame(player.GameID)
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Game Moves) - Failed to get game!: %v\n", name, pid, err)
+			continue
+		}
+		opponent, err := game.GetOpponentGamePlayer(move.PlayerID)
+				
+
+		// TODO: Validate move.
+		// TODO: Save Move to redis.
+		// TODO: I should change the active player
+		msg, err := messages.GenerateMoveMessage(move)
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Game Moves) - Failed to generate message: %v\n", name, pid, msg)
+		}
+		fmt.Printf("[%s-%d] - (Process Game Moves) - Message to publish: %v\n", name, pid, msg)
+		//redisClient.PublishToGame(*game, string(msg)) This wasnt working...
+		redisClient.PublishToGamePlayer(*opponent, string(msg))
+	
+		
 	}
 }

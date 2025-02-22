@@ -20,6 +20,8 @@ var validCommands = map[string]CommandInfo{
 	"join_room":   {Type: ClientCommand}, // DEPRECATED
 	"create_room": {Type: ClientCommand}, // DEPRECATED
 
+	"move_piece": {Type: ClientCommand},
+
 	"connected":          {Type: ServerCommand},
 	"queue_confirmation": {Type: ServerCommand}, // This confirms that the player was placed in Queue.
 	"room_created":       {Type: ServerCommand},
