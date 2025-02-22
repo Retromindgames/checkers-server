@@ -52,7 +52,7 @@ func processGameCreation() {
 			fmt.Printf("[%s-%d] - (Process Game Creation) - JSON Unmarshal Error: %v\n", name, pid, err)
 			continue
 		}
-		
+	
 		// TODO: Generate game!
 		game := room.NewGame()
 		err = redisClient.AddGame(game)
