@@ -40,6 +40,10 @@ func handleMessages(player *models.Player) {
 			handleReadyQueue(message, player)
 
 		case "leave_room":
+			if player.Status != models.StatusInRoom {
+				player.Conn.WriteMessage(websocket.TextMessage, []byte("Can't issue a leave room when not in a room."))
+				continue
+			}
 			handleLeaveRoom(player)
 		
 		case "move_piece":
