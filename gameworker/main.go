@@ -107,16 +107,15 @@ func processGameMoves() {
 			game.UpdatePlayerPieces()
 			isGameOver := game.CheckGameOver()
 			if isGameOver {
-				// TODO: Send Game Over		
-				redisClient.PublishToGamePlayer(*opponent, "GAME OVER")		
-				redisClient.PublishToPlayer(*player, "GAME OVER")		
+				redisClient.Client.RPush(context.Background(), "game_over_queue", game.ID)
 			}			
 		} else {
 			stopChannel := fmt.Sprintf("game:%s:stop_timer", game.ID)
 			redisClient.Client.Publish(context.Background(), stopChannel, "STOP") // Stop the old timer
+			game.NextPlayer()
 			go startTurnTimer(game) // Start a fresh timer
 		}
-		redisClient.AddGame(game)
+		redisClient.AddGame(game) // we update our game at the end.
 
 		// ! I think this should always happen, for now.
 		msg, err := messages.GenerateMoveMessage(move)
@@ -128,6 +127,42 @@ func processGameMoves() {
 		redisClient.PublishToGamePlayer(*opponent, string(msg))		
 	}
 }
+
+func processGameOverQueue() {
+	for {
+		// Block until there is a game over message
+		gameOverData, err := redisClient.Client.BLPop(context.Background(), 0, "game_over_queue").Result()
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Game Over) - Error retrieving game over data: %v\n", name, pid, err)
+			continue
+		}
+
+		if len(gameOverData) < 2 {
+			fmt.Println("[%s-%d] - (Process Game Over) - Unexpected BLPop result", name, pid)
+			continue
+		}
+
+		gameOverMessage := gameOverData[1] // Get the message
+		fmt.Printf("[%s-%d] - (Process Game Over) - Processing game over: %s\n", name, pid, gameOverMessage)	// this should be a game ID.
+		
+		// Now we handle game logic.
+		game, err := redisClient.GetGame(gameOverMessage)
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Game Moves) - Failed to get game!: %v\n", name, pid, err)
+			continue
+		}
+		game.FinishGame()			// This should handle our data side of things.
+		redisClient.AddGame(game) 	// we update our game at the end.
+		msg, err := messages.GenerateGameOverMessage("winner", *game)
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to get game!: %v\n", name, pid, err)
+			continue
+		}
+		redisClient.PublishToGamePlayer(*&game.Players[0], string(msg))		
+		redisClient.PublishToGamePlayer(*&game.Players[1], string(msg))		
+	}
+}
+
 
 func startTurnTimer(game *models.Game) {
 	ctx := context.Background()

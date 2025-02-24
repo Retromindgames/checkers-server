@@ -229,7 +229,7 @@ func (r *Room) NewGame() *Game {
 		Turn:      r.Turn,
 		Kinged:    Kinged{W: []string{}, B: []string{}},
 		Moves:     []string{},
-		StartTime: r.StartDate,
+		StartTime: time.Now(),
 		Winner:    "",
 	}
 	game.UpdatePlayerPieces() // Set NumPieces for each player
@@ -281,6 +281,31 @@ func (g *Game) GetOpponentGamePlayer(playerID string) (*GamePlayer, error) {
 	return nil, fmt.Errorf("opponent not found for player ID: %s", playerID)
 }
 
+func (g *Game) GetGamePlayer(playerID string) (*GamePlayer, error) {
+	if len(g.Players) != 2 {
+		return nil, fmt.Errorf("invalid number of players in game")
+	}
+
+	for _, player := range g.Players {
+		if player.ID == playerID {
+			return &player, nil
+		}
+	}
+
+	return nil, fmt.Errorf("player not found for player ID: %s", playerID)
+}
+
+// Updates player id and turn count.
+func (g *Game) NextPlayer() {
+	nextPlayerId, err := g.GetOpponentPlayerID(g.CurrentPlayerID)
+	if err	!= nil {
+		fmt.Printf("Error NextPlayer getting opponent ID: %v\n", err)
+
+	}
+	g.CurrentPlayerID = nextPlayerId
+	g.Turn += 1
+}
+
 func (g *Game) RemovePiece(pos string) {
 	if _, exists := g.Board[pos]; exists {
 		g.Board[pos] = nil
@@ -322,6 +347,11 @@ func (g *Game) CheckGameOver() bool {
 		}
 	}
 	return false // Game continues if both players have pieces
+}
+
+func (g * Game) FinishGame() {
+	g.Winner = g.CurrentPlayerID
+	g.EndTime = time.Now()
 }
 
 

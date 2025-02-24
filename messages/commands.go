@@ -30,6 +30,7 @@ var validCommands = map[string]CommandInfo{
 	"opponent_left_room": {Type: ServerCommand},
 	"game_start":         {Type: ServerCommand},
 	"game_timer":         {Type: ServerCommand},
+	"game_over":          {Type: ServerCommand},
 
 	"game_info": {Type: BroadcastCommand},
 }
