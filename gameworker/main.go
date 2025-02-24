@@ -138,7 +138,7 @@ func processGameOverQueue() {
 		}
 
 		if len(gameOverData) < 2 {
-			fmt.Println("[%s-%d] - (Process Game Over) - Unexpected BLPop result", name, pid)
+			fmt.Printf("[%s-%d] - (Process Game Over) - Unexpected BLPop result", name, pid)
 			continue
 		}
 
@@ -159,7 +159,18 @@ func processGameOverQueue() {
 			continue
 		}
 		redisClient.PublishToGamePlayer(*&game.Players[0], string(msg))		
-		redisClient.PublishToGamePlayer(*&game.Players[1], string(msg))		
+		redisClient.PublishToGamePlayer(*&game.Players[1], string(msg))	
+		
+		// Now we will process palyer balance for the winner.
+		winnerPlayer, err := redisClient.GetPlayer(game.Winner)
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to get winner player!: %v\n", name, pid, err)
+			continue
+		}
+		winnerPlayer.UpdateBalance(game.BetValue)
+		msgP1, err := messages.NewMessage("balance_update", winnerPlayer.CurrencyAmount)
+		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
+		redisClient.AddPlayer(winnerPlayer)
 	}
 }
 
