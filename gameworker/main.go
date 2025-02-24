@@ -102,22 +102,21 @@ func processGameMoves() {
 		}
 		opponent, err := game.GetOpponentGamePlayer(move.PlayerID)
 				
-		// 1. Check if there was a capture.
-		//	 		If there was, dont end turn.
-		//						, decrement the pieces, or remove it from the board.
-		//			
-		//			If not, end turn.
-		//				  , increment turn.
 		game.MovePiece(move)
-		
 		if move.IsCapture {
-				
+			game.UpdatePlayerPieces()
+			isGameOver := game.CheckGameOver()
+			if isGameOver {
+				// TODO: Send Game Over		
+				redisClient.PublishToGamePlayer(*opponent, "GAME OVER")		
+				redisClient.PublishToPlayer(*player, "GAME OVER")		
+			}			
 		} else {
 			stopChannel := fmt.Sprintf("game:%s:stop_timer", game.ID)
 			redisClient.Client.Publish(context.Background(), stopChannel, "STOP") // Stop the old timer
-
 			go startTurnTimer(game) // Start a fresh timer
 		}
+		redisClient.AddGame(game)
 
 		// ! I think this should always happen, for now.
 		msg, err := messages.GenerateMoveMessage(move)
