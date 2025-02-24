@@ -136,6 +136,7 @@ type GamePlayer struct {
 	Name      string `json:"name"`
 	Color     string `json:"color"`
 	SessionID string `json:"session_id"`
+	NumPieces string `json:"num_pieces"`
 }
 
 type Game struct {
@@ -237,3 +238,41 @@ func (g *Game) GetOpponentGamePlayer(playerID string) (*GamePlayer, error) {
 	return nil, fmt.Errorf("opponent not found for player ID: %s", playerID)
 }
 
+func (g *Game) RemovePiece(pos string) {
+	if _, exists := g.Board[pos]; exists {
+		g.Board[pos] = nil
+	}
+}
+
+func(g *Game) MovePiece(move Move){
+	
+	// Validate move
+	piece, exists := g.Board[move.From]
+	if !exists || piece == nil || piece.PieceID != move.PieceID || piece.PlayerID != move.PlayerID {
+		// Invalid move, update and break		
+		return
+	}
+
+	// Move piece to new position
+	g.Board[move.To] = piece
+	g.Board[move.From] = nil
+
+	// TODO: Handle kinging, find kinged piece.
+	if move.IsKinged {
+		//piece.Type = strings.ToUpper(piece.Type) // Convert to uppercase to indicate a king
+	}
+
+	// TODO: Review and test this. Handle capture (assumes captured piece's position is between From and To)
+	if move.IsCapture {
+		midRow := (move.From[0] + move.To[0]) / 2
+		midCol := (move.From[1] + move.To[1]) / 2
+		capturePos := fmt.Sprintf("%c%c", midRow, midCol)
+		g.Board[capturePos] = nil // Remove captured piece
+	}	
+}
+
+
+// TODO: USE helper function for logging errors
+func logError(message string, err error) {
+	//fmt.Printf("[%s-%d] - (Process Game Moves) - %s: %v\n", name, pid, message, err)
+}
