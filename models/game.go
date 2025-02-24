@@ -107,6 +107,30 @@ func generateInitialBoard(blackID, whiteID string) map[string]*Piece {
 	return board
 }
 
+func generateEndGameTestBoard(blackID, whiteID string) map[string]*Piece {
+	board := make(map[string]*Piece)
+
+	// Set positions for testing
+	testPositions := map[string]*Piece{
+		"A2": &Piece{Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
+		"B3": &Piece{Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID}, // White piece
+	}
+
+	// Initialize board and place test pieces
+	for row := 'A'; row <= 'H'; row++ {
+		for col := 1; col <= 8; col++ {
+			pos := fmt.Sprintf("%c%d", row, col)
+			if piece, exists := testPositions[pos]; exists {
+				board[pos] = piece // Place test pieces
+			} else {
+				board[pos] = nil // Empty squares
+			}
+		}
+	}
+	return board
+}
+
+
 func printBoard(board map[string]*Piece) {
 	rows := []string{"A", "B", "C", "D", "E", "F", "G", "H"}
 	fmt.Println("  1 2 3 4 5 6 7 8")
@@ -136,6 +160,7 @@ type GamePlayer struct {
 	Name      string `json:"name"`
 	Color     string `json:"color"`
 	SessionID string `json:"session_id"`
+	NumPieces int	 `json:"num_pieces"`
 }
 
 type Game struct {
@@ -197,17 +222,36 @@ func (r *Room) NewGame() *Game {
 
 	game := Game{
 		ID:     r.ID,
-		Board:     generateInitialBoard(r.CurrentPlayerID, whiteID),
+		//Board:     generateInitialBoard(r.CurrentPlayerID, whiteID),
+		Board:    	generateEndGameTestBoard(r.CurrentPlayerID, whiteID),
 		Players:   mapPlayers(r), 
 		CurrentPlayerID: r.CurrentPlayerID,
 		Turn:      r.Turn,
 		Kinged:    Kinged{W: []string{}, B: []string{}},
 		Moves:     []string{},
-		StartTime: r.StartDate,
+		StartTime: time.Now(),
 		Winner:    "",
 	}
-	printBoard(game.Board) 
+	game.UpdatePlayerPieces() // Set NumPieces for each player
+
+	//printBoard(game.Board) 
 	return &game
+}
+
+func (g * Game) CountPlayerPieces(playerID string) int {
+	count := 0
+	for _, piece := range g.Board {
+		if piece != nil && piece.PlayerID == playerID {
+			count++
+		}
+	}
+	return count
+}
+
+func (g *Game) UpdatePlayerPieces() {
+	for i := range g.Players {
+		g.Players[i].NumPieces = g.CountPlayerPieces(g.Players[i].ID)
+	}
 }
 
 func (g *Game) GetOpponentPlayerID(playerID string) (string, error) {
@@ -237,3 +281,81 @@ func (g *Game) GetOpponentGamePlayer(playerID string) (*GamePlayer, error) {
 	return nil, fmt.Errorf("opponent not found for player ID: %s", playerID)
 }
 
+func (g *Game) GetGamePlayer(playerID string) (*GamePlayer, error) {
+	if len(g.Players) != 2 {
+		return nil, fmt.Errorf("invalid number of players in game")
+	}
+
+	for _, player := range g.Players {
+		if player.ID == playerID {
+			return &player, nil
+		}
+	}
+
+	return nil, fmt.Errorf("player not found for player ID: %s", playerID)
+}
+
+// Updates player id and turn count.
+func (g *Game) NextPlayer() {
+	nextPlayerId, err := g.GetOpponentPlayerID(g.CurrentPlayerID)
+	if err	!= nil {
+		fmt.Printf("Error NextPlayer getting opponent ID: %v\n", err)
+
+	}
+	g.CurrentPlayerID = nextPlayerId
+	g.Turn += 1
+}
+
+func (g *Game) RemovePiece(pos string) {
+	if _, exists := g.Board[pos]; exists {
+		g.Board[pos] = nil
+	}
+}
+
+func(g *Game) MovePiece(move Move){
+	
+	// Validate move
+	piece, exists := g.Board[move.From]								// TODO: This was commented, since the FE seems to be sending the wrong ids.
+	if !exists || piece == nil || piece.PieceID != move.PieceID /*|| piece.PlayerID != move.PlayerID*/ {
+		// Invalid move, update and break		
+		return
+	}
+
+	// Move piece to new position
+	g.Board[move.To] = piece
+	g.Board[move.From] = nil
+
+	// TODO: Handle kinging, find kinged piece.
+	if move.IsKinged {
+		//piece.Type = strings.ToUpper(piece.Type) // Convert to uppercase to indicate a king
+	}
+
+	// TODO: Review and test this. Handle capture (assumes captured piece's position is between From and To)
+	if move.IsCapture {
+		midRow := (move.From[0] + move.To[0]) / 2
+		midCol := (move.From[1] + move.To[1]) / 2
+		capturePos := fmt.Sprintf("%c%c", midRow, midCol)
+		g.Board[capturePos] = nil // Remove captured piece
+	}	
+}
+
+func (g *Game) CheckGameOver() bool {
+	// Check each player for pieces
+	for _, player := range g.Players {
+		if player.NumPieces == 0 {
+			return true // Game over if any player's pieces are zero
+		}
+	}
+	return false // Game continues if both players have pieces
+}
+
+func (g * Game) FinishGame() {
+	g.Winner = g.CurrentPlayerID
+	g.EndTime = time.Now()
+}
+
+
+// TODO: USE helper function for logging errors
+func logError(message string, err error) {
+	//fmt.Printf("[%s-%d] - (Process Game Moves) - %s: %v\n", name, pid, message, err)
+}

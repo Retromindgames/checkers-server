@@ -61,34 +61,45 @@ func processRoomJoin() {
 }
 
 func processQueue() {
+	// Launch a goroutine for each bet queue
+	for _, bet := range models.ValidBetAmounts {
+		go processQueueForBet(bet)
+	}
+	
+	// Block forever or wait on a channel (to prevent the main goroutine from exiting)
+	select {}
+}
+
+func processQueueForBet(bet float64) {
+	queueName := fmt.Sprintf("queue:%f", bet)
 	for {
-		player1, err := redisClient.BLPop("queue", 0)
+		// Block indefinitely for player1 (this goroutine is dedicated to this queue)
+		player1, err := redisClient.BLPop(queueName, 0)
 		if err != nil {
-			fmt.Printf("[RoomWorker-%d] - Error retrieving player 1: %v\n", pid, err)
+			fmt.Printf("[RoomWorker-%d] - Error retrieving player 1 from %s: %v\n", pid, queueName, err)
 			continue
 		}
-		fmt.Printf("[RoomWorker-%d] - retrieved player 1: %v\n", pid, err)
+		fmt.Printf("[RoomWorker-%d] - Retrieved player 1 from %s: %v\n", pid, queueName, player1)
 
 		// Try fetching the second player with a timeout
-		player2, err := redisClient.BLPop("queue", 5)
-		if err != nil {
-			fmt.Printf("[RoomWorker-%d] - No second player found, re-queueing player 1.\n", pid)
-			// before we add the player back we have to get it from the players and check if its still in queue.
-			player1, err = redisClient.GetPlayer(player1.ID)
+		player2, err := redisClient.BLPop(queueName, 5)
+		if err != nil || player2 == nil {
+			fmt.Printf("[RoomWorker-%d] - No second player found in %s, re-queueing player 1.\n", pid, queueName)
+			// Re-add player1 if still eligible
+			player1Details, err := redisClient.GetPlayer(player1.ID)
 			if err != nil {
-				fmt.Printf("[RoomWorker-%d] - Error retrieving player 1: %v\n", pid, err)
+				fmt.Printf("[RoomWorker-%d] - Error retrieving player 1 details: %v\n", pid, err)
 				continue
 			}
-			// Re-add player1 back to the queue
-			if player1.Status == models.StatusInQueue{
-				redisClient.RPush("queue", player1)
+			if player1Details.Status == models.StatusInQueue {
+				redisClient.RPush(queueName, player1)
 			}
 			continue
 		}
-		fmt.Printf("[RoomWorker-%d] - retrieved player 2: %v\n", pid, err)
+		fmt.Printf("[RoomWorker-%d] - Retrieved player 2 from %s: %v\n", pid, queueName, player2)
 
 		// Process both players
-		fmt.Printf("[RoomWorker-%d] - Pairing players: %s and %s\n", pid, player1, player2)
+		fmt.Printf("[RoomWorker-%d] - Pairing players: %s and %s from %s\n", pid, player1, player2, queueName)
 		handleQueuePaired(player1, player2)
 	}
 }
@@ -149,7 +160,8 @@ func processRoomEnding() {
 		redisClient.AddPlayer(player2)
 		
 		// Pushing the player to the "queue" Redis list
-		err = redisClient.RPush("queue", player2) 
+		queueName := fmt.Sprintf("queue:%f", player2.SelectedBet) 
+		err = redisClient.RPush(queueName, player2) 
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - Placing player back on queue:%v\n", pid, err)
 			return
