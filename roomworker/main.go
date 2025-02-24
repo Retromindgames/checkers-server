@@ -322,6 +322,26 @@ func handleReadyQueue(player *models.Player) {
 
 	// Now! If both players are ready...!!
 	// We are ready to start a match!!
+	// Fist we update player balance.
+	err = player.UpdateBalance(-player.SelectedBet)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	err = player2.UpdateBalance(-player.SelectedBet)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+	msgP1, err := messages.NewMessage("balance_update", player.CurrencyAmount)
+	msgP2, err := messages.NewMessage("balance_update", player2.CurrencyAmount)
+	// then notify player and store it in redis.
+	redisClient.PublishPlayerEvent(player, string(msgP1))
+	redisClient.PublishPlayerEvent(player2, string(msgP2))
+	redisClient.AddPlayer(player)
+	redisClient.AddPlayer(player2)
+	
+	// Then we start a match
 	roomdata, err := json.Marshal(proom)
 	err = redisClient.RPushGeneric("create_game", roomdata)
 	if err != nil {

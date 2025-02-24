@@ -75,3 +75,14 @@ func (p *Player) UpdatePlayerStatus(newStatus PlayerStatus) error {
 	p.Status = newStatus
 	return nil
 }
+
+
+func (p *Player) UpdateBalance(value float64) error {
+
+	newAmount := p.CurrencyAmount + value
+	if newAmount < 0 {
+		return fmt.Errorf("UpdateBalance failed, final balance less than zero. Currente balance [%f], final balanc [%f]", p.CurrencyAmount, newAmount)
+	}
+	p.CurrencyAmount = newAmount
+	return nil
+}

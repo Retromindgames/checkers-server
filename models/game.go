@@ -174,6 +174,8 @@ type Game struct {
 	StartTime time.Time    `json:"start_time"`
 	EndTime   time.Time    `json:"end_time"`
 	Winner    string       `json:"winner"`
+	BetValue          float64    `json:"bet_value"` // Bet amount for the game
+
 }
 
 
@@ -222,8 +224,8 @@ func (r *Room) NewGame() *Game {
 
 	game := Game{
 		ID:     r.ID,
-		//Board:     generateInitialBoard(r.CurrentPlayerID, whiteID),
-		Board:    	generateEndGameTestBoard(r.CurrentPlayerID, whiteID),
+		Board:     generateInitialBoard(r.CurrentPlayerID, whiteID),
+		//Board:    	generateEndGameTestBoard(r.CurrentPlayerID, whiteID),
 		Players:   mapPlayers(r), 
 		CurrentPlayerID: r.CurrentPlayerID,
 		Turn:      r.Turn,
@@ -231,6 +233,7 @@ func (r *Room) NewGame() *Game {
 		Moves:     []string{},
 		StartTime: time.Now(),
 		Winner:    "",
+		BetValue: r.BetValue,
 	}
 	game.UpdatePlayerPieces() // Set NumPieces for each player
 
