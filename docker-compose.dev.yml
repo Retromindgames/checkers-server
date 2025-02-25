@@ -1,7 +1,53 @@
 services:
   wsapi:
+    container_name: wsapi
+    build:
+      context: .  # Root of the project
+      dockerfile: wsapi.dockerfile  # Dockerfile in the root
+    ports:
+      - "80:80"  # Change to SSL port
     volumes:
       - /home/ec2-user/SSL:/etc/ssl/wsapi:ro  # Mount SSL certs from host
     environment:
       - SSL_CERT_PATH=/etc/ssl/certificate.cert
       - SSL_KEY_PATH=/etc/ssl/privatekey.pem
+    depends_on:
+      - redis
+
+  pstatusworker:
+    container_name: pstatusworker
+    build:
+      context: .
+      dockerfile: pstatusworker.dockerfile
+    depends_on:
+      - redis
+
+  roomworker:
+    container_name: roomworker
+    build:
+      context: .
+      dockerfile: roomworker.dockerfile
+    depends_on:
+      - redis
+
+  broadcastworker:
+    container_name: broadcastworker
+    build:
+      context: .
+      dockerfile: broadcastworker.dockerfile
+    depends_on:
+      - redis
+  
+  gameworker:
+    container_name: gameworker
+    build:
+      context: .
+      dockerfile: gameworker.dockerfile
+    depends_on:
+      - redis
+
+  redis:
+    container_name: redis
+    image: redis:alpine
+    ports:
+      - "6379:6379"
