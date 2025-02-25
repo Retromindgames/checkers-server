@@ -7,7 +7,7 @@ services:
     ports:
       - "80:80"  # Change to SSL port
     volumes:
-      - /home/ec2-user/SSL:/etc/ssl/wsapi:ro  # Mount SSL certs from host
+      - /home/ec2-user/SSL:/etc/ssl:ro  # Mount SSL certs from host
     environment:
       - SSL_CERT_PATH=/etc/ssl/certificate.cert
       - SSL_KEY_PATH=/etc/ssl/privatekey.pem
