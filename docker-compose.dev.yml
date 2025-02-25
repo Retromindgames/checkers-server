@@ -2,10 +2,15 @@ services:
   wsapi:
     container_name: wsapi
     build:
-      context: . # Root of the project
-      dockerfile: wsapi.dockerfile # Dockerfile in the root
+      context: .  # Root of the project
+      dockerfile: wsapi.dockerfile  # Dockerfile in the root
     ports:
-      - "80:80"
+      - "80:80"  # Change to SSL port
+    volumes:
+      - /home/ec2-user/SSL:/etc/ssl/wsapi:ro  # Mount SSL certs from host
+    environment:
+      - SSL_CERT_PATH=/etc/ssl/wsapi/certificate.cert
+      - SSL_KEY_PATH=/etc/ssl/wsapi/privatekey.pem
     depends_on:
       - redis
 
