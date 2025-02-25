@@ -11,6 +11,7 @@ services:
     environment:
       - SSL_CERT_PATH=/etc/ssl/certificate.cert
       - SSL_KEY_PATH=/etc/ssl/privatekey.pem
+      - CONFIG_PATH=/root/config/config.json
     depends_on:
       - redis
 
