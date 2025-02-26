@@ -16,7 +16,6 @@ func main() {
 	}
 	port := ports[0] // Select first available port
 
-	
 	http.HandleFunc("/ws", wsapi.HandleConnection)
 	addr := fmt.Sprintf(":%d", port)
 	
@@ -27,8 +26,8 @@ func main() {
 	//keyPath := os.Getenv("SSL_KEY_PATH")
 	
 	//if certPath == "" || keyPath == "" {
-		log.Fatal("[wsapi] - SSL certificate paths not set, defaulting to HTTP.")
-		log.Fatal(http.ListenAndServe(addr, nil))
+	//log.Fatal("[wsapi] - SSL certificate paths not set, defaulting to HTTP.")
+	log.Fatal(http.ListenAndServe(addr, nil))
 	//} else {
 	//	log.Fatal(http.ListenAndServeTLS(addr, certPath, keyPath, nil))
 	//}	
