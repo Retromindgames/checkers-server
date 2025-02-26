@@ -23,5 +23,5 @@ docker-compose -f docker-compose.dev.yml up --build
 
 ## Transfer Files to Server:
 
-scp -r C:\Projetos\SSH-AWS\damas-server\SSL\* ec2-user@remote_host:/home/ec2-user/ssl/
+scp -i pvp.pem -r C:\Projetos\SSH-AWS\damas-server\SSL\* ec2-user@remote_host:/home/ec2-user/ssl/
 
