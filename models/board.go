@@ -70,11 +70,13 @@ func (b *Board) CanPieceCapture(pos string) bool {
 		fmt.Printf("(CanPieceCapture) - Piece doesnt exist in the board")
 		return false // No piece at this position
 	}
-
-	// Define diagonal jump directions (row, col)
-	directions := []struct{ rowDelta, colDelta int }{
-		{1, 1}, {1, -1}, // Forward diagonals
-		{-1, 1}, {-1, -1}, // Backward diagonals
+	//var direction = piece.Type == "b" ? 1 : -1;
+	var direction = 1
+	if(piece.Type == "w"){
+		direction = -1
+	}
+	directions := []struct {rowDelta, colDelta int} {
+		{1, direction} , {-1, direction},
 	}
 
 	// Convert position (e.g., "A3" → row 'A', col 3)
@@ -85,6 +87,7 @@ func (b *Board) CanPieceCapture(pos string) bool {
 		// Compute middle position (opponent's piece)
 		midRow := fromRow + rune(dir.rowDelta)
 		midCol := fromCol + dir.colDelta
+		
 		midPos := fmt.Sprintf("%c%d", midRow, midCol)
 		
 		// Compute landing position
@@ -101,7 +104,7 @@ func (b *Board) CanPieceCapture(pos string) bool {
 		}
 		fmt.Printf("(CanPieceCapture) - middle piece  exists!")
 		// Ensure landing square is empty
-		if destPiece, destExists := b.Grid[landPos]; !destExists || destPiece == nil {
+		if destPiece, destExists := b.Grid[landPos]; destExists && destPiece == nil {
 			fmt.Printf("(CanPieceCapture) - Valid capture move found")
 			return true // Valid capture move found!
 		}
