@@ -194,8 +194,9 @@ func startTurnTimer(game *models.Game) {
 
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
-
-	timer := 30
+	
+	// fetch the timer from the config.
+	timer := config.Cfg.Services["gameworker"].Timer
 	for timer > 0 {
 		select {
 		case <-ticker.C:
