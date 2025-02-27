@@ -4,7 +4,7 @@
     "db": 0
   },
   "services": {
-    "wsapi": { "ports": [443, 8081, 8082] },
+    "wsapi": { "ports": [80, 443] },
     "pstatusworker": {},
     "roomworker": {}
   }
