@@ -194,7 +194,7 @@ func startTurnTimer(game *models.Game) {
 
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
-	
+
 	// fetch the timer from the config.
 	timer := config.Cfg.Services["gameworker"].Timer
 	for timer > 0 {
@@ -218,7 +218,7 @@ func startTurnTimer(game *models.Game) {
 }
 
 
-func BroadCastToGamePlayers(msg []byte,game models.Game) {
+func BroadCastToGamePlayers(msg []byte, game models.Game) {
 	redisClient.PublishToGamePlayer(game.Players[0], string(msg))
 	redisClient.PublishToGamePlayer(game.Players[1], string(msg))
 }

@@ -67,6 +67,7 @@ func (b *Board) GenerateEndGameTestBoard(blackID, whiteID string) {
 func (b *Board) CanPieceCapture(pos string) bool {
 	piece, exists := b.Grid[pos]
 	if !exists || piece == nil {
+		fmt.Printf("(CanPieceCapture) - Piece doesnt exist in the board")
 		return false // No piece at this position
 	}
 
@@ -85,24 +86,27 @@ func (b *Board) CanPieceCapture(pos string) bool {
 		midRow := fromRow + rune(dir.rowDelta)
 		midCol := fromCol + dir.colDelta
 		midPos := fmt.Sprintf("%c%d", midRow, midCol)
-
+		
 		// Compute landing position
 		landRow := fromRow + rune(2*dir.rowDelta)
 		landCol := fromCol + 2*dir.colDelta
 		landPos := fmt.Sprintf("%c%d", landRow, landCol)
+		fmt.Printf("(CanPieceCapture) - landPos [%s]", landPos)
 
 		// Ensure middle square has an opponent piece
 		midPiece, midExists := b.Grid[midPos]
 		if !midExists || midPiece == nil || midPiece.PlayerID == piece.PlayerID {
+			fmt.Printf("(CanPieceCapture) - middle piece doesnt exists!")
 			continue // No opponent to jump over
 		}
-
+		fmt.Printf("(CanPieceCapture) - middle piece  exists!")
 		// Ensure landing square is empty
 		if destPiece, destExists := b.Grid[landPos]; !destExists || destPiece == nil {
+			fmt.Printf("(CanPieceCapture) - Valid capture move found")
 			return true // Valid capture move found!
 		}
 	}
-
+	fmt.Printf("(CanPieceCapture) - No captures available ")
 	return false // No captures available
 }
 
