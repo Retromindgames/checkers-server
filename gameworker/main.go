@@ -71,7 +71,6 @@ func processGameCreation() {
 		redisClient.PublishToGamePlayer(game.Players[0], string(msg))
 		redisClient.PublishToGamePlayer(game.Players[1], string(msg))
 		go startTurnTimer(game) // Start turn timer
-
 	}
 }
 
@@ -179,6 +178,11 @@ func handleTurnChange(game *models.Game) {
 	stopChannel := fmt.Sprintf("game:%s:stop_timer", game.ID)
 	redisClient.Client.Publish(context.Background(), stopChannel, "STOP") // Stop the old timer
 	game.NextPlayer()
+	msg , err := messages.NewMessage("turn_switch", game.CurrentPlayerID)
+	if err != nil {
+		fmt.Printf("[%s-%d] - (Handle Turn Change) - Failed to generate for turn change: %v\n", name, pid, msg)
+	}
+	BroadCastToGamePlayers(msg, *game)
 	go startTurnTimer(game) // Start a fresh timer
 }
 
@@ -207,6 +211,13 @@ func startTurnTimer(game *models.Game) {
 			}
 		}
 	}
-
+	handleTurnChange(game)
+	redisClient.AddGame(game)
 	fmt.Printf("Turn timer expired for game %s\n", game.ID)
+}
+
+
+func BroadCastToGamePlayers(msg []byte,game models.Game) {
+	redisClient.PublishToGamePlayer(game.Players[0], string(msg))
+	redisClient.PublishToGamePlayer(game.Players[1], string(msg))
 }

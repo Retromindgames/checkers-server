@@ -31,6 +31,7 @@ var validCommands = map[string]CommandInfo{
 	"game_start":         {Type: ServerCommand},
 	"game_timer":         {Type: ServerCommand},
 	"game_over":          {Type: ServerCommand},
+	"turn_switch":        {Type: ServerCommand},
 	"balance_update":     {Type: ServerCommand},
 
 	"game_info": {Type: BroadcastCommand},
