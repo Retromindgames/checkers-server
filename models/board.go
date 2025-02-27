@@ -64,6 +64,48 @@ func (b *Board) GenerateEndGameTestBoard(blackID, whiteID string) {
 	}
 }
 
+func (b *Board) CanPieceCapture(pos string) bool {
+	piece, exists := b.Grid[pos]
+	if !exists || piece == nil {
+		return false // No piece at this position
+	}
+
+	// Define diagonal jump directions (row, col)
+	directions := []struct{ rowDelta, colDelta int }{
+		{1, 1}, {1, -1}, // Forward diagonals
+		{-1, 1}, {-1, -1}, // Backward diagonals
+	}
+
+	// Convert position (e.g., "A3" → row 'A', col 3)
+	fromRow := rune(pos[0]) // Convert byte to rune
+	fromCol := int(pos[1] - '0')
+
+	for _, dir := range directions {
+		// Compute middle position (opponent's piece)
+		midRow := fromRow + rune(dir.rowDelta)
+		midCol := fromCol + dir.colDelta
+		midPos := fmt.Sprintf("%c%d", midRow, midCol)
+
+		// Compute landing position
+		landRow := fromRow + rune(2*dir.rowDelta)
+		landCol := fromCol + 2*dir.colDelta
+		landPos := fmt.Sprintf("%c%d", landRow, landCol)
+
+		// Ensure middle square has an opponent piece
+		midPiece, midExists := b.Grid[midPos]
+		if !midExists || midPiece == nil || midPiece.PlayerID == piece.PlayerID {
+			continue // No opponent to jump over
+		}
+
+		// Ensure landing square is empty
+		if destPiece, destExists := b.Grid[landPos]; !destExists || destPiece == nil {
+			return true // Valid capture move found!
+		}
+	}
+
+	return false // No captures available
+}
+
 // TODO: Gotta finish implementing this.
 var validSquares = map[string]bool{
 	"A1": false, "A3": true, "A5": true, "A7": true,
