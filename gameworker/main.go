@@ -63,13 +63,20 @@ func processGameCreation() {
 		// we need to update our players with a game ID.
 		player1.GameID = game.ID
 		player2.GameID = game.ID
+		// We then reset the room id
+		player1.RoomID = ""
+		player2.RoomID = ""
+		// we also change the player status.
+		player1.UpdatePlayerStatus(models.StatusInGame)
+		player2.UpdatePlayerStatus(models.StatusInGame)
+		// Finnally save stuff to redis.
 		err = redisClient.AddPlayer(player1)
 		err = redisClient.AddPlayer(player2)
 		err = redisClient.AddGame(game)
 		msg, err := messages.GenerateGameStartMessage(*game)
+
 		fmt.Printf("[%s-%d] - (Process Game Creation) - Message to publish: %v\n", name, pid, msg)
-		redisClient.PublishToGamePlayer(game.Players[0], string(msg))
-		redisClient.PublishToGamePlayer(game.Players[1], string(msg))
+		redisClient.PublishToGame(*game, string(msg))
 		go startTurnTimer(game) // Start turn timer
 	}
 }
@@ -215,7 +222,6 @@ func startTurnTimer(game *models.Game) {
 	redisClient.AddGame(game)
 	fmt.Printf("Turn timer expired for game %s\n", game.ID)
 }
-
 
 func BroadCastToGamePlayers(msg []byte, game models.Game) {
 	redisClient.PublishToGamePlayer(game.Players[0], string(msg))
