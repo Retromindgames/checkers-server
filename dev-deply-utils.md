@@ -15,6 +15,12 @@ docker rm $(docker ps -aq) // removes containers
 docker rmi $(docker images -aq) // removes images
 ```
 
+To restart docker containers in the server 
+
+docker restart $(docker ps -q)
+
+
+
 ### Clean Up space
 
 git fetch --prune
