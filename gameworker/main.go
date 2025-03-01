@@ -102,29 +102,28 @@ func processGameMoves() {
 		}
 		opponent, err := game.GetOpponentGamePlayer(move.PlayerID)
 
+		// We move our piece.
 		game.MovePiece(move)
-		if move.IsCapture {
-			game.UpdatePlayerPieces()
-			if game.CheckGameOver() {
-				redisClient.Client.RPush(context.Background(), "game_over_queue", game.ID)
-			} else { // If there is no game over, we will validate if the current piece can move again.
-				if !game.Board.CanPieceCapture(move.To) { // if it cant move, the player turn ends on.
-					handleTurnChange(game)
-				}
-			}
-		} else {
+		game.UpdatePlayerPieces()
+		// We send the message to the opponent player.
+		msg, err := messages.GenerateMoveMessage(move)
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Game Moves) - Failed to generate message: %v\n", name, pid, string(msg))
+		}
+		fmt.Printf("[%s-%d] - (Process Game Moves) - Message to publish: %v\n", name, pid, string(msg))
+		redisClient.PublishToGamePlayer(*opponent, string(msg))
+
+		// We check for game Over
+		if game.CheckGameOver() {
+			redisClient.Client.RPush(context.Background(), "game_over_queue", game.ID)
+			redisClient.AddGame(game) // we update our game
+			continue
+		}
+		// we check for a turn change.
+		if move.IsCapture && !game.Board.CanPieceCapture(move.To) {
 			handleTurnChange(game)
 		}
 		redisClient.AddGame(game) // we update our game at the end.
-
-		// ! I think this should always happen, for now.
-		msg, err := messages.GenerateMoveMessage(move)
-		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Game Moves) - Failed to generate message: %v\n", name, pid, msg)
-		}
-		fmt.Printf("[%s-%d] - (Process Game Moves) - Message to publish: %v\n", name, pid, msg)
-		//redisClient.PublishToGame(*game, string(msg)) This wasnt working...
-		redisClient.PublishToGamePlayer(*opponent, string(msg))
 	}
 }
 
