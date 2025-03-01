@@ -226,11 +226,7 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		Currency:  player1.Currency,
 		BetValue:  player1.SelectedBet,
 	}
-	err := redisClient.AddRoom(room)
-	if err != nil {
-		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
-		return
-	}
+
 	player1.RoomID = room.ID
 	player2.RoomID = room.ID
 	// TODO: review this 
@@ -247,8 +243,8 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	} else {
 		room.CurrentPlayerID = player2.ID
 	}
-	// we save the room again since we made changed to it.
-	err = redisClient.AddRoom(room)
+	// we save the room
+	err := redisClient.AddRoom(room)
 	if err != nil {
 		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
 		return
