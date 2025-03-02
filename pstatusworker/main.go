@@ -73,10 +73,16 @@ func handleRemovePlayer(player *models.Player) {
 	fmt.Printf("[PStatus Worker-%d] - Removing player: %s (Session: %s, Currency: %s, RoomID: %s)\n",
 		pid, player.ID, player.SessionID, player.Currency, player.RoomID)
 
+	// We dont need to issue a command to leave the queue, since the queue fetched the player-
 	if(player.RoomID != ""){
 		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Room, sending notification to room worker!: %v\n", pid, player)
 		redisClient.RPush("leave_room", player)
 	}
+	if(player.GameID != ""){
+		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Game, sending notification to Game worker!: %v\n", pid, player)
+		redisClient.RPush("leave_game", player)
+	}
+
 
 	err := redisClient.RemovePlayer(string(player.ID))
 	if err != nil {
