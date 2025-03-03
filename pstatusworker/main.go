@@ -78,6 +78,7 @@ func handleRemovePlayer(player *models.Player) {
 		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Room, sending notification to room worker!: %v\n", pid, player)
 		redisClient.RPush("leave_room", player)
 	}
+	// ! somehow the game id was empty here. Wich is odd, and worrisome.Somehow room id was not empty. The status seems to be OK.
 	if(player.GameID != "" || player.Status == models.StatusInGame){
 		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Game, sending notification to Game worker!: %v\n", pid, player)
 		redisClient.RPush("leave_game", player)
