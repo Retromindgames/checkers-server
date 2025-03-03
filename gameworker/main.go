@@ -77,7 +77,7 @@ func processGameCreation() {
 		msg, err := messages.GenerateGameStartMessage(*game)
 
 		fmt.Printf("[%s-%d] - (Process Game Creation) - Message to publish: %v\n", name, pid, string(msg))
-		redisClient.PublishToGame(*game, string(msg))
+		BroadCastToGamePlayers(msg, *game)
 		go startTurnTimer(game) // Start turn timer
 	}
 }
