@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# To run:
+#   chmod +x deploy.sh
+#   ./deploy.sh <branch-name>
+
+
 # Check if branch is passed as an argument
 if [ -z "$1" ]; then
   echo "Usage: $0 <branch>"
@@ -28,6 +33,6 @@ docker rmi -f $(docker images -q)
 
 # Build and run Docker Compose
 echo "Running Docker Compose with build..."
-docker compose up --build -d
+docker-compose up --build -d
 
 echo "Operation completed successfully."
