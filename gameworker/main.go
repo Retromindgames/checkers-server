@@ -124,12 +124,12 @@ func processGameMoves() {
 		// We check for game Over
 		if game.CheckGameOver() {
 			redisClient.Client.RPush(context.Background(), "game_over_queue", game.ID)
-			redisClient.AddGame(game) // we update our game
+			redisClient.UpdateGame(game) // we update our game
 			continue
 		}
 		if !move.IsCapture {
 			handleTurnChange(game)
-			redisClient.AddGame(game)
+			redisClient.UpdateGame(game)
 			continue
 		}
 		
@@ -137,7 +137,7 @@ func processGameMoves() {
 		if move.IsCapture && !game.Board.CanPieceCapture(move.To) {
 			handleTurnChange(game)
 		}
-		redisClient.AddGame(game) // we update our game at the end.
+		redisClient.UpdateGame(game) // we update our game at the end.
 	}
 }
 
@@ -290,7 +290,7 @@ func startTurnTimer(game *models.Game) {
 		}
 	}
 	handleTurnChange(game)
-	redisClient.AddGame(game)
+	redisClient.UpdateGame(game)
 	fmt.Printf("Turn timer expired for game %s\n", game.ID)
 }
 
