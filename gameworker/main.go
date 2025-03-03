@@ -127,6 +127,12 @@ func processGameMoves() {
 			redisClient.AddGame(game) // we update our game
 			continue
 		}
+		if !move.IsCapture {
+			handleTurnChange(game)
+			redisClient.AddGame(game)
+			continue
+		}
+		
 		// we check for a turn change.
 		if move.IsCapture && !game.Board.CanPieceCapture(move.To) {
 			handleTurnChange(game)
