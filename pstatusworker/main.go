@@ -65,6 +65,7 @@ func processPlayerOffline(){
 			continue
 		}
 		fmt.Printf("[PStatus Worker-%d] - Player disconnected: %+v\n", pid, playerData)
+		playerData, err = redisClient.GetPlayer(playerData.ID)
 		handleRemovePlayer(playerData)
 	}
 }
@@ -72,10 +73,16 @@ func processPlayerOffline(){
 func handleRemovePlayer(player *models.Player) {
 	fmt.Printf("[PStatus Worker-%d] - Removing player: %s (Session: %s, Currency: %s, RoomID: %s)\n",
 		pid, player.ID, player.SessionID, player.Currency, player.RoomID)
-
-	if(player.RoomID != ""){
+	
+	// We dont need to issue a command to leave the queue, since the queue fetched the player-
+	if(player.RoomID != "" || player.Status == models.StatusInRoom || player.Status == models.StatusInRoomReady){
 		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Room, sending notification to room worker!: %v\n", pid, player)
 		redisClient.RPush("leave_room", player)
+	}
+	// ! somehow the game id was empty here. Wich is odd, and worrisome.Somehow room id was not empty. The status seems to be OK.
+	if(player.GameID != "" || player.Status == models.StatusInGame){
+		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Game, sending notification to Game worker!: %v\n", pid, player)
+		redisClient.RPush("leave_game", player)
 	}
 
 	err := redisClient.RemovePlayer(string(player.ID))
@@ -106,7 +113,7 @@ func handleNewPlayer(player *models.Player) {
 
 func updatePlayerToRedis(player *models.Player) {
 	
-	err := redisClient.AddPlayer(player)
+	err := redisClient.UpdatePlayer(player)
 	if err != nil {
 		fmt.Printf("[PStatus Worker-%d] - Failed to add player: %v\n", pid, err)
 		return

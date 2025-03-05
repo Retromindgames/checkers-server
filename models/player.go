@@ -59,6 +59,7 @@ var validStatusTransitions = map[PlayerStatus]map[PlayerStatus]bool{
 	},
 	StatusInGame: {
 		StatusOnline: true,
+		StatusOffline: true,
 	},
 }
 
@@ -76,7 +77,6 @@ func (p *Player) UpdatePlayerStatus(newStatus PlayerStatus) error {
 	return nil
 }
 
-
 func (p *Player) UpdateBalance(value float64) error {
 
 	newAmount := p.CurrencyAmount + value
@@ -85,4 +85,11 @@ func (p *Player) UpdateBalance(value float64) error {
 	}
 	p.CurrencyAmount = newAmount
 	return nil
+}
+
+func (p * Player) IsEligibleForQueue() bool {
+	if p == nil || p.Status != StatusInQueue {
+		return false
+	}
+	return true
 }

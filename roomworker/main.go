@@ -80,24 +80,36 @@ func processQueueForBet(bet float64) {
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - Retrieved player 1 from %s: %v\n", pid, queueName, player1)
+		
+		player1Details, err := redisClient.GetPlayer(player1.ID)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error retrieving player 1 details, player removed from queue: %v\n", pid, err)
+			continue
+		}
+		// we check to see if the player is eligible to be processed.
+		if !player1Details.IsEligibleForQueue() {
+			fmt.Printf("[RoomWorker-%d] - player1 not eligible to be processed by the queue, player removed from queue: %v\n", pid, err)
+			continue
+		}
 
 		// Try fetching the second player with a timeout
 		player2, err := redisClient.BLPop(queueName, 5)
 		if err != nil || player2 == nil {
 			fmt.Printf("[RoomWorker-%d] - No second player found in %s, re-queueing player 1.\n", pid, queueName)
-			// Re-add player1 if still eligible
-			player1Details, err := redisClient.GetPlayer(player1.ID)
-			if err != nil {
-				fmt.Printf("[RoomWorker-%d] - Error retrieving player 1 details: %v\n", pid, err)
-				continue
-			}
-			if player1Details.Status == models.StatusInQueue {
-				redisClient.RPush(queueName, player1)
-			}
+			// Since we failed to get the player2, we will requeue the player1.
+			redisClient.RPush(queueName, player1)
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - Retrieved player 2 from %s: %v\n", pid, queueName, player2)
-
+		
+		// before we handle the paired, we will do a final check to make sure the players2 is still online / valid.
+		if !player2.IsEligibleForQueue() {
+			// If it is not valid, we will add player 1 back to the queue.
+			fmt.Printf("[RoomWorker-%d] - player1 not eligible to be processed by the queue, player removed from queue: %v\n", pid, err)
+			redisClient.RPush(queueName, player1)
+			continue
+		}
+		
 		// Process both players
 		fmt.Printf("[RoomWorker-%d] - Pairing players: %s and %s from %s\n", pid, player1, player2, queueName)
 		handleQueuePaired(player1, player2)
@@ -156,8 +168,8 @@ func processRoomEnding() {
 		playerData.Status = models.StatusOnline
 		player2.RoomID = ""
 		player2.Status = models.StatusInQueue
-		redisClient.AddPlayer(playerData)
-		redisClient.AddPlayer(player2)
+		redisClient.UpdatePlayer(playerData)
+		redisClient.UpdatePlayer(player2)
 		
 		// Pushing the player to the "queue" Redis list
 		queueName := fmt.Sprintf("queue:%f", player2.SelectedBet) 
@@ -196,7 +208,7 @@ func handleCreateRoom(player *models.Player) {
 
 	player.RoomID = room.ID
 	player.Status = "waiting_oponente"
-	redisClient.AddPlayer(player) // This should update out player room info.
+	redisClient.UpdatePlayer(player) // This should update out player room info.
 
 	messageBytes, err := messages.GenerateRoomCreatedMessage(*room)
 	if err != nil {
@@ -226,18 +238,14 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		Currency:  player1.Currency,
 		BetValue:  player1.SelectedBet,
 	}
-	err := redisClient.AddRoom(room)
-	if err != nil {
-		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
-		return
-	}
+
 	player1.RoomID = room.ID
 	player2.RoomID = room.ID
 	// TODO: review this 
 	player1.Status = models.StatusInRoom
 	player2.Status = models.StatusInRoom
-	redisClient.AddPlayer(player1)
-	redisClient.AddPlayer(player2)
+	redisClient.UpdatePlayer(player1)
+	redisClient.UpdatePlayer(player2)
 	// Now we set the player colors. TODO: This is ugly, this should be changed.
 	colorp1 := rand.Intn(2)
 	colorp2 := 1
@@ -247,8 +255,8 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	} else {
 		room.CurrentPlayerID = player2.ID
 	}
-	// we save the room again since we made changed to it.
-	err = redisClient.AddRoom(room)
+	// we save the room
+	err := redisClient.AddRoom(room)
 	if err != nil {
 		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
 		return
@@ -338,8 +346,8 @@ func handleReadyQueue(player *models.Player) {
 	// then notify player and store it in redis.
 	redisClient.PublishPlayerEvent(player, string(msgP1))
 	redisClient.PublishPlayerEvent(player2, string(msgP2))
-	redisClient.AddPlayer(player)
-	redisClient.AddPlayer(player2)
+	redisClient.UpdatePlayer(player)
+	redisClient.UpdatePlayer(player2)
 	
 	// Then we start a match
 	roomdata, err := json.Marshal(proom)

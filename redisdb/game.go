@@ -16,6 +16,25 @@ func (r *RedisClient) AddGame(game *models.Game) error {
 	return r.Client.HSet(context.Background(), "games", game.ID, data).Err()
 }
 
+func (r *RedisClient) UpdateGame(game *models.Game) error {
+	ctx := context.Background()
+	exists, err := r.Client.HExists(ctx, "games", game.ID).Result()
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - failed to check game existence: %v", err)
+	}
+	if !exists {
+		return fmt.Errorf("[RedisClient] - game with ID %s does not exist", game.ID)
+	}
+
+	data, err := json.Marshal(game)
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - failed to serialize game: %v", err)
+	}
+
+	return r.Client.HSet(ctx, "games", game.ID, data).Err()
+}
+
+
 func (r *RedisClient) GetGame(gameID string) (*models.Game, error) {
 	data, err := r.Client.HGet(context.Background(), "games", gameID).Result()
 	if err != nil {
