@@ -168,8 +168,8 @@ func processRoomEnding() {
 		playerData.Status = models.StatusOnline
 		player2.RoomID = ""
 		player2.Status = models.StatusInQueue
-		redisClient.AddPlayer(playerData)
-		redisClient.AddPlayer(player2)
+		redisClient.UpdatePlayer(playerData)
+		redisClient.UpdatePlayer(player2)
 		
 		// Pushing the player to the "queue" Redis list
 		queueName := fmt.Sprintf("queue:%f", player2.SelectedBet) 
@@ -208,7 +208,7 @@ func handleCreateRoom(player *models.Player) {
 
 	player.RoomID = room.ID
 	player.Status = "waiting_oponente"
-	redisClient.AddPlayer(player) // This should update out player room info.
+	redisClient.UpdatePlayer(player) // This should update out player room info.
 
 	messageBytes, err := messages.GenerateRoomCreatedMessage(*room)
 	if err != nil {
@@ -244,8 +244,8 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	// TODO: review this 
 	player1.Status = models.StatusInRoom
 	player2.Status = models.StatusInRoom
-	redisClient.AddPlayer(player1)
-	redisClient.AddPlayer(player2)
+	redisClient.UpdatePlayer(player1)
+	redisClient.UpdatePlayer(player2)
 	// Now we set the player colors. TODO: This is ugly, this should be changed.
 	colorp1 := rand.Intn(2)
 	colorp2 := 1
@@ -346,8 +346,8 @@ func handleReadyQueue(player *models.Player) {
 	// then notify player and store it in redis.
 	redisClient.PublishPlayerEvent(player, string(msgP1))
 	redisClient.PublishPlayerEvent(player2, string(msgP2))
-	redisClient.AddPlayer(player)
-	redisClient.AddPlayer(player2)
+	redisClient.UpdatePlayer(player)
+	redisClient.UpdatePlayer(player2)
 	
 	// Then we start a match
 	roomdata, err := json.Marshal(proom)

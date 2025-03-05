@@ -71,8 +71,8 @@ func processGameCreation() {
 		player1.UpdatePlayerStatus(models.StatusInGame)
 		player2.UpdatePlayerStatus(models.StatusInGame)
 		// Finnally save stuff to redis.
-		err = redisClient.AddPlayer(player1)
-		err = redisClient.AddPlayer(player2)
+		err = redisClient.UpdatePlayer(player1)
+		err = redisClient.UpdatePlayer(player2)
 		err = redisClient.AddGame(game)
 		msg, err := messages.GenerateGameStartMessage(*game)
 
@@ -182,7 +182,7 @@ func processGameOverQueue() {
 		// Update status and game Id of both players
 		winnerPlayer.GameID = ""
 		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
-		winnerPlayer.UpdateBalance(game.BetValue)
+		winnerPlayer.UpdateBalance(game.BetValue * 1.75)		// TODO: Move this to own function, maybe read from config?
 		loserID, err := game.GetOpponentPlayerID(winnerPlayer.ID)
 		loserPlayer, err := redisClient.GetPlayer(loserID)
 		loserPlayer.GameID = ""
@@ -190,7 +190,7 @@ func processGameOverQueue() {
 
 		msgP1, err := messages.NewMessage("balance_update", winnerPlayer.CurrencyAmount)
 		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
-		redisClient.AddPlayer(winnerPlayer)
+		redisClient.UpdatePlayer(winnerPlayer)
 		// since the game is Over, we remove it from redis.
 		redisClient.RemoveGame(game.ID)
 	}
@@ -204,6 +204,7 @@ func processLeaveGame() {
 			fmt.Printf("[%s-%d] - (Process Leave Game) - Error retrieving player data from queue: %v\n", name, pid, err)
 			continue
 		}
+		//playerData, err = redisClient.GetPlayer(playerData.ID)	// We cant do the get player, because it was already removed...
 		fmt.Printf("[%s-%d] - Processing the leave game: %+v\n", name, pid, playerData)
 		game, err := redisClient.GetGame(playerData.GameID)
 		if err != nil {
@@ -230,18 +231,13 @@ func processLeaveGame() {
 			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to get winner player!: %v\n", name, pid, err)
 			continue
 		}
-		// Update status and game Id of both players
+		// Update status and game Id of remaining player
 		winnerPlayer.GameID = ""
 		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
-		winnerPlayer.UpdateBalance(game.BetValue)
-		loserID, err := game.GetOpponentPlayerID(winnerPlayer.ID)
-		loserPlayer, err := redisClient.GetPlayer(loserID)
-		loserPlayer.GameID = ""
-		loserPlayer.UpdatePlayerStatus(models.StatusOnline)
-
+		winnerPlayer.UpdateBalance(game.BetValue*1.75) // TODO: Move this to own function, maybe read from config?
 		msgP1, err := messages.NewMessage("balance_update", winnerPlayer.CurrencyAmount)
 		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
-		redisClient.AddPlayer(winnerPlayer)
+		redisClient.UpdatePlayer(winnerPlayer)
 		// since the game is Over, we remove it from redis.
 		redisClient.RemoveGame(game.ID)
 	}

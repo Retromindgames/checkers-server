@@ -81,7 +81,7 @@ func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) 
 	}
 	redisClient.UpdatePlayersInQueueSet(player.ID, models.StatusInQueue)
 	// we update out player status.
-	redisClient.AddPlayer(player)
+	redisClient.UpdatePlayer(player)
 
 	// send a confirmation message back to the player
 	m, err := messages.GenerateQueueConfirmationMessage(true)
@@ -99,7 +99,7 @@ func handleLeaveQueue(msg *messages.Message[json.RawMessage], player *models.Pla
 		return
 	}
 	redisClient.UpdatePlayersInQueueSet(player.ID, models.StatusOnline)
-	redisClient.AddPlayer(player)	// This is important, we will only re-add players to a queue that are in queue.
+	redisClient.UpdatePlayer(player)	// This is important, we will only re-add players to a queue that are in queue.
 	queueName := fmt.Sprintf("queue:%f", player.SelectedBet) 
 	err := redisClient.RemovePlayerFromQueue(queueName, player) 
 	if err != nil {
@@ -138,7 +138,7 @@ func handleReadyQueue(msg *messages.Message[json.RawMessage], player *models.Pla
 	player.Conn.WriteMessage(websocket.TextMessage, []byte("processing 'ready_queue'"))
 	// we update our player to redis.
 	redisClient.UpdatePlayersInQueueSet(player.ID, player.Status)
-	err := redisClient.AddPlayer(player)
+	err := redisClient.UpdatePlayer(player)
 	if err != nil {
 		fmt.Printf("Error adding player to Redis: %v\n", err)
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player"))
@@ -161,7 +161,7 @@ func handleLeaveRoom(player *models.Player) {
 	}
 	player.Conn.WriteMessage(websocket.TextMessage, []byte("processing 'leave_room'"))
 	// we update our player to redis.
-	err := redisClient.AddPlayer(player)
+	err := redisClient.UpdatePlayer(player)
 	if err != nil {
 		fmt.Printf("Error adding player to Redis: %v\n", err)
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player"))

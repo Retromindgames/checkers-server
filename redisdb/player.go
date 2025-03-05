@@ -7,15 +7,6 @@ import (
 	"fmt"
 )
 
-func (r *RedisClient) AddPlayerDeprecated(key string, player *models.Player) error {
-	data, err := json.Marshal(player)
-	if err != nil {
-		return fmt.Errorf("[RedisClient] - failed to serialize player: %v", err)
-	}
-
-	return r.Client.HSet(context.Background(), key, player.ID, data).Err()
-}
-
 func (r *RedisClient) AddPlayer(player *models.Player) error {
 	data, err := json.Marshal(player)
 	if err != nil {
@@ -25,6 +16,23 @@ func (r *RedisClient) AddPlayer(player *models.Player) error {
 	return r.Client.HSet(context.Background(), "players", player.ID, data).Err()
 }
 
+func (r *RedisClient) UpdatePlayer(player *models.Player) error {
+	ctx := context.Background()
+	exists, err := r.Client.HExists(ctx, "players", player.ID).Result()
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - failed to check player existence: %v", err)
+	}
+	if !exists {
+		return fmt.Errorf("[RedisClient] - player with ID %s does not exist", player.ID)
+	}
+
+	data, err := json.Marshal(player)
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - failed to serialize game: %v", err)
+	}
+
+	return r.Client.HSet(ctx, "players", player.ID, data).Err()
+}
 
 func (r *RedisClient) GetPlayerDeprecated(key string, playerID string) (*models.Player, error) {
 	data, err := r.Client.HGet(context.Background(), key, playerID).Result()

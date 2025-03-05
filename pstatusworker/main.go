@@ -65,6 +65,7 @@ func processPlayerOffline(){
 			continue
 		}
 		fmt.Printf("[PStatus Worker-%d] - Player disconnected: %+v\n", pid, playerData)
+		playerData, err = redisClient.GetPlayer(playerData.ID)
 		handleRemovePlayer(playerData)
 	}
 }
@@ -112,7 +113,7 @@ func handleNewPlayer(player *models.Player) {
 
 func updatePlayerToRedis(player *models.Player) {
 	
-	err := redisClient.AddPlayer(player)
+	err := redisClient.UpdatePlayer(player)
 	if err != nil {
 		fmt.Printf("[PStatus Worker-%d] - Failed to add player: %v\n", pid, err)
 		return
