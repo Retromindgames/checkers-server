@@ -132,7 +132,7 @@ func processGameMoves() {
 			redisClient.UpdateGame(game)
 			continue
 		}
-		
+
 		// we check for a turn change.
 		if move.IsCapture && !game.Board.CanPieceCapture(move.To) {
 			handleTurnChange(game)
@@ -164,7 +164,7 @@ func processGameOverQueue() {
 			fmt.Printf("[%s-%d] - (Process Game Moves) - Failed to get game!: %v\n", name, pid, err)
 			continue
 		}
-		game.FinishGame()         // This should handle our data side of things.
+		game.FinishGame() // This should handle our data side of things.
 		msg, err := messages.GenerateGameOverMessage("winner", *game)
 		if err != nil {
 			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to get game!: %v\n", name, pid, err)
@@ -182,7 +182,7 @@ func processGameOverQueue() {
 		// Update status and game Id of both players
 		winnerPlayer.GameID = ""
 		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
-		winnerPlayer.UpdateBalance(game.BetValue * 1.75)		// TODO: Move this to own function, maybe read from config?
+		winnerPlayer.UpdateBalance(game.BetValue * 1.75) // TODO: Move this to own function, maybe read from config?
 		loserID, err := game.GetOpponentPlayerID(winnerPlayer.ID)
 		loserPlayer, err := redisClient.GetPlayer(loserID)
 		loserPlayer.GameID = ""
@@ -215,8 +215,8 @@ func processLeaveGame() {
 		stopGameTimer(playerData.GameID)
 
 		// What happens when a player leaves the game?
-		game.FinishGame()         // This should handle our data side of things.
-		game.Winner, err = game.GetOpponentPlayerID(playerData.ID)	// we gotta set our winner.
+		game.FinishGame()                                          // This should handle our data side of things.
+		game.Winner, err = game.GetOpponentPlayerID(playerData.ID) // we gotta set our winner.
 		msg, err := messages.GenerateGameOverMessage("winner", *game)
 		if err != nil {
 			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to get game!: %v\n", name, pid, err)
@@ -234,19 +234,23 @@ func processLeaveGame() {
 		// Update status and game Id of remaining player
 		winnerPlayer.GameID = ""
 		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
-		winnerPlayer.UpdateBalance(game.BetValue*1.75) // TODO: Move this to own function, maybe read from config?
+		winnerPlayer.UpdateBalance(game.BetValue * 1.75) // TODO: Move this to own function, maybe read from config?
 		msgP1, err := messages.NewMessage("balance_update", winnerPlayer.CurrencyAmount)
 		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
 		redisClient.UpdatePlayer(winnerPlayer)
 		// since the game is Over, we remove it from redis.
-		redisClient.RemoveGame(game.ID)
+		if redisClient.RemoveGame(game.ID) != nil {
+			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to remove game!: %v\n", name, pid, err)
+		} else {
+			fmt.Printf("[%s-%d] - (Process Game Over) - Removed game!: %v\n", name, pid, err)
+		}
 	}
 }
 
 func handleTurnChange(game *models.Game) {
 	stopGameTimer(game.ID)
 	game.NextPlayer()
-	msg , err := messages.NewMessage("turn_switch", game.CurrentPlayerID)
+	msg, err := messages.NewMessage("turn_switch", game.CurrentPlayerID)
 	if err != nil {
 		fmt.Printf("[%s-%d] - (Handle Turn Change) - Failed to generate for turn change: %v\n", name, pid, msg)
 	}

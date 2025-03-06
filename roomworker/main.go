@@ -97,6 +97,7 @@ func processQueueForBet(bet float64) {
 		if err != nil || player2 == nil {
 			fmt.Printf("[RoomWorker-%d] - No second player found in %s, re-queueing player 1.\n", pid, queueName)
 			// Since we failed to get the player2, we will requeue the player1.
+			time.Sleep(time.Second * 3)
 			redisClient.RPush(queueName, player1)
 			continue
 		}
@@ -107,6 +108,7 @@ func processQueueForBet(bet float64) {
 		if err != nil || !player2Details.IsEligibleForQueue() {
 			// If it is not valid, we will add player 1 back to the queue.
 			fmt.Printf("[RoomWorker-%d] - player2 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
+			time.Sleep(time.Second * 3)
 			redisClient.RPush(queueName, player1)
 			continue
 		}
