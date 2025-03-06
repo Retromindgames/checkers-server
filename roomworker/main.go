@@ -65,7 +65,7 @@ func processQueue() {
 	for _, bet := range models.ValidBetAmounts {
 		go processQueueForBet(bet)
 	}
-	
+
 	// Block forever or wait on a channel (to prevent the main goroutine from exiting)
 	select {}
 }
@@ -80,7 +80,7 @@ func processQueueForBet(bet float64) {
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - Retrieved player 1 from %s: %v\n", pid, queueName, player1)
-		
+
 		player1Details, err := redisClient.GetPlayer(player1.ID)
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - Error retrieving player 1 details, player removed from queue: %v\n", pid, err)
@@ -88,7 +88,7 @@ func processQueueForBet(bet float64) {
 		}
 		// we check to see if the player is eligible to be processed.
 		if !player1Details.IsEligibleForQueue() {
-			fmt.Printf("[RoomWorker-%d] - player1 not eligible to be processed by the queue, player removed from queue: %v\n", pid, err)
+			fmt.Printf("[RoomWorker-%d] - player1 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
 			continue
 		}
 
@@ -101,15 +101,15 @@ func processQueueForBet(bet float64) {
 			continue
 		}
 		fmt.Printf("[RoomWorker-%d] - Retrieved player 2 from %s: %v\n", pid, queueName, player2)
-		
+
 		// before we handle the paired, we will do a final check to make sure the players2 is still online / valid.
 		if !player2.IsEligibleForQueue() {
 			// If it is not valid, we will add player 1 back to the queue.
-			fmt.Printf("[RoomWorker-%d] - player1 not eligible to be processed by the queue, player removed from queue: %v\n", pid, err)
+			fmt.Printf("[RoomWorker-%d] - player2 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
 			redisClient.RPush(queueName, player1)
 			continue
 		}
-		
+
 		// Process both players
 		fmt.Printf("[RoomWorker-%d] - Pairing players: %s and %s from %s\n", pid, player1, player2, queueName)
 		handleQueuePaired(player1, player2)
@@ -136,7 +136,7 @@ func processReadyQueue() {
 
 func processRoomEnding() {
 	for {
-		playerData, err := redisClient.BLPop("leave_room", 0) 
+		playerData, err := redisClient.BLPop("leave_room", 0)
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
@@ -170,10 +170,10 @@ func processRoomEnding() {
 		player2.Status = models.StatusInQueue
 		redisClient.UpdatePlayer(playerData)
 		redisClient.UpdatePlayer(player2)
-		
+
 		// Pushing the player to the "queue" Redis list
-		queueName := fmt.Sprintf("queue:%f", player2.SelectedBet) 
-		err = redisClient.RPush(queueName, player2) 
+		queueName := fmt.Sprintf("queue:%f", player2.SelectedBet)
+		err = redisClient.RPush(queueName, player2)
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - Placing player back on queue:%v\n", pid, err)
 			return
@@ -241,7 +241,7 @@ func handleQueuePaired(player1, player2 *models.Player) {
 
 	player1.RoomID = room.ID
 	player2.RoomID = room.ID
-	// TODO: review this 
+	// TODO: review this
 	player1.Status = models.StatusInRoom
 	player2.Status = models.StatusInRoom
 	redisClient.UpdatePlayer(player1)
@@ -348,7 +348,7 @@ func handleReadyQueue(player *models.Player) {
 	redisClient.PublishPlayerEvent(player2, string(msgP2))
 	redisClient.UpdatePlayer(player)
 	redisClient.UpdatePlayer(player2)
-	
+
 	// Then we start a match
 	roomdata, err := json.Marshal(proom)
 	err = redisClient.RPushGeneric("create_game", roomdata)
