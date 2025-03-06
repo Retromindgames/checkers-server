@@ -45,12 +45,11 @@ func handleMessages(player *models.Player) {
 				continue
 			}
 			handleLeaveRoom(player)
-		
+
 		case "move_piece":
 			handleMovePiece(message, player)
 		}
-		
-		
+
 	}
 }
 
@@ -71,17 +70,18 @@ func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) 
 	player.SelectedBet = betValue
 	player.Status = models.StatusInQueue
 
+	redisClient.UpdatePlayersInQueueSet(player.ID, models.StatusInQueue)
+	// we update out player status, I think this needs to happen before we add it to the queue.
+	redisClient.UpdatePlayer(player)
+
 	// Pushing the player to the "queue" Redis list
-	queueName := fmt.Sprintf("queue:%f", betValue) 
+	queueName := fmt.Sprintf("queue:%f", betValue)
 	err = redisClient.RPush(queueName, player) //
 	if err != nil {
 		fmt.Printf("Error pushing player to Redis queue: %v\n", err)
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
 		return
 	}
-	redisClient.UpdatePlayersInQueueSet(player.ID, models.StatusInQueue)
-	// we update out player status.
-	redisClient.UpdatePlayer(player)
 
 	// send a confirmation message back to the player
 	m, err := messages.GenerateQueueConfirmationMessage(true)
@@ -99,9 +99,9 @@ func handleLeaveQueue(msg *messages.Message[json.RawMessage], player *models.Pla
 		return
 	}
 	redisClient.UpdatePlayersInQueueSet(player.ID, models.StatusOnline)
-	redisClient.UpdatePlayer(player)	// This is important, we will only re-add players to a queue that are in queue.
-	queueName := fmt.Sprintf("queue:%f", player.SelectedBet) 
-	err := redisClient.RemovePlayerFromQueue(queueName, player) 
+	redisClient.UpdatePlayer(player) // This is important, we will only re-add players to a queue that are in queue.
+	queueName := fmt.Sprintf("queue:%f", player.SelectedBet)
+	err := redisClient.RemovePlayerFromQueue(queueName, player)
 	if err != nil {
 		fmt.Printf("Error removing player from Redis queue: %v\n", err)
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error removing player to queue"))
@@ -167,7 +167,7 @@ func handleLeaveRoom(player *models.Player) {
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player"))
 		return
 	}
-	err = redisClient.RPush("leave_room", player) 
+	err = redisClient.RPush("leave_room", player)
 	if err != nil {
 		fmt.Printf("Error pushing player to Redis leave_room queue: %v\n", err)
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
@@ -177,9 +177,9 @@ func handleLeaveRoom(player *models.Player) {
 }
 
 func handleMovePiece(message *messages.Message[json.RawMessage], player *models.Player) {
-	// TODO: Validate we can move. 
+	// TODO: Validate we can move.
 	// Currently the movement message is just being sent to the game worker
-	err := redisClient.RPushGeneric("move_piece", message.Value) 
+	err := redisClient.RPushGeneric("move_piece", message.Value)
 	if err != nil {
 		fmt.Printf("Error pushing move to Redis handleMovePiece queue: %v\n", err)
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
