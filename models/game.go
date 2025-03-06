@@ -1,6 +1,7 @@
 package models
 
 import (
+	"checkers-server/config"
 	"fmt"
 	"time"
 
@@ -22,6 +23,7 @@ type GamePlayer struct {
 	ID        string `json:"id"`
 	Token     string `json:"token"`
 	Name      string `json:"name"`
+	Timer	  int	 `json:"timer"` 		
 	Color     string `json:"color"`
 	SessionID string `json:"session_id"`
 	NumPieces int    `json:"num_pieces"`
@@ -39,7 +41,7 @@ type Game struct {
 	EndTime         time.Time    `json:"end_time"`
 	Winner          string       `json:"winner"`
 	BetValue        float64      `json:"bet_value"` // Bet amount for the game
-
+	TimerSetting string		 `json:"timer_settings"`
 }
 
 type Kinged struct {
@@ -63,6 +65,7 @@ func MapPlayerToGamePlayer(player Player) GamePlayer {
 		Name:      player.Name,
 		Token:     player.Token,
 		SessionID: player.SessionID,
+		Timer: 0,
 	}
 }
 
@@ -96,11 +99,28 @@ func (r *Room) NewGame() *Game {
 		StartTime:       time.Now(),
 		Winner:          "",
 		BetValue:        r.BetValue,
+		TimerSetting: config.Cfg.Services["gameworker"].TimerSetting,
 	}
+	game.SetUpPlayerTimers()
 	game.UpdatePlayerPieces() // Set NumPieces for each player
 
 	//printBoard(game.Board)
 	return &game
+}
+
+func (g *Game) SetUpPlayerTimers() {
+	
+	switch g.TimerSetting {
+	case "ResetEveryTurn":
+		g.Players[0].Timer = config.Cfg.Services["gameworker"].Timer
+		g.Players[1].Timer = g.Players[0].Timer
+		 
+	case "Cumulative":
+		calculatedTimer := config.Cfg.Services["gameworker"].Timer * config.Cfg.Services["gameworker"].PiecesInMatch 
+		g.Players[0].Timer = calculatedTimer + 1
+		g.Players[1].Timer = g.Players[0].Timer
+		
+	}
 }
 
 func (g *Game) CountPlayerPieces(playerID string) int {
