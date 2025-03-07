@@ -101,6 +101,14 @@ func (r *Room) NewGame() *Game {
 		BetValue:        r.BetValue,
 		TimerSetting: config.Cfg.Services["gameworker"].TimerSetting,
 	}
+
+	if game.Players[0].ID == whiteID {
+		game.Players[0].Color = "w"
+		game.Players[1].Color = "b"
+	} else {
+		game.Players[0].Color = "b"
+		game.Players[1].Color = "w"
+	}
 	game.SetUpPlayerTimers()
 	game.UpdatePlayerPieces() // Set NumPieces for each player
 

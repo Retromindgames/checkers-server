@@ -9,9 +9,9 @@
     "roomworker": {},
     "gameworker": {
       "timer": 15,  
-      "pieces_in_match": 10,
+      "pieces_in_match": 12,
       "timer_setting": "Cumulative"   
     },
-    "broadcastworker": { "timer": 10 }
+    "broadcastworker": { "timer": 180 }
   }
 }

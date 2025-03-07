@@ -129,7 +129,6 @@ func processGameMoves() {
 		}
 		if !move.IsCapture {
 			handleTurnChange(game)
-			redisClient.UpdateGame(game)
 			continue
 		}
 
@@ -248,14 +247,15 @@ func processLeaveGame() {
 }
 
 func handleTurnChange(game *models.Game) {
-	publishStopToTimerChannel(game.ID)
+	// publishStopToTimerChannel(game.ID)
 	game.NextPlayer()
+	redisClient.UpdateGame(game)
 	msg, err := messages.NewMessage("turn_switch", game.CurrentPlayerID)
 	if err != nil {
 		fmt.Printf("[%s-%d] - (Handle Turn Change) - Failed to generate for turn change: %v\n", name, pid, msg)
 	}
 	BroadCastToGamePlayers(msg, *game)
-	go publishMoveToTimerChannel(game.ID) // Start a fresh timer or switch player timer.
+	publishSwitchToTimerChannel(game.ID) // Start a fresh timer or switch player timer.
 }
 
 func publishStopToTimerChannel(gameID string) {
@@ -263,9 +263,9 @@ func publishStopToTimerChannel(gameID string) {
 	redisClient.Client.Publish(context.Background(), stopChannel, "STOP") // Stop the old timer
 }
 
-func publishMoveToTimerChannel(gameID string) {
-	moveChannel := fmt.Sprintf("game:%s:move", gameID)
-	redisClient.Client.Publish(context.Background(), moveChannel, "MOVE") // This will let the timer know there was a change.
+func publishSwitchToTimerChannel(gameID string) {
+	switchChannel := fmt.Sprintf("game:%s:switch", gameID)
+	redisClient.Client.Publish(context.Background(), switchChannel, "SWITCH") // This will let the timer know there was a change.
 }
 
 func startTimer(game *models.Game) {
@@ -282,10 +282,10 @@ func startTimer(game *models.Game) {
 func startResetEveryTurnTimer(game *models.Game) {
 	ctx := context.Background()
 	stopChannel := fmt.Sprintf("game:%s:stop_timer", game.ID)
-	moveChannel := fmt.Sprintf("game:%s:move", game.ID) // Channel to listen for move events
+	switchChannel := fmt.Sprintf("game:%s:switch", game.ID) // Channel to listen for switch events
 
-	// Subscribe to both stop and move channels
-	pubsub := redisClient.Client.Subscribe(ctx, stopChannel, moveChannel)
+	// Subscribe to both stop and switch channels
+	pubsub := redisClient.Client.Subscribe(ctx, stopChannel, switchChannel)
 	defer pubsub.Close()
 
 	ticker := time.NewTicker(1 * time.Second)
@@ -321,22 +321,18 @@ func startResetEveryTurnTimer(game *models.Game) {
 
 			// Check if the timer has expired
 			if activePlayerTimer <= 0 {
-				// Handle turn change
 				handleTurnChange(game)
-				redisClient.UpdateGame(game)
 				fmt.Printf("Turn timer expired for player %s in game %s. Switching turns.\n", activePlayer.ID, game.ID)
-				return
-			}
+			} 
+
 
 		case msg := <-pubsub.Channel():
 			switch msg.Channel {
 			case stopChannel:
-				if msg.Payload == "STOP" {
-					fmt.Printf("Timer stopped for game %s\n", game.ID)
-					return // Exit the function, stopping the timer
-				}
+				fmt.Printf("Timer stopped for game %s\n", game.ID)
+				return // Exit the function, stopping the timer
 
-			case moveChannel:
+			case switchChannel:
 				// Switch the active player when a move is made
 				activePlayerIndex = 1 - activePlayerIndex // Toggle between 0 and 1
 				activePlayer = game.Players[activePlayerIndex]
@@ -352,10 +348,10 @@ func startResetEveryTurnTimer(game *models.Game) {
 func startCumulativeTimer(game *models.Game) {
 	ctx := context.Background()
 	stopChannel := fmt.Sprintf("game:%s:stop_timer", game.ID)
-	moveChannel := fmt.Sprintf("game:%s:move", game.ID) // Channel to listen for move events
+	switchChannel := fmt.Sprintf("game:%s:switch", game.ID) // Channel to listen for move events
 
 	// Subscribe to both stop and move channels
-	pubsub := redisClient.Client.Subscribe(ctx, stopChannel, moveChannel)
+	pubsub := redisClient.Client.Subscribe(ctx, stopChannel, switchChannel)
 	defer pubsub.Close()
 
 	ticker := time.NewTicker(1 * time.Second)
@@ -394,7 +390,6 @@ func startCumulativeTimer(game *models.Game) {
 				// The other player wins
 				winner := game.Players[1-activePlayerIndex].ID
 				//handleGameEnd(*game, "timeout", winner)
-				redisClient.UpdateGame(game)
 				fmt.Printf("Cumulative timer expired for player %s in game %s. Player %s wins.\n", activePlayer.ID, game.ID, winner)
 				return
 			}
@@ -402,13 +397,11 @@ func startCumulativeTimer(game *models.Game) {
 		case msg := <-pubsub.Channel():
 			switch msg.Channel {
 			case stopChannel:
-				if msg.Payload == "STOP" {
-					fmt.Printf("Timer stopped for game %s\n", game.ID)
-					return // Exit the function, stopping the timer
-				}
-
-			case moveChannel:
-				// Switch the active player when a move is made
+				fmt.Printf("Timer stopped for game %s\n", game.ID)
+				return // Exit the function, stopping the timer
+				
+			case switchChannel:
+				// Switch the active player when a switch is sent
 				activePlayerIndex = 1 - activePlayerIndex // Toggle between 0 and 1
 				activePlayer = game.Players[activePlayerIndex]
 				fmt.Printf("Switched active player to %s in game %s\n", activePlayer.ID, game.ID)

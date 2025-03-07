@@ -128,7 +128,6 @@ func (r *RedisClient) GetEmptyRoomsByBetValue(BetValue float64) ([]models.Room, 
 	zsetKey := "rooms_by_bid"
 
 	// Get room IDs in the given bid amount range
-	// TODO: This is bugged, its not procuding the riight results.
 	roomIDs, err := r.Client.ZRangeByScore(ctx, zsetKey, &redis.ZRangeBy{
 		Min: fmt.Sprintf("%f", BetValue),
 		Max: fmt.Sprintf("%f", BetValue),
