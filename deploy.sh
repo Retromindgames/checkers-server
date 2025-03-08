@@ -18,6 +18,9 @@ echo "Fetching and pulling branch: $BRANCH"
 git fetch origin $BRANCH
 git checkout $BRANCH
 git pull origin $BRANCH
+git branch | grep -v "$BRANCH" | xargs git branch -D
+git clean -fdx
+git gc --aggressive --prune=now
 
 # Stop all Docker containers
 echo "Stopping all Docker containers..."

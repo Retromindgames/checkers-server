@@ -10,7 +10,7 @@
     "gameworker": {
       "timer": 15,  
       "pieces_in_match": 12,
-      "timer_setting": "reset"   
+      "timer_setting": "cumulative"   
     },
     "broadcastworker": { "timer": 180 }
   }
