@@ -32,7 +32,6 @@ func main() {
 	fmt.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
 	go processGameCreation()
 	go processGameMoves()
-	go processGameOverQueue()
 	go processLeaveGame()
 	select {}
 }
@@ -123,8 +122,7 @@ func processGameMoves() {
 
 		// We check for game Over
 		if game.CheckGameOver() {
-			redisClient.UpdateGame(game) 
-			redisClient.Client.RPush(context.Background(), "game_over_queue", game.ID)
+			handleGameEnd(*game, "winner", move.PlayerID)
 			continue
 		}
 		// We check for a capture.
@@ -138,34 +136,6 @@ func processGameMoves() {
 			continue
 		}
 		redisClient.UpdateGame(game) // we update our game at the end.
-	}
-}
-
-func processGameOverQueue() {
-	for {
-		// Block until there is a game over message
-		gameOverData, err := redisClient.Client.BLPop(context.Background(), 0, "game_over_queue").Result()
-		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Game Over) - Error retrieving game over data: %v\n", name, pid, err)
-			continue
-		}
-		// Check if valid BLPOP
-		if len(gameOverData) < 2 {
-			fmt.Printf("[%s-%d] - (Process Game Over) - Unexpected BLPop result", name, pid)
-			continue
-		}
-		// Get gameID from data
-		gameId := gameOverData[1]                                                                   // Get the message
-		fmt.Printf("[%s-%d] - (Process Game Over) - Processing game over: %s\n", name, pid, gameId) // this should be a game ID.
-
-		//Load game from redis.
-		game, err := redisClient.GetGame(gameId)
-		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to get game!: %v\n", name, pid, err)
-			continue
-		}
-		
-		handleGameEnd(*game, "winner", game.CurrentPlayerID)		
 	}
 }
 
@@ -213,9 +183,9 @@ func publishSwitchToTimerChannel(gameID string) {
 
 func startTimer(game *models.Game) {
 	switch game.TimerSetting {
-	case "ResetEveryTurn":
+	case "reset":
 		startResetEveryTurnTimer(game)
-	case "Cumulative":
+	case "cumulative":
 		startCumulativeTimer(game)
 	default:
 		log.Printf("Invalid timer setting: %s for game %s\n", game.TimerSetting, game.ID)
@@ -353,7 +323,6 @@ func startCumulativeTimer(game *models.Game) {
 	}
 }
 
-
 func handleGameEnd(game models.Game, reason string, winnerID string) {
 	// if the game is over, lets stop the timers.
 	publishStopToTimerChannel(game.ID)
@@ -400,7 +369,6 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 		fmt.Printf("[%s-%d] - (Handle Game Over) - Removed game!: %v\n", name, pid, err)
 	}
 }
-
 
 func BroadCastToGamePlayers(msg []byte, game models.Game) {
 	redisClient.PublishToGamePlayer(game.Players[0], string(msg))

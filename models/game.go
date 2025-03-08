@@ -83,14 +83,12 @@ func mapPlayers(r *Room) []GamePlayer {
 }
 
 func (r *Room) NewGame() *Game {
-	whiteID, err := r.GetOpponentPlayerID(r.CurrentPlayerID)
-	if err != nil {
-		// TODO: Return an error?
-	}
+	whiteID, _ := r.GetOpponentPlayerID(r.CurrentPlayerID)
 
 	game := Game{
 		ID:              r.ID,
-		Board:           *NewBoard(r.CurrentPlayerID, whiteID, "std-game"),
+		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "std-game"),
+		Board:           *NewBoard(r.CurrentPlayerID, whiteID, "two-pieces-endgame"),
 		Players:         mapPlayers(r),
 		CurrentPlayerID: r.CurrentPlayerID,
 		Turn:            r.Turn,
@@ -111,19 +109,17 @@ func (r *Room) NewGame() *Game {
 	}
 	game.SetUpPlayerTimers()
 	game.UpdatePlayerPieces() // Set NumPieces for each player
-
-	//printBoard(game.Board)
 	return &game
 }
 
 func (g *Game) SetUpPlayerTimers() {
 	
 	switch g.TimerSetting {
-	case "ResetEveryTurn":
+	case "reset":
 		g.Players[0].Timer = config.Cfg.Services["gameworker"].Timer
 		g.Players[1].Timer = g.Players[0].Timer
 		 
-	case "Cumulative":
+	case "cumulative":
 		calculatedTimer := config.Cfg.Services["gameworker"].Timer * config.Cfg.Services["gameworker"].PiecesInMatch 
 		g.Players[0].Timer = calculatedTimer + 1
 		g.Players[1].Timer = g.Players[0].Timer

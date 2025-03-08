@@ -19,7 +19,7 @@ import (
 		"roomworker": {},
 		"gameworker": {
 			"timer": 15,
-			"timer_settings": "Cumulative", 	// Options: "ResetEveryTurn" or "Cumulative"
+			"timer_settings": "reset", 	// Options: "reset" or "cumulative"
 			"pieces_in_match": 10 				// Number of pieces in the match
 		}
 	}
