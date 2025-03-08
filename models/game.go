@@ -87,8 +87,8 @@ func (r *Room) NewGame() *Game {
 
 	game := Game{
 		ID:              r.ID,
-		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "std-game"),
-		Board:           *NewBoard(r.CurrentPlayerID, whiteID, "two-pieces-endgame"),
+		Board:           *NewBoard(r.CurrentPlayerID, whiteID, "std-game"),
+		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "two-pieces-endgame"),
 		Players:         mapPlayers(r),
 		CurrentPlayerID: r.CurrentPlayerID,
 		Turn:            r.Turn,
