@@ -360,7 +360,7 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 		// Update status and game Id of players
 		opponentPlayer.GameID = ""
 		opponentPlayer.UpdatePlayerStatus(models.StatusOnline)
-		redisClient.UpdatePlayer(winnerPlayer)
+		redisClient.UpdatePlayer(opponentPlayer)
 	}
 
 	// since the game is Over, we remove it from redis.
