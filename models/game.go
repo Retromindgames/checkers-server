@@ -1,6 +1,7 @@
 package models
 
 import (
+	"checkers-server/config"
 	"fmt"
 	"time"
 
@@ -22,6 +23,7 @@ type GamePlayer struct {
 	ID        string `json:"id"`
 	Token     string `json:"token"`
 	Name      string `json:"name"`
+	Timer	  int	 `json:"timer"` 		
 	Color     string `json:"color"`
 	SessionID string `json:"session_id"`
 	NumPieces int    `json:"num_pieces"`
@@ -39,7 +41,7 @@ type Game struct {
 	EndTime         time.Time    `json:"end_time"`
 	Winner          string       `json:"winner"`
 	BetValue        float64      `json:"bet_value"` // Bet amount for the game
-
+	TimerSetting string		 `json:"timer_settings"`
 }
 
 type Kinged struct {
@@ -63,6 +65,7 @@ func MapPlayerToGamePlayer(player Player) GamePlayer {
 		Name:      player.Name,
 		Token:     player.Token,
 		SessionID: player.SessionID,
+		Timer: 0,
 	}
 }
 
@@ -80,14 +83,12 @@ func mapPlayers(r *Room) []GamePlayer {
 }
 
 func (r *Room) NewGame() *Game {
-	whiteID, err := r.GetOpponentPlayerID(r.CurrentPlayerID)
-	if err != nil {
-		// TODO: Return an error?
-	}
+	whiteID, _ := r.GetOpponentPlayerID(r.CurrentPlayerID)
 
 	game := Game{
 		ID:              r.ID,
-		Board:           *NewBoard(r.CurrentPlayerID, whiteID, "std-game"),
+		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "std-game"),
+		Board:           *NewBoard(r.CurrentPlayerID, whiteID, "two-pieces-endgame"),
 		Players:         mapPlayers(r),
 		CurrentPlayerID: r.CurrentPlayerID,
 		Turn:            r.Turn,
@@ -96,11 +97,34 @@ func (r *Room) NewGame() *Game {
 		StartTime:       time.Now(),
 		Winner:          "",
 		BetValue:        r.BetValue,
+		TimerSetting: config.Cfg.Services["gameworker"].TimerSetting,
 	}
-	game.UpdatePlayerPieces() // Set NumPieces for each player
 
-	//printBoard(game.Board)
+	if game.Players[0].ID == whiteID {
+		game.Players[0].Color = "w"
+		game.Players[1].Color = "b"
+	} else {
+		game.Players[0].Color = "b"
+		game.Players[1].Color = "w"
+	}
+	game.SetUpPlayerTimers()
+	game.UpdatePlayerPieces() // Set NumPieces for each player
 	return &game
+}
+
+func (g *Game) SetUpPlayerTimers() {
+	
+	switch g.TimerSetting {
+	case "reset":
+		g.Players[0].Timer = config.Cfg.Services["gameworker"].Timer
+		g.Players[1].Timer = g.Players[0].Timer
+		 
+	case "cumulative":
+		calculatedTimer := config.Cfg.Services["gameworker"].Timer * config.Cfg.Services["gameworker"].PiecesInMatch 
+		g.Players[0].Timer = calculatedTimer + 1
+		g.Players[1].Timer = g.Players[0].Timer
+		
+	}
 }
 
 func (g *Game) CountPlayerPieces(playerID string) int {
@@ -214,8 +238,8 @@ func (g *Game) CheckGameOver() bool {
 	return false // Game continues if both players have pieces
 }
 
-func (g *Game) FinishGame() {
-	g.Winner = g.CurrentPlayerID
+func (g *Game) FinishGame(winnerID string) {
+	g.Winner = winnerID
 	g.EndTime = time.Now()
 }
 

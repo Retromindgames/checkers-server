@@ -28,7 +28,6 @@ func main() {
 	fmt.Printf("[PStatus Worker-%d] - Waiting for player connections...\n", pid)
 	go processPlayerOnline()
 	go processPlayerOffline()
-	go processPlayerUpdate()
 
 	select {}
 }
@@ -45,17 +44,6 @@ func processPlayerOnline(){
 	}
 }
 
-func processPlayerUpdate(){
-	for {
-		message, err := redisClient.BLPop("player_update", 0) // Block
-		if err != nil {
-			fmt.Printf("[PStatus Worker-%d] - Error retrieving update message:%v\n", pid, err)
-			continue
-		}
-		fmt.Printf("[PStatus Worker-%d] - TODO Processing player update: %+v\n", pid, message)
-		//updatePlayerToRedis(playerData)
-	}
-}
 
 func processPlayerOffline(){
 	for {
@@ -66,7 +54,9 @@ func processPlayerOffline(){
 		}
 		fmt.Printf("[PStatus Worker-%d] - Player disconnected: %+v\n", pid, playerData)
 		playerData, err = redisClient.GetPlayer(playerData.ID)
-		handleRemovePlayer(playerData)
+		if err == nil {
+			handleRemovePlayer(playerData)	
+		}
 	}
 }
 
@@ -79,7 +69,6 @@ func handleRemovePlayer(player *models.Player) {
 		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Room, sending notification to room worker!: %v\n", pid, player)
 		redisClient.RPush("leave_room", player)
 	}
-	// ! somehow the game id was empty here. Wich is odd, and worrisome.Somehow room id was not empty. The status seems to be OK.
 	if(player.GameID != "" || player.Status == models.StatusInGame){
 		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Game, sending notification to Game worker!: %v\n", pid, player)
 		redisClient.RPush("leave_game", player)

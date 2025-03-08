@@ -104,6 +104,13 @@ func processQueueForBet(bet float64) {
 		fmt.Printf("[RoomWorker-%d] - Retrieved player 2 from %s: %v\n", pid, queueName, player2)
 
 		player2Details, err := redisClient.GetPlayer(player2.ID)
+		
+		if player1Details.ID == player2Details.ID {
+			fmt.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
+			redisClient.RPush(queueName, player1)
+			continue
+		}
+
 		// before we handle the paired, we will do a final check to make sure the players2 is still online / valid.
 		if err != nil || !player2Details.IsEligibleForQueue() {
 			// If it is not valid, we will add player 1 back to the queue.

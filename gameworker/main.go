@@ -32,7 +32,6 @@ func main() {
 	fmt.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
 	go processGameCreation()
 	go processGameMoves()
-	go processGameOverQueue()
 	go processLeaveGame()
 	select {}
 }
@@ -74,11 +73,12 @@ func processGameCreation() {
 		err = redisClient.UpdatePlayer(player1)
 		err = redisClient.UpdatePlayer(player2)
 		err = redisClient.AddGame(game)
+		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		msg, err := messages.GenerateGameStartMessage(*game)
 
 		fmt.Printf("[%s-%d] - (Process Game Creation) - Message to publish: %v\n", name, pid, string(msg))
 		BroadCastToGamePlayers(msg, *game)
-		go startTurnTimer(game) // Start turn timer
+		go startTimer(game) // Start turn timer
 	}
 }
 
@@ -123,76 +123,20 @@ func processGameMoves() {
 
 		// We check for game Over
 		if game.CheckGameOver() {
-			redisClient.Client.RPush(context.Background(), "game_over_queue", game.ID)
-			redisClient.UpdateGame(game) // we update our game
+			handleGameEnd(*game, "winner", move.PlayerID)
 			continue
 		}
+		// We check for a capture.
 		if !move.IsCapture {
 			handleTurnChange(game)
-			redisClient.UpdateGame(game)
 			continue
 		}
-
 		// we check for a turn change.
 		if move.IsCapture && !game.Board.CanPieceCapture(move.To) {
 			handleTurnChange(game)
+			continue
 		}
 		redisClient.UpdateGame(game) // we update our game at the end.
-	}
-}
-
-func processGameOverQueue() {
-	for {
-		// Block until there is a game over message
-		gameOverData, err := redisClient.Client.BLPop(context.Background(), 0, "game_over_queue").Result()
-		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Game Over) - Error retrieving game over data: %v\n", name, pid, err)
-			continue
-		}
-
-		if len(gameOverData) < 2 {
-			fmt.Printf("[%s-%d] - (Process Game Over) - Unexpected BLPop result", name, pid)
-			continue
-		}
-		gameId := gameOverData[1]                                                                   // Get the message
-		fmt.Printf("[%s-%d] - (Process Game Over) - Processing game over: %s\n", name, pid, gameId) // this should be a game ID.
-		stopGameTimer(gameId)
-
-		// Now we handle game logic.
-		game, err := redisClient.GetGame(gameId)
-		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Game Moves) - Failed to get game!: %v\n", name, pid, err)
-			continue
-		}
-		game.FinishGame() // This should handle our data side of things.
-		msg, err := messages.GenerateGameOverMessage("winner", *game)
-		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to get game!: %v\n", name, pid, err)
-			continue
-		}
-		redisClient.PublishToGamePlayer(*&game.Players[0], string(msg))
-		redisClient.PublishToGamePlayer(*&game.Players[1], string(msg))
-
-		// Now we will process palyer balance for the winner.
-		winnerPlayer, err := redisClient.GetPlayer(game.Winner)
-		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to get winner player!: %v\n", name, pid, err)
-			continue
-		}
-		// Update status and game Id of both players
-		winnerPlayer.GameID = ""
-		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
-		winnerPlayer.UpdateBalance(game.BetValue * 1.75) // TODO: Move this to own function, maybe read from config?
-		loserID, err := game.GetOpponentPlayerID(winnerPlayer.ID)
-		loserPlayer, err := redisClient.GetPlayer(loserID)
-		loserPlayer.GameID = ""
-		loserPlayer.UpdatePlayerStatus(models.StatusOnline)
-
-		msgP1, err := messages.NewMessage("balance_update", winnerPlayer.CurrencyAmount)
-		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
-		redisClient.UpdatePlayer(winnerPlayer)
-		// since the game is Over, we remove it from redis.
-		redisClient.RemoveGame(game.ID)
 	}
 }
 
@@ -211,87 +155,220 @@ func processLeaveGame() {
 			fmt.Printf("[%s-%d] - Error retrieving Game:%v\n", name, pid, err)
 			continue
 		}
-		// if the game is over, lets stop the timers.
-		stopGameTimer(playerData.GameID)
-
-		// What happens when a player leaves the game?
-		game.FinishGame()                                          // This should handle our data side of things.
-		game.Winner, err = game.GetOpponentPlayerID(playerData.ID) // we gotta set our winner.
-		msg, err := messages.GenerateGameOverMessage("winner", *game)
-		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to get game!: %v\n", name, pid, err)
-			continue
-		}
-		redisClient.PublishToGamePlayer(*&game.Players[0], string(msg))
-		redisClient.PublishToGamePlayer(*&game.Players[1], string(msg))
-
-		// Now we will process palyer balance for the winner.
-		winnerPlayer, err := redisClient.GetPlayer(game.Winner)
-		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to get winner player!: %v\n", name, pid, err)
-			continue
-		}
-		// Update status and game Id of remaining player
-		winnerPlayer.GameID = ""
-		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
-		winnerPlayer.UpdateBalance(game.BetValue * 1.75) // TODO: Move this to own function, maybe read from config?
-		msgP1, err := messages.NewMessage("balance_update", winnerPlayer.CurrencyAmount)
-		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
-		redisClient.UpdatePlayer(winnerPlayer)
-		// since the game is Over, we remove it from redis.
-		if redisClient.RemoveGame(game.ID) != nil {
-			fmt.Printf("[%s-%d] - (Process Game Over) - Failed to remove game!: %v\n", name, pid, err)
-		} else {
-			fmt.Printf("[%s-%d] - (Process Game Over) - Removed game!: %v\n", name, pid, err)
-		}
+		winnrID, _ := game.GetOpponentPlayerID(playerData.ID)
+		handleGameEnd(*game, "player_left", winnrID)
 	}
 }
 
 func handleTurnChange(game *models.Game) {
-	stopGameTimer(game.ID)
+	// publishStopToTimerChannel(game.ID)
 	game.NextPlayer()
+	redisClient.UpdateGame(game)
 	msg, err := messages.NewMessage("turn_switch", game.CurrentPlayerID)
 	if err != nil {
 		fmt.Printf("[%s-%d] - (Handle Turn Change) - Failed to generate for turn change: %v\n", name, pid, msg)
 	}
 	BroadCastToGamePlayers(msg, *game)
-	go startTurnTimer(game) // Start a fresh timer
+	publishSwitchToTimerChannel(game.ID) // Start a fresh timer or switch player timer.
 }
 
-func stopGameTimer(gameID string) {
+func publishStopToTimerChannel(gameID string) {
 	stopChannel := fmt.Sprintf("game:%s:stop_timer", gameID)
 	redisClient.Client.Publish(context.Background(), stopChannel, "STOP") // Stop the old timer
 }
 
-func startTurnTimer(game *models.Game) {
+func publishSwitchToTimerChannel(gameID string) {
+	switchChannel := fmt.Sprintf("game:%s:switch", gameID)
+	redisClient.Client.Publish(context.Background(), switchChannel, "SWITCH") // This will let the timer know there was a change.
+}
+
+func startTimer(game *models.Game) {
+	switch game.TimerSetting {
+	case "reset":
+		startResetEveryTurnTimer(game)
+	case "cumulative":
+		startCumulativeTimer(game)
+	default:
+		log.Printf("Invalid timer setting: %s for game %s\n", game.TimerSetting, game.ID)
+	}
+}
+
+func startResetEveryTurnTimer(game *models.Game) {
 	ctx := context.Background()
 	stopChannel := fmt.Sprintf("game:%s:stop_timer", game.ID)
-	pubsub := redisClient.Client.Subscribe(ctx, stopChannel)
+	switchChannel := fmt.Sprintf("game:%s:switch", game.ID) // Channel to listen for switch events
+
+	// Subscribe to both stop and switch channels
+	pubsub := redisClient.Client.Subscribe(ctx, stopChannel, switchChannel)
 	defer pubsub.Close()
 
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-	// fetch the timer from the config.
-	timer := config.Cfg.Services["gameworker"].Timer
-	for timer > 0 {
+	// Fetch the base timer from the config.
+	baseTimer := config.Cfg.Services["gameworker"].Timer
+
+	// Find the player with Color == "b" to start the timer
+	var activePlayerIndex int
+	for i, player := range game.Players {
+		if player.Color == "b" {
+			activePlayerIndex = i
+			break
+		}
+	}
+	activePlayer := game.Players[activePlayerIndex]
+
+	// Initialize the timer for the active player
+	timer := baseTimer
+
+	for {
 		select {
 		case <-ticker.C:
-			msg, _ := messages.GenerateGameTimerMessage(*game, timer)
+			// Decrement the timer
+			timer--
+			activePlayerTimer := timer
+
+			// Publish the updated timer to both players
+			msg, _ := messages.GenerateGameTimerMessage(*game, activePlayerTimer)
 			redisClient.PublishToGamePlayer(game.Players[0], string(msg))
 			redisClient.PublishToGamePlayer(game.Players[1], string(msg))
-			timer--
+
+			// Check if the timer has expired
+			if activePlayerTimer <= 0 {
+				handleTurnChange(game)
+				fmt.Printf("Turn timer expired for player %s in game %s. Switching turns.\n", activePlayer.ID, game.ID)
+			} 
+
 
 		case msg := <-pubsub.Channel():
-			if msg.Payload == "STOP" {
+			switch msg.Channel {
+			case stopChannel:
 				fmt.Printf("Timer stopped for game %s\n", game.ID)
 				return // Exit the function, stopping the timer
+
+			case switchChannel:
+				// Switch the active player when a move is made
+				activePlayerIndex = 1 - activePlayerIndex // Toggle between 0 and 1
+				activePlayer = game.Players[activePlayerIndex]
+
+				// Reset the timer for the new active player
+				timer = baseTimer
+				fmt.Printf("Switched active player to %s in game %s. Timer reset to %d seconds.\n", activePlayer.ID, game.ID, timer)
 			}
 		}
 	}
-	handleTurnChange(game)
-	redisClient.UpdateGame(game)
-	fmt.Printf("Turn timer expired for game %s\n", game.ID)
+}
+
+func startCumulativeTimer(game *models.Game) {
+	ctx := context.Background()
+	stopChannel := fmt.Sprintf("game:%s:stop_timer", game.ID)
+	switchChannel := fmt.Sprintf("game:%s:switch", game.ID) // Channel to listen for move events
+
+	// Subscribe to both stop and move channels
+	pubsub := redisClient.Client.Subscribe(ctx, stopChannel, switchChannel)
+	defer pubsub.Close()
+
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	// Initialize timers for each player
+	playerTimers := make(map[string]int) // Key: Player ID, Value: Remaining time
+	for _, player := range game.Players {
+		playerTimers[player.ID] = player.Timer
+	}
+
+	// Find the player with Color == "b" to start the timer
+	var activePlayerIndex int
+	for i, player := range game.Players {
+		if player.Color == "b" {
+			activePlayerIndex = i
+			break
+		}
+	}
+	activePlayer := game.Players[activePlayerIndex]
+
+	for {
+		select {
+		case <-ticker.C:
+			// Decrement the active player's timer
+			playerTimers[activePlayer.ID]--
+			activePlayerTimer := playerTimers[activePlayer.ID]
+
+			// Publish the updated timer to both players
+			msg, _ := messages.GenerateGameTimerMessage(*game, activePlayerTimer)
+			redisClient.PublishToGamePlayer(game.Players[0], string(msg))
+			redisClient.PublishToGamePlayer(game.Players[1], string(msg))
+
+			// Check if the active player's timer has expired
+			if activePlayerTimer <= 0 {
+				// The other player wins
+				winner := game.Players[1-activePlayerIndex].ID
+				handleGameEnd(*game, "timeout", winner)
+				fmt.Printf("Cumulative timer expired for player %s in game %s. Player %s wins.\n", activePlayer.ID, game.ID, winner)
+				return
+			}
+
+		case msg := <-pubsub.Channel():
+			switch msg.Channel {
+			case stopChannel:
+				fmt.Printf("Timer stopped for game %s\n", game.ID)
+				return // Exit the function, stopping the timer
+				
+			case switchChannel:
+				// Switch the active player when a switch is sent
+				activePlayerIndex = 1 - activePlayerIndex // Toggle between 0 and 1
+				activePlayer = game.Players[activePlayerIndex]
+				fmt.Printf("Switched active player to %s in game %s\n", activePlayer.ID, game.ID)
+			}
+		}
+	}
+}
+
+func handleGameEnd(game models.Game, reason string, winnerID string) {
+	// if the game is over, lets stop the timers.
+	publishStopToTimerChannel(game.ID)
+	game.FinishGame(winnerID) 
+	msg, err := messages.GenerateGameOverMessage(reason, game)
+	if err != nil {
+		fmt.Printf("[%s-%d] - (Handle Game Over) - Failed to get game!: %v\n", name, pid, err)
+		return
+	}
+	redisClient.PublishToGamePlayer(*&game.Players[0], string(msg))
+	redisClient.PublishToGamePlayer(*&game.Players[1], string(msg))
+
+	// Now we update the winner player
+	winnerPlayer, err := redisClient.GetPlayer(game.Winner)
+	if err != nil {
+		fmt.Printf("[%s-%d] - (Handle Game Over) - Failed to get winner player!: %v\n", name, pid, err)
+		return
+	} else {
+		// Update status and game Id of players
+		winnerPlayer.GameID = ""
+		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
+		winnerPlayer.UpdateBalance(game.BetValue * 1.75)
+		msgP1, _ := messages.NewMessage("balance_update", winnerPlayer.CurrencyAmount)
+		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
+		redisClient.UpdatePlayer(winnerPlayer)
+	}
+
+	opponentID, _ := game.GetOpponentPlayerID(winnerPlayer.ID)
+	opponentPlayer, err := redisClient.GetPlayer(opponentID)
+	if err != nil {
+		fmt.Printf("[%s-%d] - (Handle Game Over) - Failed to get looser player!: %v\n", name, pid, err)
+		return
+	} else {
+		// Update status and game Id of players
+		opponentPlayer.GameID = ""
+		opponentPlayer.UpdatePlayerStatus(models.StatusOnline)
+		redisClient.UpdatePlayer(opponentPlayer)
+	}
+
+	// since the game is Over, we remove it from redis.
+	if redisClient.RemoveGame(game.ID) != nil {
+		fmt.Printf("[%s-%d] - (Handle Game Over) - Failed to remove game!: %v\n", name, pid, err)
+	} else {
+		fmt.Printf("[%s-%d] - (Handle Game Over) - Removed game!: %v\n", name, pid, err)
+	}
 }
 
 func BroadCastToGamePlayers(msg []byte, game models.Game) {

@@ -54,7 +54,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	playerID := r.RemoteAddr
+	playerID := models.GenerateUUID()
 	player := &models.Player{
 		ID:             playerID,
 		Conn:           conn,
