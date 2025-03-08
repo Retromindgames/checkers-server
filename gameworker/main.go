@@ -73,6 +73,7 @@ func processGameCreation() {
 		err = redisClient.UpdatePlayer(player1)
 		err = redisClient.UpdatePlayer(player2)
 		err = redisClient.AddGame(game)
+		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		msg, err := messages.GenerateGameStartMessage(*game)
 
 		fmt.Printf("[%s-%d] - (Process Game Creation) - Message to publish: %v\n", name, pid, string(msg))
