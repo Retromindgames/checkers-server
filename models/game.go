@@ -242,8 +242,8 @@ func (g *Game) CheckGameOver() bool {
 	return false // Game continues if both players have pieces
 }
 
-func (g *Game) FinishGame() {
-	g.Winner = g.CurrentPlayerID
+func (g *Game) FinishGame(winnerID string) {
+	g.Winner = winnerID
 	g.EndTime = time.Now()
 }
 

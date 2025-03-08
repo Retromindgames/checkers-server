@@ -175,7 +175,7 @@ func GenerateGameTimerMessage(game models.Game, timer int) ([]byte, error) {
 }
 
 func GenerateGameOverMessage(reason string, game models.Game) ([]byte, error) {
-	winner, err := game.GetGamePlayer(game.CurrentPlayerID)
+	winner, err := game.GetGamePlayer(game.Winner)
 	if err != nil {
 		fmt.Printf("Error retrieving game winner player: %v\n", err)
 
