@@ -33,6 +33,7 @@ func main() {
 	go processGameCreation()
 	go processGameMoves()
 	go processLeaveGame()
+	go processDisconnectFromGame()
 	select {}
 }
 
@@ -157,6 +158,45 @@ func processLeaveGame() {
 		}
 		winnrID, _ := game.GetOpponentPlayerID(playerData.ID)
 		handleGameEnd(*game, "player_left", winnrID)
+	}
+}
+ 
+func processDisconnectFromGame() {
+	for {
+		// Block until there is a game over message
+		playerData, err := redisClient.BLPop("disconnect_game", 0)
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Disconnect Game) - Error retrieving player data from queue: %v\n", name, pid, err)
+			continue
+		}
+		//playerData, err = redisClient.GetPlayer(playerData.ID)	// We cant do the get player, because it was already removed...
+		fmt.Printf("[%s-%d] - Processing the leave game: %+v\n", name, pid, playerData)
+		game, err := redisClient.GetGame(playerData.GameID)
+		if err != nil {
+			fmt.Printf("[%s-%d] - Error retrieving Game:%v\n", name, pid, err)
+			continue
+		}
+		gamePlayer, _ := game.GetGamePlayer(playerData.ID)
+		// Serialize GamePlayer to JSON
+		playerJSON, err := json.Marshal(gamePlayer)
+		if err != nil {
+			fmt.Println("Error marshaling player:", err)
+			return
+		}
+		// Save player data using SessionID as the key
+		key := fmt.Sprintf("players_disconnected:%s", playerData.SessionID)
+		err = redisClient.Client.Set(context.Background(), key, playerJSON, 0).Err() // 0 means no expiration
+		if err != nil {
+			fmt.Println("Error saving player to Redis:", err)
+			return
+		}
+		fmt.Println("Player saved to disconnected list with key:", key)
+
+		// Now we notify the other player that this happened
+		msg, _ := messages.NewMessage("opponent_disconnected_game", "disconnected")
+		opponent, _ := game.GetOpponentGamePlayer(gamePlayer.ID)
+		redisClient.PublishToGamePlayer(*opponent, string(msg))
+		
 	}
 }
 

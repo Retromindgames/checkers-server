@@ -71,7 +71,7 @@ func handleRemovePlayer(player *models.Player) {
 	}
 	if(player.GameID != "" || player.Status == models.StatusInGame){
 		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Game, sending notification to Game worker!: %v\n", pid, player)
-		redisClient.RPush("leave_game", player)
+		redisClient.RPush("disconnect_game", player)
 	}
 
 	err := redisClient.RemovePlayer(string(player.ID))
