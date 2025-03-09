@@ -196,8 +196,33 @@ func processReconnectFromGame() {
 			fmt.Printf("[%s-%d] - (Process Reconnect Game) - Error retrieving player data from queue: %v\n", name, pid, err)
 			continue
 		}
-		//playerData, err = redisClient.GetPlayer(playerData.ID)	// We cant do the get player, because it was already removed...
-		fmt.Printf("[%s-%d] - Processing the leave game: %+v\n", name, pid, playerData)
+		fmt.Printf("[%s-%d]  (Process Reconnect Game) - Processing the reconnect game: %+v\n", name, pid, playerData)
+
+		game, err := redisClient.GetGame(playerData.GameID)
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Reconnect Game) - Error retrieving game data from redis: %v\n", name, pid, err)
+			continue
+		}
+
+		// We send a message to the reconnected player with the board state.
+		msg, err := messages.GenerateGameStartMessage(*game)
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Reconnect Game) - Error generating game start message: %v\n", name, pid, err)
+			continue
+		}
+		err = redisClient.PublishToPlayer(*playerData, string(msg))
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Reconnect Game) - Error publishing game start message: %v\n", name, pid, err)
+			continue
+		}
+		fmt.Printf("[%s-%d] - (Process Reconnect Game) - game start message: %v\n", name, pid, string(msg))
+
+		// We notify the opponent that the player reconnected.
+		opponent, _ := game.GetOpponentGamePlayer(playerData.ID)
+		msg, _ = messages.NewMessage("opponent_disconnected_game", "reconnected")
+		redisClient.PublishToGamePlayer(*opponent, string(msg))
+
+		redisClient.DeleteDisconnectedPlayerSession(playerData.SessionID)
 	}
 }
 

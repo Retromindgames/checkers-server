@@ -68,7 +68,6 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			Status:         models.StatusInGame,
 			GameID:         discPlayer.GameID,
 		}
-		redisClient.RPush("reconnect_game", player)
 	} else {
 		playerID := models.GenerateUUID()
 		newPlayer := &models.Player{
@@ -99,6 +98,10 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println("[wsapi] - Player added online:", player.ID)
+	// Now that our player has subscribbed to our stuff, we will notify the gameworker of the reconnect.
+	if discPlayer != nil {
+		redisClient.RPush("reconnect_game", player)
+	}
 	go handleMessages(player)
 }
 
