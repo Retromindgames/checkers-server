@@ -34,6 +34,7 @@ func main() {
 	go processGameMoves()
 	go processLeaveGame()
 	go processDisconnectFromGame()
+	go processReconnectFromGame()
 	select {}
 }
 
@@ -160,7 +161,7 @@ func processLeaveGame() {
 		handleGameEnd(*game, "player_left", winnrID)
 	}
 }
- 
+
 func processDisconnectFromGame() {
 	for {
 		// Block until there is a game over message
@@ -176,27 +177,27 @@ func processDisconnectFromGame() {
 			fmt.Printf("[%s-%d] - Error retrieving Game:%v\n", name, pid, err)
 			continue
 		}
+		redisClient.SaveDisconnectSessionPlayerData(*playerData, *game)
 		gamePlayer, _ := game.GetGamePlayer(playerData.ID)
-		// Serialize GamePlayer to JSON
-		playerJSON, err := json.Marshal(gamePlayer)
-		if err != nil {
-			fmt.Println("Error marshaling player:", err)
-			return
-		}
-		// Save player data using SessionID as the key
-		key := fmt.Sprintf("players_disconnected:%s", playerData.SessionID)
-		err = redisClient.Client.Set(context.Background(), key, playerJSON, 0).Err() // 0 means no expiration
-		if err != nil {
-			fmt.Println("Error saving player to Redis:", err)
-			return
-		}
-		fmt.Println("Player saved to disconnected list with key:", key)
 
 		// Now we notify the other player that this happened
 		msg, _ := messages.NewMessage("opponent_disconnected_game", "disconnected")
 		opponent, _ := game.GetOpponentGamePlayer(gamePlayer.ID)
 		redisClient.PublishToGamePlayer(*opponent, string(msg))
-		
+
+	}
+}
+
+func processReconnectFromGame() {
+	for {
+		// Block until there is a game over message
+		playerData, err := redisClient.BLPop("reconnect_game", 0)
+		if err != nil {
+			fmt.Printf("[%s-%d] - (Process Reconnect Game) - Error retrieving player data from queue: %v\n", name, pid, err)
+			continue
+		}
+		//playerData, err = redisClient.GetPlayer(playerData.ID)	// We cant do the get player, because it was already removed...
+		fmt.Printf("[%s-%d] - Processing the leave game: %+v\n", name, pid, playerData)
 	}
 }
 
@@ -277,8 +278,7 @@ func startResetEveryTurnTimer(game *models.Game) {
 			if activePlayerTimer <= 0 {
 				handleTurnChange(game)
 				fmt.Printf("Turn timer expired for player %s in game %s. Switching turns.\n", activePlayer.ID, game.ID)
-			} 
-
+			}
 
 		case msg := <-pubsub.Channel():
 			switch msg.Channel {
@@ -353,7 +353,7 @@ func startCumulativeTimer(game *models.Game) {
 			case stopChannel:
 				fmt.Printf("Timer stopped for game %s\n", game.ID)
 				return // Exit the function, stopping the timer
-				
+
 			case switchChannel:
 				// Switch the active player when a switch is sent
 				activePlayerIndex = 1 - activePlayerIndex // Toggle between 0 and 1
@@ -367,7 +367,7 @@ func startCumulativeTimer(game *models.Game) {
 func handleGameEnd(game models.Game, reason string, winnerID string) {
 	// if the game is over, lets stop the timers.
 	publishStopToTimerChannel(game.ID)
-	game.FinishGame(winnerID) 
+	game.FinishGame(winnerID)
 	msg, err := messages.GenerateGameOverMessage(reason, game)
 	if err != nil {
 		fmt.Printf("[%s-%d] - (Handle Game Over) - Failed to get game!: %v\n", name, pid, err)

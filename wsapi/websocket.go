@@ -53,22 +53,40 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Failed to upgrade:", err)
 		return
 	}
-
-	playerID := models.GenerateUUID()
-	player := &models.Player{
-		ID:             playerID,
-		Conn:           conn,
-		Token:          playerData.Token,
-		Name:           playerData.Name,
-		SessionID:      playerData.SessionID,
-		Currency:       currency,
-		CurrencyAmount: playerData.CurrencyAmount,
-		Status:         models.StatusOnline,
+	var player *models.Player
+	// We will just check if the player that connected is part of our disconnected players
+	discPlayer := redisClient.GetDisconnectedPlayerData(sessionID)
+	if discPlayer != nil {
+		player = &models.Player{
+			ID:             discPlayer.ID,
+			Conn:           conn,
+			Token:          playerData.Token,
+			Name:           playerData.Name,
+			SessionID:      playerData.SessionID,
+			Currency:       currency,
+			CurrencyAmount: playerData.CurrencyAmount,
+			Status:         models.StatusInGame,
+			GameID:         discPlayer.GameID,
+		}
+		redisClient.RPush("reconnect_game", player)
+	} else {
+		playerID := models.GenerateUUID()
+		newPlayer := &models.Player{
+			ID:             playerID,
+			Conn:           conn,
+			Token:          playerData.Token,
+			Name:           playerData.Name,
+			SessionID:      playerData.SessionID,
+			Currency:       currency,
+			CurrencyAmount: playerData.CurrencyAmount,
+			Status:         models.StatusOnline,
+		}
+		player = newPlayer
 	}
 
 	// We add the player to our player map.
 	playersMutex.Lock()
-	players[playerID] = player
+	players[player.ID] = player
 	playersMutex.Unlock()
 
 	subscriptionReady := make(chan bool)
@@ -88,7 +106,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	redisClient.SubscribePlayerChannel(*player, func(message string) {
 		//fmt.Println("[wsapi] - Received server to PLAYER message:", message)
-	
+
 		// Send the received message to the player's WebSocket connection
 		err := player.Conn.WriteMessage(websocket.TextMessage, []byte(message))
 		if err != nil {
