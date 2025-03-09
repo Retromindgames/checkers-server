@@ -205,17 +205,16 @@ func processReconnectFromGame() {
 		}
 
 		// We send a message to the reconnected player with the board state.
-		msg, err := messages.GenerateGameStartMessage(*game)
+		msg, err := messages.GenerateGameReconnectMessage(*game)
 		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Reconnect Game) - Error generating game start message: %v\n", name, pid, err)
+			fmt.Printf("[%s-%d] - (Process Reconnect Game) - Error generating game reconnect message: %v\n", name, pid, err)
 			continue
 		}
 		err = redisClient.PublishToPlayer(*playerData, string(msg))
 		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Reconnect Game) - Error publishing game start message: %v\n", name, pid, err)
+			fmt.Printf("[%s-%d] - (Process Reconnect Game) - Error publishing game reconnect message: %v\n", name, pid, err)
 			continue
 		}
-		fmt.Printf("[%s-%d] - (Process Reconnect Game) - game start message: %v\n", name, pid, string(msg))
 
 		// We notify the opponent that the player reconnected.
 		opponent, _ := game.GetOpponentGamePlayer(playerData.ID)

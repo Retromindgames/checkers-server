@@ -30,6 +30,7 @@ var validCommands = map[string]CommandInfo{
 	"opponent_left_room":         {Type: ServerCommand}, // This is a message sent when a player leaves a room.
 	"opponent_disconnected_game": {Type: ServerCommand}, // This is a message sent when a player disconnects from a game.
 	"game_start":                 {Type: ServerCommand}, // This is the message sent with data for the game start.
+	"game_reconnect":             {Type: ServerCommand}, // The same as game_start, but for a reconnect.
 	"game_timer":                 {Type: ServerCommand}, // This is a timer sent to both players in a game.
 	"game_over":                  {Type: ServerCommand}, // Sent when server detects a game over.
 	"turn_switch":                {Type: ServerCommand}, // Sent when the server detects a turn switch.
