@@ -63,6 +63,16 @@ func (r *RedisClient) GameExists(gameID string) (bool, error) {
 	return exists, err
 }
 
+func (r *RedisClient) GetNumberOfGames() int {
+	// Use HLen to get the number of fields (games) in the "games" hash
+	count, err := r.Client.HLen(context.Background(), "games").Result()
+	if err != nil {
+		fmt.Errorf("[RedisClient] - failed to get number of games: %v", err)
+		return 0
+	}
+	return int(count)
+}
+
 // This should be called when a disconnect happens during a game, it will save the
 // session and some player data, to easely identify disconnected players.
 func (r *RedisClient) SaveDisconnectSessionPlayerData(playerData models.Player, game models.Game) {
