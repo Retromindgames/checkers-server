@@ -359,6 +359,7 @@ func startCumulativeTimer(game *models.Game) {
 			activePlayerTimer := playerTimers[activePlayer.ID]
 
 			// Publish the updated timer to both players
+			game, _ := redisClient.GetGame(game.ID)
 			msg, _ := messages.GenerateGameTimerMessage(*game, activePlayerTimer)
 			redisClient.PublishToGamePlayer(game.Players[0], string(msg))
 			redisClient.PublishToGamePlayer(game.Players[1], string(msg))
