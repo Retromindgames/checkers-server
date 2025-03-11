@@ -64,6 +64,18 @@ func (b *Board) GenerateEndGameTestBoard(blackID, whiteID string) {
 	}
 }
 
+func (b *Board) GetPieceByID(pieceID string) *Piece {
+    for _, piece := range b.Grid {
+		if piece == nil {
+			continue
+		}
+        if piece.PieceID == pieceID {
+            return piece
+        }
+    }
+    return nil
+}
+
 func (b *Board) CanPieceCapture(pos string) bool {
 	piece, exists := b.Grid[pos]
 	if !exists || piece == nil {
@@ -113,30 +125,18 @@ func (b *Board) CanPieceCapture(pos string) bool {
 	return false // No captures available
 }
 
-// TODO: Gotta finish implementing this.
-var validSquares = map[string]bool{
-	"A1": false, "A3": true, "A5": true, "A7": true,
-	"B2": true, "B4": true, "B6": true, "B8": true,
-	"C1": true, "C3": true, "C5": true, "C7": true,
-	"D2": true, "D4": true, "D6": true, "D8": true,
-	"E1": true, "E3": true, "E5": true, "E7": true,
-	"F2": true, "F4": true, "F6": true, "F8": true,
-	"G1": true, "G3": true, "G5": true, "G7": true,
-	"H2": true, "H4": true, "H6": true, "H8": true,
+func (b *Board) WasPieceKinged(pos string, piece Piece) bool {
+	if len(pos) == 0 {
+        return false 
+    }
+	firstChar := pos[0]
+	if piece.Type == "b" && firstChar == 'H'{
+		fmt.Printf("(WasPieceKinged) - Black piece was kinged!")
+		return true
+	} 
+	if piece.Type == "w" && firstChar == 'A' {
+		fmt.Printf("(WasPieceKinged) - White piece was kinged!")
+		return true
+	}
+	return false
 }
-
-/*
-	? - Check if a square is valid
-	square := "A3"
-	if valid, exists := validSquares[square]; exists && valid {
-		fmt.Println(square, "is a valid square")
-	} else {
-		fmt.Println(square, "is not a valid square")
-	}
-
-	? - Display the valid squares
-	fmt.Println("Valid squares on the checkers board:")
-	for square := range validSquares {
-		fmt.Println(square)
-	}
-*/

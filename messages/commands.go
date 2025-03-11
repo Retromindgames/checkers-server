@@ -20,7 +20,8 @@ var validCommands = map[string]CommandInfo{
 	"join_room":   {Type: ClientCommand}, // DEPRECATED
 	"create_room": {Type: ClientCommand}, // DEPRECATED
 
-	"move_piece": {Type: ClientCommand}, // This is issued by the cliente to trigger the movement of a piece.
+	"move_piece":   {Type: ClientCommand}, // This is issued by the cliente to trigger the movement of a piece.
+	"invalid_move": {Type: ServerCommand}, // This is issued by the cliente to trigger the movement of a piece.
 
 	"connected":                  {Type: ServerCommand}, // issues when a player connects.
 	"queue_confirmation":         {Type: ServerCommand}, // This confirms that the player was placed in Queue.

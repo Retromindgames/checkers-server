@@ -110,10 +110,21 @@ func processGameMoves() {
 			fmt.Printf("[%s-%d] - (Process Game Moves) - Failed to get game!: %v\n", name, pid, err)
 			continue
 		}
-		opponent, err := game.GetOpponentGamePlayer(move.PlayerID)
+		if game.CurrentPlayerID != move.PlayerID {
+			fmt.Printf("[%s-%d] - (Process Game Moves) - Incorrect current player to process move!: %v\n", name, pid, moveData)
+			continue
+		}
+		//isInvalid, reason := game.IsMoveValid(move)
+		//if isInValid {
+		//}
 
 		// We move our piece.
-		game.MovePiece(move)
+		if !game.MovePiece(move) {
+			fmt.Printf("[%s-%d] - (Process Game Moves) - Invalid Move!: %v\n", name, pid, moveData)
+			msginv, _ := messages.NewMessage("invalid_move", "")
+			redisClient.PublishToPlayer(*player, string(msginv))
+			continue
+		}
 		game.UpdatePlayerPieces()
 		// We send the message to the opponent player.
 		msg, err := messages.GenerateMoveMessage(move)
@@ -121,6 +132,7 @@ func processGameMoves() {
 			fmt.Printf("[%s-%d] - (Process Game Moves) - Failed to generate message: %v\n", name, pid, string(msg))
 		}
 		fmt.Printf("[%s-%d] - (Process Game Moves) - Message to publish: %v\n", name, pid, string(msg))
+		opponent, _ := game.GetOpponentGamePlayer(move.PlayerID)
 		redisClient.PublishToGamePlayer(*opponent, string(msg))
 
 		// We check for game Over
@@ -133,8 +145,12 @@ func processGameMoves() {
 			handleTurnChange(game)
 			continue
 		}
-		// we check for a turn change.
+		// We check for a turn change, if the piece was kinged, it changes turn.
 		if move.IsCapture && !game.Board.CanPieceCapture(move.To) {
+			handleTurnChange(game)
+			continue
+		}
+		if game.Board.WasPieceKinged(move.To, *game.Board.GetPieceByID(move.PieceID)) {
 			handleTurnChange(game)
 			continue
 		}

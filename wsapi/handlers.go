@@ -41,15 +41,18 @@ func handleMessages(player *models.Player) {
 
 		case "leave_room":
 			if player.Status != models.StatusInRoom {
-				player.Conn.WriteMessage(websocket.TextMessage, []byte("Can't issue a leave room when not in a room."))
+				player.Conn.WriteMessage(websocket.TextMessage, []byte("Can't issue a leave room when not in a Room."))
 				continue
 			}
 			handleLeaveRoom(player)
 
 		case "move_piece":
+			if player.Status != models.StatusInGame {
+				player.Conn.WriteMessage(websocket.TextMessage, []byte("Can't issue a move when not in a Game."))
+				continue
+			}
 			handleMovePiece(message, player)
 		}
-
 	}
 }
 
@@ -177,9 +180,20 @@ func handleLeaveRoom(player *models.Player) {
 }
 
 func handleMovePiece(message *messages.Message[json.RawMessage], player *models.Player) {
-	// TODO: Validate we can move.
-	// Currently the movement message is just being sent to the game worker
-	err := redisClient.RPushGeneric("move_piece", message.Value)
+	var move models.Move
+	err := json.Unmarshal([]byte(message.Value), &move) 
+	if err != nil {
+		fmt.Printf("[Handlers] - Handle Move Piece - JSON Unmarshal Error: %v\n", err)
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("[Handlers] - Handle Move Piece - JSON Unmarshal Error"))
+		return
+	}
+	if move.PlayerID != player.ID {
+		fmt.Printf("[Handlers] - Handle Move Piece - move.PlayerID != player.ID\n")
+		player.Conn.WriteMessage(websocket.TextMessage, []byte("[Handlers] - Handle Move Piece - move.PlayerID != player.ID"))
+		return
+	}
+	// movement message is sent to the game worker
+	err = redisClient.RPushGeneric("move_piece", message.Value)
 	if err != nil {
 		fmt.Printf("Error pushing move to Redis handleMovePiece queue: %v\n", err)
 		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))

@@ -201,13 +201,13 @@ func (g *Game) RemovePiece(pos string) {
 	}
 }
 
-func (g *Game) MovePiece(move Move) {
+func (g *Game) MovePiece(move Move) bool {
 
 	// Validate move
-	piece, exists := g.Board.Grid[move.From] // TODO: This was commented, since the FE seems to be sending the wrong ids.
-	if !exists || piece == nil || piece.PieceID != move.PieceID /*|| piece.PlayerID != move.PlayerID*/ {
+	piece, exists := g.Board.Grid[move.From]
+	if !exists || piece == nil || piece.PieceID != move.PieceID || piece.PlayerID != move.PlayerID {
 		// Invalid move, update and break
-		return
+		return false
 	}
 
 	// Move piece to new position
@@ -226,6 +226,7 @@ func (g *Game) MovePiece(move Move) {
 		capturePos := fmt.Sprintf("%c%c", midRow, midCol)
 		g.Board.Grid[capturePos] = nil // Remove captured piece
 	}
+	return true
 }
 
 func (g *Game) CheckGameOver() bool {
@@ -241,9 +242,4 @@ func (g *Game) CheckGameOver() bool {
 func (g *Game) FinishGame(winnerID string) {
 	g.Winner = winnerID
 	g.EndTime = time.Now()
-}
-
-// TODO: USE helper function for logging errors
-func logError(message string, err error) {
-	//fmt.Printf("[%s-%d] - (Process Game Moves) - %s: %v\n", name, pid, message, err)
 }
