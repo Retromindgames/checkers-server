@@ -135,6 +135,8 @@ func processGameMoves() {
 		opponent, _ := game.GetOpponentGamePlayer(move.PlayerID)
 		redisClient.PublishToGamePlayer(*opponent, string(msg))
 
+		game.Moves = append(game.Moves, move)
+
 		// We check for game Over
 		if game.CheckGameOver() {
 			handleGameEnd(*game, "winner", move.PlayerID)

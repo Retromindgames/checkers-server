@@ -36,7 +36,7 @@ type Game struct {
 	CurrentPlayerID string       `json:"current_player_id"`
 	Turn            int          `json:"turn"`
 	Kinged          Kinged       `json:"kinged"`
-	Moves           []string     `json:"moves"`
+	Moves           []Move	     `json:"moves"`
 	StartTime       time.Time    `json:"start_time"`
 	EndTime         time.Time    `json:"end_time"`
 	Winner          string       `json:"winner"`
@@ -93,7 +93,7 @@ func (r *Room) NewGame() *Game {
 		CurrentPlayerID: r.CurrentPlayerID,
 		Turn:            r.Turn,
 		Kinged:          Kinged{W: []string{}, B: []string{}},
-		Moves:           []string{},
+		Moves:           []Move{},
 		StartTime:       time.Now(),
 		Winner:          "",
 		BetValue:        r.BetValue,

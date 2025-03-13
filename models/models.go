@@ -5,6 +5,14 @@ import (
 )
 
 
+type Session struct {
+	ID 			string  	`json:"session_id"`
+	Token 		float64 	`json:"token"`
+	PlayerName   	 int64  `json:"player_name"`
+	Currency 	int64   	`json:"currency"`
+	OperatorName string		`json:"operator_name"`
+}
+
 type RoomAggregate struct {
 	AggregateValue float64 `json:"aggregate_value"`
 	Count          int64   `json:"count"`
