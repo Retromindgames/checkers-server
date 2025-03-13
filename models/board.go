@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 )
@@ -17,6 +18,8 @@ func NewBoard(blackID, whiteID, boardtype string) *Board {
 		board.GenerateInitialBoard(blackID, whiteID) // Automatically initialize board state
 	case "two-pieces-endgame":
 		board.GenerateEndGameTestBoard(blackID, whiteID) // Automatically initialize board state
+	case "multiple-capture":
+		board.GenerateMultipleCaptureTestBoard(blackID, whiteID) // Automatically initialize board state
 	}
 	return board
 }
@@ -64,6 +67,33 @@ func (b *Board) GenerateEndGameTestBoard(blackID, whiteID string) {
 	}
 }
 
+// Test config for multiple capture
+func (b *Board) GenerateMultipleCaptureTestBoard(blackID, whiteID string) {
+	// Set positions for testing
+	testPositions := map[string]*Piece{
+		"A1": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
+		"A3": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
+		"A7": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
+		"B2": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
+		"B4": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
+		"C5": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
+		"D6": {Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID}, // Black piece
+		"E7": {Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID}, // Black piece
+	}
+
+	// Initialize board and place test pieces
+	for row := 'A'; row <= 'H'; row++ {
+		for col := 1; col <= 8; col++ {
+			pos := fmt.Sprintf("%c%d", row, col)
+			if piece, exists := testPositions[pos]; exists {
+				b.Grid[pos] = piece // Place test pieces
+			} else {
+				b.Grid[pos] = nil // Empty squares
+			}
+		}
+	}
+}
+
 func (b *Board) GetPieceByID(pieceID string) *Piece {
     for _, piece := range b.Grid {
 		if piece == nil {
@@ -76,19 +106,74 @@ func (b *Board) GetPieceByID(pieceID string) *Piece {
     return nil
 }
 
+//func (b *Board) CanPieceCapture(pos string) bool {
+//	piece, exists := b.Grid[pos]
+//	if !exists || piece == nil {
+//		fmt.Printf("(CanPieceCapture) - Piece doesnt exist in the board")
+//		return false // No piece at this position
+//	}
+//	//var direction = piece.Type == "b" ? 1 : -1;
+//	var direction = 1
+//	if(piece.Type == "w"){
+//		direction = -1
+//	}
+//	directions := []struct {rowDelta, colDelta int} {
+//		{1, direction} , {-1, direction},
+//	}
+//
+//	// Convert position (e.g., "A3" → row 'A', col 3)
+//	fromRow := rune(pos[0]) // Convert byte to rune
+//	fromCol := int(pos[1] - '0')
+//
+//	for _, dir := range directions {
+//		// Compute middle position (opponent's piece)
+//		midRow := fromRow + rune(dir.rowDelta)
+//		midCol := fromCol + dir.colDelta
+//		
+//		midPos := fmt.Sprintf("%c%d", midRow, midCol)
+//		
+//		// Compute landing position
+//		landRow := fromRow + rune(2*dir.rowDelta)
+//		landCol := fromCol + 2*dir.colDelta
+//		landPos := fmt.Sprintf("%c%d", landRow, landCol)
+//		fmt.Printf("(CanPieceCapture) - landPos [%s]", landPos)
+//
+//		// Ensure middle square has an opponent piece
+//		midPiece, midExists := b.Grid[midPos]
+//		if !midExists || midPiece == nil || midPiece.PlayerID == piece.PlayerID {
+//			fmt.Printf("(CanPieceCapture) - middle piece doesnt exists!")
+//			continue // No opponent to jump over
+//		}
+//		fmt.Printf("(CanPieceCapture) - middle piece  exists!")
+//		// Ensure landing square is empty
+//		if destPiece, destExists := b.Grid[landPos]; destExists && destPiece == nil {
+//			fmt.Printf("(CanPieceCapture) - Valid capture move found")
+//			return true // Valid capture move found!
+//		}
+//	}
+//	fmt.Printf("(CanPieceCapture) - No captures available ")
+//	return false // No captures available
+//}
+
 func (b *Board) CanPieceCapture(pos string) bool {
 	piece, exists := b.Grid[pos]
 	if !exists || piece == nil {
-		fmt.Printf("(CanPieceCapture) - Piece doesnt exist in the board")
+		log.Printf("(CanPieceCapture) - Piece doesn't exist on the board\n")
 		return false // No piece at this position
 	}
-	//var direction = piece.Type == "b" ? 1 : -1;
-	var direction = 1
-	if(piece.Type == "w"){
-		direction = -1
+
+	// Determine the direction based on the piece type
+	var direction int
+	if piece.Type == "w" {
+		direction = -1 // White pieces move "up" (decreasing row)
+	} else {
+		direction = 1 // Black pieces move "down" (increasing row)
 	}
-	directions := []struct {rowDelta, colDelta int} {
-		{1, direction} , {-1, direction},
+
+	// Define the possible capture directions
+	directions := []struct{ rowDelta, colDelta int }{
+		{direction, 1},  // Diagonal right
+		{direction, -1}, // Diagonal left
 	}
 
 	// Convert position (e.g., "A3" → row 'A', col 3)
@@ -99,31 +184,103 @@ func (b *Board) CanPieceCapture(pos string) bool {
 		// Compute middle position (opponent's piece)
 		midRow := fromRow + rune(dir.rowDelta)
 		midCol := fromCol + dir.colDelta
-		
 		midPos := fmt.Sprintf("%c%d", midRow, midCol)
-		
+
 		// Compute landing position
 		landRow := fromRow + rune(2*dir.rowDelta)
 		landCol := fromCol + 2*dir.colDelta
 		landPos := fmt.Sprintf("%c%d", landRow, landCol)
-		fmt.Printf("(CanPieceCapture) - landPos [%s]", landPos)
+		log.Printf("(CanPieceCapture) - Checking landPos [%s]\n", landPos)
 
 		// Ensure middle square has an opponent piece
 		midPiece, midExists := b.Grid[midPos]
 		if !midExists || midPiece == nil || midPiece.PlayerID == piece.PlayerID {
-			fmt.Printf("(CanPieceCapture) - middle piece doesnt exists!")
+			log.Printf("(CanPieceCapture) - Middle piece doesn't exist or is not an opponent!\n")
 			continue // No opponent to jump over
 		}
-		fmt.Printf("(CanPieceCapture) - middle piece  exists!")
+
+		log.Printf("(CanPieceCapture) - Middle piece exists and is an opponent!\n")
+
 		// Ensure landing square is empty
 		if destPiece, destExists := b.Grid[landPos]; destExists && destPiece == nil {
-			fmt.Printf("(CanPieceCapture) - Valid capture move found")
+			log.Printf("(CanPieceCapture) - Valid capture move found\n")
 			return true // Valid capture move found!
 		}
 	}
-	fmt.Printf("(CanPieceCapture) - No captures available ")
+
+	log.Printf("(CanPieceCapture) - No captures available\n")
 	return false // No captures available
 }
+
+
+func (b *Board) CanPieceCaptureNEW(pos string) bool {
+	piece, exists := b.Grid[pos]
+	if !exists || piece == nil {
+		log.Printf("(CanPieceCapture) - Piece doesn't exist on the board\n")
+		return false // No piece at this position
+	}
+
+	// Define the possible capture directions
+	var directions []struct{ rowDelta, colDelta int }
+
+	if piece.IsKinged {
+		// Kings can move in all four diagonal directions
+		directions = []struct{ rowDelta, colDelta int }{
+			{1, 1},   // Diagonal right (down)
+			{1, -1},  // Diagonal left (down)
+			{-1, 1},  // Diagonal right (up)
+			{-1, -1}, // Diagonal left (up)
+		}
+	} else {
+		// Normal pieces can only move forward
+		var direction int
+		if piece.Type == "w" {
+			direction = -1 // White pieces move "up" (decreasing row)
+		} else {
+			direction = 1 // Black pieces move "down" (increasing row)
+		}
+		directions = []struct{ rowDelta, colDelta int }{
+			{direction, 1},  // Diagonal right
+			{direction, -1}, // Diagonal left
+		}
+	}
+
+	// Convert position (e.g., "A3" → row 'A', col 3)
+	fromRow := rune(pos[0]) // Convert byte to rune
+	fromCol := int(pos[1] - '0')
+
+	for _, dir := range directions {
+		// Compute middle position (opponent's piece)
+		midRow := fromRow + rune(dir.rowDelta)
+		midCol := fromCol + dir.colDelta
+		midPos := fmt.Sprintf("%c%d", midRow, midCol)
+
+		// Compute landing position
+		landRow := fromRow + rune(2*dir.rowDelta)
+		landCol := fromCol + 2*dir.colDelta
+		landPos := fmt.Sprintf("%c%d", landRow, landCol)
+		log.Printf("(CanPieceCapture) - Checking landPos [%s]\n", landPos)
+
+		// Ensure middle square has an opponent piece
+		midPiece, midExists := b.Grid[midPos]
+		if !midExists || midPiece == nil || midPiece.PlayerID == piece.PlayerID {
+			log.Printf("(CanPieceCapture) - Middle piece doesn't exist or is not an opponent!\n")
+			continue // No opponent to jump over
+		}
+
+		log.Printf("(CanPieceCapture) - Middle piece exists and is an opponent!\n")
+
+		// Ensure landing square is empty
+		if destPiece, destExists := b.Grid[landPos]; destExists && destPiece == nil {
+			log.Printf("(CanPieceCapture) - Valid capture move found\n")
+			return true // Valid capture move found!
+		}
+	}
+
+	log.Printf("(CanPieceCapture) - No captures available\n")
+	return false // No captures available
+}
+
 
 func (b *Board) WasPieceKinged(pos string, piece Piece) bool {
 	if len(pos) == 0 {

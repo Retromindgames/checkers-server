@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 )
@@ -46,7 +45,7 @@ func LoadConfig() {
 	if configPath == "" {
 		log.Fatal("[config.go] - CONFIG_PATH not set")
 	} 
-	fmt.Println("[config.go] - Config path is:", configPath)
+	log.Println("[config.go] - Config path is:", configPath)
 	
 	file, err := os.Open(configPath)
 	if err != nil {

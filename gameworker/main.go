@@ -125,7 +125,16 @@ func processGameMoves() {
 			redisClient.PublishToPlayer(*player, string(msginv))
 			continue
 		}
+		
 		game.UpdatePlayerPieces()
+		piece := game.Board.GetPieceByID(move.PieceID)
+		move.IsKinged = game.Board.WasPieceKinged(move.To, *piece)
+		piece.IsKinged = move.IsKinged
+		
+		
+		// TODO: Check for isCapture.
+		
+		
 		// We send the message to the opponent player.
 		msg, err := messages.GenerateMoveMessage(move)
 		if err != nil {
@@ -135,6 +144,9 @@ func processGameMoves() {
 		opponent, _ := game.GetOpponentGamePlayer(move.PlayerID)
 		redisClient.PublishToGamePlayer(*opponent, string(msg))
 
+
+		// Since the move was validated and passed to the other player, its time to check for our end turn / end game conditions.
+		// This means we can add the move to our game.
 		game.Moves = append(game.Moves, move)
 
 		// We check for game Over
@@ -148,11 +160,11 @@ func processGameMoves() {
 			continue
 		}
 		// We check for a turn change, if the piece was kinged, it changes turn.
-		if move.IsCapture && !game.Board.CanPieceCapture(move.To) {
+		if move.IsCapture && !game.Board.CanPieceCaptureNEW(move.To) {
 			handleTurnChange(game)
 			continue
 		}
-		if game.Board.WasPieceKinged(move.To, *game.Board.GetPieceByID(move.PieceID)) {
+		if move.IsKinged {
 			handleTurnChange(game)
 			continue
 		}

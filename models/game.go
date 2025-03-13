@@ -11,6 +11,7 @@ import (
 type Piece struct {
 	Type     string `json:"type"`
 	PlayerID string `json:"player_id"`
+	IsKinged bool `json:"is_kinged"`
 	PieceID  string `json:"piece_id"`
 }
 
@@ -35,18 +36,13 @@ type Game struct {
 	Players         []GamePlayer `json:"players"`
 	CurrentPlayerID string       `json:"current_player_id"`
 	Turn            int          `json:"turn"`
-	Kinged          Kinged       `json:"kinged"`
 	Moves           []Move	     `json:"moves"`
 	StartTime       time.Time    `json:"start_time"`
 	EndTime         time.Time    `json:"end_time"`
 	Winner          string       `json:"winner"`
 	BetValue        float64      `json:"bet_value"` // Bet amount for the game
-	TimerSetting string		 `json:"timer_settings"`
-}
-
-type Kinged struct {
-	W []string `json:"w"`
-	B []string `json:"b"`
+	TimerSetting 	string		 `json:"timer_settings"`
+	OperatorName 	string 		 `json:"operator_name"`
 }
 
 // Move represents a single move in the game
@@ -89,10 +85,10 @@ func (r *Room) NewGame() *Game {
 		ID:              r.ID,
 		Board:           *NewBoard(r.CurrentPlayerID, whiteID, "std-game"),
 		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "two-pieces-endgame"),
+		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "multiple-capture"),
 		Players:         mapPlayers(r),
 		CurrentPlayerID: r.CurrentPlayerID,
 		Turn:            r.Turn,
-		Kinged:          Kinged{W: []string{}, B: []string{}},
 		Moves:           []Move{},
 		StartTime:       time.Now(),
 		Winner:          "",
