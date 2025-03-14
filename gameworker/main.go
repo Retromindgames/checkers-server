@@ -4,6 +4,7 @@ import (
 	"checkers-server/config"
 	"checkers-server/messages"
 	"checkers-server/models"
+	"checkers-server/postgrescli"
 	"checkers-server/redisdb"
 	"context"
 	"encoding/json"
@@ -15,6 +16,7 @@ import (
 
 var pid int
 var redisClient *redisdb.RedisClient
+var postgresClient *postgrescli.PostgresCli
 var name = "GameWorker"
 
 func init() {
@@ -26,6 +28,11 @@ func init() {
 		log.Fatalf("[%s-Redis] Error initializing Redis client: %v\n", name, err)
 	}
 	redisClient = client
+	sqlcliente, err := postgrescli.NewPostgresCli("sa", "checkersdb", "checkers", "localhost", "5432")
+	if err != nil {
+		log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)
+	}
+	postgresClient = sqlcliente
 }
 
 func main() {
@@ -125,16 +132,14 @@ func processGameMoves() {
 			redisClient.PublishToPlayer(*player, string(msginv))
 			continue
 		}
-		
+
 		game.UpdatePlayerPieces()
 		piece := game.Board.GetPieceByID(move.PieceID)
 		move.IsKinged = game.Board.WasPieceKinged(move.To, *piece)
 		piece.IsKinged = move.IsKinged
-		
-		
+
 		// TODO: Check for isCapture.
-		
-		
+
 		// We send the message to the opponent player.
 		msg, err := messages.GenerateMoveMessage(move)
 		if err != nil {
@@ -143,7 +148,6 @@ func processGameMoves() {
 		fmt.Printf("[%s-%d] - (Process Game Moves) - Message to publish: %v\n", name, pid, string(msg))
 		opponent, _ := game.GetOpponentGamePlayer(move.PlayerID)
 		redisClient.PublishToGamePlayer(*opponent, string(msg))
-
 
 		// Since the move was validated and passed to the other player, its time to check for our end turn / end game conditions.
 		// This means we can add the move to our game.
@@ -214,7 +218,6 @@ func processDisconnectFromGame() {
 		msg, _ := messages.NewMessage("opponent_disconnected_game", "disconnected")
 		opponent, _ := game.GetOpponentGamePlayer(gamePlayer.ID)
 		redisClient.PublishToGamePlayer(*opponent, string(msg))
-
 	}
 }
 
@@ -464,6 +467,9 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 	} else {
 		fmt.Printf("[%s-%d] - (Handle Game Over) - Removed game!: %v\n", name, pid, err)
 	}
+
+	// We then save the game to POSTGRES.
+	postgresClient.SaveGame(game)
 }
 
 func BroadCastToGamePlayers(msg []byte, game models.Game) {
