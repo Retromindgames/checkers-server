@@ -15,6 +15,12 @@ docker rm $(docker ps -aq) // removes containers
 docker rmi $(docker images -aq) // removes images
 ```
 
+Or for windows:
+FOR /F "tokens=*" %i IN ('docker ps -aq') DO docker stop %i
+FOR /F "tokens=*" %i IN ('docker ps -qa') DO docker rm -v -f %i
+FOR /F "tokens=*" %i IN ('docker images -aq') DO docker rmi -f %i 
+
+
 To restart docker containers in the server 
 
 docker restart $(docker ps -q)
