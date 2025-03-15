@@ -71,14 +71,14 @@ func (b *Board) GenerateEndGameTestBoard(blackID, whiteID string) {
 func (b *Board) GenerateMultipleCaptureTestBoard(blackID, whiteID string) {
 	// Set positions for testing
 	testPositions := map[string]*Piece{
-		"A1": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
-		"A3": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
-		"A7": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
-		"B2": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
-		"B4": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
-		"C5": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, // Black piece
-		"D6": {Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID}, // Black piece
-		"E7": {Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID}, // Black piece
+		"A1": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
+		"A3": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
+		"A7": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
+		"B2": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
+		"B4": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
+		"C5": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
+		"D6": {Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID}, 
+		"E7": {Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID},
 	}
 
 	// Initialize board and place test pieces
@@ -163,12 +163,7 @@ func (b *Board) CanPieceCapture(pos string) bool {
 	}
 
 	// Determine the direction based on the piece type
-	var direction int
-	if piece.Type == "w" {
-		direction = -1 // White pieces move "up" (decreasing row)
-	} else {
-		direction = 1 // Black pieces move "down" (increasing row)
-	}
+	var direction = GetPieceDirection(*piece)
 
 	// Define the possible capture directions
 	directions := []struct{ rowDelta, colDelta int }{
@@ -177,8 +172,11 @@ func (b *Board) CanPieceCapture(pos string) bool {
 	}
 
 	// Convert position (e.g., "A3" → row 'A', col 3)
-	fromRow := rune(pos[0]) // Convert byte to rune
-	fromCol := int(pos[1] - '0')
+	fromRow, fromCol, err := parsePosition(pos)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
 
 	for _, dir := range directions {
 		// Compute middle position (opponent's piece)
@@ -211,7 +209,6 @@ func (b *Board) CanPieceCapture(pos string) bool {
 	log.Printf("(CanPieceCapture) - No captures available\n")
 	return false // No captures available
 }
-
 
 func (b *Board) CanPieceCaptureNEW(pos string) bool {
 	piece, exists := b.Grid[pos]
@@ -231,14 +228,11 @@ func (b *Board) CanPieceCaptureNEW(pos string) bool {
 			{-1, 1},  // Diagonal right (up)
 			{-1, -1}, // Diagonal left (up)
 		}
+		log.Printf("(CanPieceCapture) - Piece is king, multiple directions.")
 	} else {
+		log.Printf("(CanPieceCapture) - Piece is not king, single direction.")
 		// Normal pieces can only move forward
-		var direction int
-		if piece.Type == "w" {
-			direction = -1 // White pieces move "up" (decreasing row)
-		} else {
-			direction = 1 // Black pieces move "down" (increasing row)
-		}
+		var direction = GetPieceDirection(*piece)
 		directions = []struct{ rowDelta, colDelta int }{
 			{direction, 1},  // Diagonal right
 			{direction, -1}, // Diagonal left
@@ -246,8 +240,11 @@ func (b *Board) CanPieceCaptureNEW(pos string) bool {
 	}
 
 	// Convert position (e.g., "A3" → row 'A', col 3)
-	fromRow := rune(pos[0]) // Convert byte to rune
-	fromCol := int(pos[1] - '0')
+	fromRow, fromCol, err := parsePosition(pos)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
 
 	for _, dir := range directions {
 		// Compute middle position (opponent's piece)
@@ -276,7 +273,6 @@ func (b *Board) CanPieceCaptureNEW(pos string) bool {
 			return true // Valid capture move found!
 		}
 	}
-
 	log.Printf("(CanPieceCapture) - No captures available\n")
 	return false // No captures available
 }
@@ -296,4 +292,31 @@ func (b *Board) WasPieceKinged(pos string, piece Piece) bool {
 		return true
 	}
 	return false
+}
+
+func GetPieceDirection(piece Piece) int {
+	// Determine the direction based on the piece type
+	if piece.Type == "w" {
+		return -1 // White pieces move "up" (decreasing row)
+	} else {
+		return 1  // Black pieces move "down" (increasing row)
+	}
+}
+
+// parsePosition converts a position string (e.g., "A3") into row (rune) and column (int).
+// Returns an error if the position is invalid.
+func parsePosition(pos string) (rune, int, error) {
+	if len(pos) != 2 {
+		return 0, 0, fmt.Errorf("(Parse Position) - invalid position format: must be 2 characters (e.g., 'A3')")
+	}
+
+	row := rune(pos[0]) // Convert the first character to a rune (e.g., 'A')
+	col := int(pos[1] - '0') // Convert the second character to an integer (e.g., '3' → 3)
+
+	// Validate the row and column
+	if row < 'A' || row > 'H' || col < 1 || col > 8 {
+		return 0, 0, fmt.Errorf("(Parse Position) - position is out of bounds: must be between A1 and H8")
+	}
+
+	return row, col, nil
 }

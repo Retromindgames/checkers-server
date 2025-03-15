@@ -28,11 +28,11 @@ func init() {
 		log.Fatalf("[%s-Redis] Error initializing Redis client: %v\n", name, err)
 	}
 	redisClient = client
-	sqlcliente, err := postgrescli.NewPostgresCli("sa", "checkersdb", "checkers", "localhost", "5432")
-	if err != nil {
-		log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)
-	}
-	postgresClient = sqlcliente
+	//sqlcliente, err := postgrescli.NewPostgresCli("sa", "checkersdb", "checkers", "localhost", "5432")
+	//if err != nil {
+	//	log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)
+	//}
+	//postgresClient = sqlcliente
 }
 
 func main() {
@@ -136,7 +136,9 @@ func processGameMoves() {
 		game.UpdatePlayerPieces()
 		piece := game.Board.GetPieceByID(move.PieceID)
 		move.IsKinged = game.Board.WasPieceKinged(move.To, *piece)
-		piece.IsKinged = move.IsKinged
+		if move.IsKinged {
+			piece.IsKinged = move.IsKinged
+		}
 
 		// TODO: Check for isCapture.
 
@@ -163,7 +165,7 @@ func processGameMoves() {
 			handleTurnChange(game)
 			continue
 		}
-		// We check for a turn change, if the piece was kinged, it changes turn.
+
 		if move.IsCapture && !game.Board.CanPieceCaptureNEW(move.To) {
 			handleTurnChange(game)
 			continue
@@ -469,7 +471,7 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 	}
 
 	// We then save the game to POSTGRES.
-	postgresClient.SaveGame(game)
+	//postgresClient.SaveGame(game)
 }
 
 func BroadCastToGamePlayers(msg []byte, game models.Game) {
