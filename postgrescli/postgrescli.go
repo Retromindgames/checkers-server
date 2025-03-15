@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+
+	_ "github.com/lib/pq"
 )
 
 type PostgresCli struct {
