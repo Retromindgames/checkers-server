@@ -67,6 +67,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			CurrencyAmount: playerData.CurrencyAmount,
 			Status:         models.StatusInGame,
 			GameID:         discPlayer.GameID,
+			WriteChan:      make(chan []byte),
 		}
 	} else {
 		playerID := models.GenerateUUID()
@@ -79,9 +80,11 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			Currency:       currency,
 			CurrencyAmount: playerData.CurrencyAmount,
 			Status:         models.StatusOnline,
+			WriteChan:      make(chan []byte),
 		}
 		player = newPlayer
 	}
+	player.StartWriteGoroutine() // Start the write goroutine
 
 	// We add the player to our player map.
 	playersMutex.Lock()
@@ -108,41 +111,13 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 // Function to handle player channel subscription
 func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	redisClient.SubscribePlayerChannel(*player, func(message string) {
-		//fmt.Println("[wsapi] - Received server to PLAYER message:", message)
-
+		fmt.Println("[wsapi] - Received server to PLAYER message:", message)
 		// Send the received message to the player's WebSocket connection
-		err := player.Conn.WriteMessage(websocket.TextMessage, []byte(message))
-		if err != nil {
-			fmt.Println("[wsapi] - Failed to send message to player:", err)
-			player.Conn.Close()
-		}
+		player.WriteChan <- []byte(message)
 	})
 	ready <- true // Notify that the subscription is ready
 }
 
-func subscribeToGameChannel(player models.Player, gameID string, ready chan bool) {
-	redisClient.Subscribe("game:"+gameID, func(message string) {
-		// TODO: This should just return messaged to player.
-		// Step 1: Parse the message using messages.ParseMessage
-		msg, err := messages.ParseMessage([]byte(message))
-		if err != nil {
-			fmt.Println("[wsapi] - Failed to parse message:", err)
-			return
-		}
-		// Step 2: Marshal the message back to JSON
-		finalBytes, err := json.Marshal(msg)
-		if err != nil {
-			fmt.Println("[wsapi] - Failed to marshal final message:", err)
-			return
-		}
-		err = player.Conn.WriteMessage(websocket.TextMessage, finalBytes)
-		if err != nil {
-			fmt.Println("[wsapi] - Failed to send message to player:", err)
-			player.Conn.Close()
-		}
-	})
-	ready <- true // Notify that the subscription is ready
-}
 
 func subscribeToBroadcastChannel() {
 	redisClient.Subscribe("game_info", func(message string) {
@@ -163,11 +138,7 @@ func subscribeToBroadcastChannel() {
 		playersMutex.Lock()
 		defer playersMutex.Unlock() // Ensures mutex is unlocked even if an error occurs
 		for _, player := range players {
-			err := player.Conn.WriteMessage(websocket.TextMessage, finalBytes)
-			if err != nil {
-				fmt.Println("[wsapi] - Failed to send message to player:", err)
-				player.Conn.Close()
-			}
+			player.WriteChan <- finalBytes // Send message to the write channel
 		}
 	})
 }
