@@ -74,14 +74,14 @@ func (r *RedisClient) GetRoomAggregates() (*models.RoomAggregateResponse, error)
 		roomAggregate = append(roomAggregate, aggregate)
 		//totalPlayers += int(value)
 	}
-	
+
 	// Sort by Count in descending order (most players first)
 	sort.Slice(roomAggregate, func(i, j int) bool {
 		return roomAggregate[i].Count > roomAggregate[j].Count
 	})
 
 	return &models.RoomAggregateResponse{
-		PlayersWaiting: int(totalPlayers),
+		PlayersWaiting: int(totalPlayers) + (r.GetNumberOfGames() * 2),
 		RoomAggregate:  roomAggregate,
 	}, nil
 }

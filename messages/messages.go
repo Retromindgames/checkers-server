@@ -26,7 +26,7 @@ type GameConnectedMessage struct {
 // This one missed the json code, the FE is already working wth this... dont CHANGE
 type GameStartMessage struct {
 	Board           map[string]*models.Piece
-	MaxTimer int		`json:"max_timer"`
+	MaxTimer        int `json:"max_timer"`
 	CurrentPlayerID string
 	GamePlayers     []models.GamePlayer
 }
@@ -159,11 +159,21 @@ func GenerateQueueConfirmationMessage(value bool) ([]byte, error) {
 func GenerateGameStartMessage(game models.Game) ([]byte, error) {
 	gamestart := GameStartMessage{
 		Board:           game.Board.Grid,
-		MaxTimer: 		 game.Players[0].Timer,
+		MaxTimer:        game.Players[0].Timer,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers:     game.Players,
 	}
 	return NewMessage("game_start", gamestart)
+}
+
+func GenerateGameReconnectMessage(game models.Game) ([]byte, error) {
+	gamestart := GameStartMessage{
+		Board:           game.Board.Grid,
+		MaxTimer:        game.Players[0].Timer,
+		CurrentPlayerID: game.CurrentPlayerID,
+		GamePlayers:     game.Players,
+	}
+	return NewMessage("game_reconnect", gamestart)
 }
 
 func GenerateGameTimerMessage(game models.Game, timer int) ([]byte, error) {

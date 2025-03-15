@@ -11,6 +11,7 @@ import (
 type Piece struct {
 	Type     string `json:"type"`
 	PlayerID string `json:"player_id"`
+	IsKinged bool `json:"is_kinged"`
 	PieceID  string `json:"piece_id"`
 }
 
@@ -35,18 +36,13 @@ type Game struct {
 	Players         []GamePlayer `json:"players"`
 	CurrentPlayerID string       `json:"current_player_id"`
 	Turn            int          `json:"turn"`
-	Kinged          Kinged       `json:"kinged"`
-	Moves           []string     `json:"moves"`
+	Moves           []Move	     `json:"moves"`
 	StartTime       time.Time    `json:"start_time"`
 	EndTime         time.Time    `json:"end_time"`
 	Winner          string       `json:"winner"`
 	BetValue        float64      `json:"bet_value"` // Bet amount for the game
-	TimerSetting string		 `json:"timer_settings"`
-}
-
-type Kinged struct {
-	W []string `json:"w"`
-	B []string `json:"b"`
+	TimerSetting 	string		 `json:"timer_settings"`
+	OperatorName 	string 		 `json:"operator_name"`
 }
 
 // Move represents a single move in the game
@@ -87,13 +83,13 @@ func (r *Room) NewGame() *Game {
 
 	game := Game{
 		ID:              r.ID,
-		Board:           *NewBoard(r.CurrentPlayerID, whiteID, "std-game"),
+		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "std-game"),
 		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "two-pieces-endgame"),
+		Board:           *NewBoard(r.CurrentPlayerID, whiteID, "multiple-capture"),
 		Players:         mapPlayers(r),
 		CurrentPlayerID: r.CurrentPlayerID,
 		Turn:            r.Turn,
-		Kinged:          Kinged{W: []string{}, B: []string{}},
-		Moves:           []string{},
+		Moves:           []Move{},
 		StartTime:       time.Now(),
 		Winner:          "",
 		BetValue:        r.BetValue,
@@ -201,13 +197,13 @@ func (g *Game) RemovePiece(pos string) {
 	}
 }
 
-func (g *Game) MovePiece(move Move) {
+func (g *Game) MovePiece(move Move) bool {
 
 	// Validate move
-	piece, exists := g.Board.Grid[move.From] // TODO: This was commented, since the FE seems to be sending the wrong ids.
-	if !exists || piece == nil || piece.PieceID != move.PieceID /*|| piece.PlayerID != move.PlayerID*/ {
+	piece, exists := g.Board.Grid[move.From]
+	if !exists || piece == nil || piece.PieceID != move.PieceID || piece.PlayerID != move.PlayerID {
 		// Invalid move, update and break
-		return
+		return false
 	}
 
 	// Move piece to new position
@@ -226,6 +222,7 @@ func (g *Game) MovePiece(move Move) {
 		capturePos := fmt.Sprintf("%c%c", midRow, midCol)
 		g.Board.Grid[capturePos] = nil // Remove captured piece
 	}
+	return true
 }
 
 func (g *Game) CheckGameOver() bool {
@@ -241,9 +238,4 @@ func (g *Game) CheckGameOver() bool {
 func (g *Game) FinishGame(winnerID string) {
 	g.Winner = winnerID
 	g.EndTime = time.Now()
-}
-
-// TODO: USE helper function for logging errors
-func logError(message string, err error) {
-	//fmt.Printf("[%s-%d] - (Process Game Moves) - %s: %v\n", name, pid, message, err)
 }
