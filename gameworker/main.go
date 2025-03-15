@@ -28,11 +28,11 @@ func init() {
 		log.Fatalf("[%s-Redis] Error initializing Redis client: %v\n", name, err)
 	}
 	redisClient = client
-	//sqlcliente, err := postgrescli.NewPostgresCli("sa", "checkersdb", "checkers", "localhost", "5432")
-	//if err != nil {
-	//	log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)
-	//}
-	//postgresClient = sqlcliente
+	sqlcliente, err := postgrescli.NewPostgresCli("sa", "checkersdb", "checkers", "localhost", "5432")
+	if err != nil {
+		log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)
+	}
+	postgresClient = sqlcliente
 }
 
 func main() {
