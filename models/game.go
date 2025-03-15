@@ -210,17 +210,43 @@ func (g *Game) MovePiece(move Move) bool {
 	g.Board.Grid[move.To] = piece
 	g.Board.Grid[move.From] = nil
 
-	// TODO: Handle kinging, find kinged piece.
-	if move.IsKinged {
-		//piece.Type = strings.ToUpper(piece.Type) // Convert to uppercase to indicate a king
-	}
-
-	// TODO: Review and test this. Handle capture (assumes captured piece's position is between From and To)
+	//if move.IsCapture && !piece.IsKinged {
+	//	midRow := (move.From[0] + move.To[0]) / 2
+	//	midCol := (move.From[1] + move.To[1]) / 2
+	//	capturePos := fmt.Sprintf("%c%c", midRow, midCol)
+	//	g.Board.Grid[capturePos] = nil // Remove captured piece
+	//}
+	// Handle capture
 	if move.IsCapture {
-		midRow := (move.From[0] + move.To[0]) / 2
-		midCol := (move.From[1] + move.To[1]) / 2
-		capturePos := fmt.Sprintf("%c%c", midRow, midCol)
-		g.Board.Grid[capturePos] = nil // Remove captured piece
+		var capturePos string
+		if piece.IsKinged {
+			// For kinged pieces, the captured piece is the last square before the landing position
+			fromRow, fromCol := move.From[0], move.From[1]
+			toRow, toCol := move.To[0], move.To[1]
+
+			// Calculate the direction of movement
+			rowStep := 1
+			if toRow < fromRow {
+				rowStep = -1
+			}
+			colStep := 1
+			if toCol < fromCol {
+				colStep = -1
+			}
+
+			// Calculate the position of the captured piece
+			captureRow := toRow - byte(rowStep)
+			captureCol := toCol - byte(colStep)
+			capturePos = fmt.Sprintf("%c%c", captureRow, captureCol)
+		} else {
+			// For regular pieces, the captured piece is in the middle of the from and to positions
+			midRow := (move.From[0] + move.To[0]) / 2
+			midCol := (move.From[1] + move.To[1]) / 2
+			capturePos = fmt.Sprintf("%c%c", midRow, midCol)
+		}
+
+		// Remove the captured piece
+		g.Board.Grid[capturePos] = nil
 	}
 	return true
 }

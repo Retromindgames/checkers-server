@@ -121,9 +121,13 @@ func processGameMoves() {
 			fmt.Printf("[%s-%d] - (Process Game Moves) - Incorrect current player to process move!: %v\n", name, pid, moveData)
 			continue
 		}
-		//isInvalid, reason := game.IsMoveValid(move)
-		//if isInValid {
-		//}
+
+		valid, err := game.Board.IsValidMove(move)
+		if err != nil {
+			log.Printf("Error: %v", err)
+		} else {
+			log.Printf("Move is valid: %v", valid)
+		}
 
 		// We move our piece.
 		if !game.MovePiece(move) {

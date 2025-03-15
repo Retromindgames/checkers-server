@@ -279,6 +279,10 @@ func (b *Board) CanPieceCaptureNEW(pos string) bool {
 
 
 func (b *Board) WasPieceKinged(pos string, piece Piece) bool {
+	if piece.IsKinged {		// If its alerady a king we just return false.
+		return false
+	}	
+
 	if len(pos) == 0 {
         return false 
     }
@@ -319,4 +323,74 @@ func parsePosition(pos string) (rune, int, error) {
 	}
 
 	return row, col, nil
+}
+
+
+func (b *Board) IsValidMove(move Move) (bool, error) {
+	// Check if the piece exists on the board
+	piece, exists := b.Grid[move.From]
+	if !exists || piece == nil {
+		return false, fmt.Errorf("(isValidMove) - piece does not exist at the source square")
+	}
+	// Check if the piece belongs to the player making the move
+	if piece.PlayerID != move.PlayerID {
+		return false, fmt.Errorf("(isValidMove) - piece does not belong to the player")
+	}
+	// Check if the piece is a regular piece (not kinged)
+	if piece.IsKinged {
+		return false, fmt.Errorf("(isValidMove) - piece is kinged, this function only checks regular pieces")
+	}
+
+	// Parse the source and destination positions
+	fromRow, fromCol, err := parsePosition(move.From)
+	if err != nil {
+		return false, fmt.Errorf("(isValidMove) - invalid source position: %v", err)
+	}
+	toRow, toCol, err := parsePosition(move.To)
+	if err != nil {
+		return false, fmt.Errorf("(isValidMove) - invalid destination position: %v", err)
+	}
+
+	// Check if the destination square is empty
+	if _, exists := b.Grid[move.To]; exists {
+		return false, fmt.Errorf("(isValidMove) - destination square is not empty")
+	}
+
+	// Calculate the difference in rows and columns
+	deltaRow := int(toRow - fromRow)
+	deltaCol := toCol - fromCol
+
+	// Skip direction validation if the piece is kinged
+	if !piece.IsKinged {
+		direction := GetPieceDirection(*piece)
+		if deltaRow*direction <= 0 {	// Check if the move is in the correct direction
+			return false, fmt.Errorf("(isValidMove) - move is not in the correct direction for the piece type")
+		}
+	}
+
+	// Check if the move is diagonal
+	if abs(deltaCol) != 1 || abs(deltaRow) != 1 {
+		// If it's not a single diagonal move, check if it's a capture
+		if !move.IsCapture || abs(deltaCol) != 2 || abs(deltaRow) != 2 {
+			return false, fmt.Errorf("(isValidMove) - move is not diagonal or a valid capture")
+		}
+
+		// For a capture, check if the intermediate square has an opponent's piece
+		captureRow := fromRow + rune(deltaRow/2)
+		captureCol := fromCol + deltaCol/2
+		captureSquare := string(captureRow) + string('0'+captureCol)
+		capturedPiece, exists := b.Grid[captureSquare]
+		if !exists || capturedPiece == nil || capturedPiece.PlayerID == move.PlayerID {
+			return false, fmt.Errorf("(isValidMove) - invalid capture: no opponent's piece to capture")
+		}
+	}
+	// If all checks pass, the move is valid
+	return true, nil
+}
+
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
 }
