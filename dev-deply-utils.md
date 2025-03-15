@@ -10,9 +10,12 @@ docker exec -it <container_id> /bin/sh  # Use /bin/bash if available
 docker logs --since 5m <container_id>
 
 ```bash
-docker stop $(docker ps -aq) // stop containers
-docker rm $(docker ps -aq) // removes containers
-docker rmi $(docker images -aq) // removes images
+// stop containers
+docker stop $(docker ps -aq) 
+// removes containers
+docker rm $(docker ps -aq) 
+// removes images
+docker rmi $(docker images -aq) 
 ```
 
 Or for windows:
