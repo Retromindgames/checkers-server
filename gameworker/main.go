@@ -475,7 +475,7 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 	}
 
 	// We then save the game to POSTGRES.
-	//postgresClient.SaveGame(game)
+	postgresClient.SaveGame(game)
 }
 
 func BroadCastToGamePlayers(msg []byte, game models.Game) {
