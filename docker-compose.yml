@@ -12,6 +12,17 @@ services:
       - redis
       - postgres
 
+  restapi:
+    container_name: restapiworker
+    build:
+      context: .                    # Root of the project
+      dockerfile: restapiworker.dockerfile  # Dockerfile in the root
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - postgres
+
   pstatusworker:
     container_name: pstatusworker
     build:
