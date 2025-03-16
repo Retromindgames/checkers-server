@@ -5,8 +5,6 @@ import (
 	"checkers-server/models"
 	"encoding/json"
 	"fmt"
-
-	"github.com/gorilla/websocket"
 )
 
 func handleMessages(player *models.Player) {
@@ -24,7 +22,8 @@ func handleMessages(player *models.Player) {
 		// Process the received message (expecting JSON), this will read the command but leave the value.
 		message, err := messages.ParseMessage(msg)
 		if err != nil {
-			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid message format."+err.Error()))
+			player.WriteChan <- []byte("Invalid message format." + err.Error())
+			//player.Conn.WriteMessage(websocket.TextMessage, )
 			continue
 		}
 
@@ -41,14 +40,16 @@ func handleMessages(player *models.Player) {
 
 		case "leave_room":
 			if player.Status != models.StatusInRoom {
-				player.Conn.WriteMessage(websocket.TextMessage, []byte("Can't issue a leave room when not in a Room."))
+				player.WriteChan <- []byte("Can't issue a leave room when not in a Room.")
+				//player.Conn.WriteMessage(websocket.TextMessage, []byte("Can't issue a leave room when not in a Room."))
 				continue
 			}
 			handleLeaveRoom(player)
 
 		case "move_piece":
 			if player.Status != models.StatusInGame {
-				player.Conn.WriteMessage(websocket.TextMessage, []byte("Can't issue a move when not in a Game."))
+				player.WriteChan <- []byte("Can't issue a move when not in a Game.")
+				//player.Conn.WriteMessage(websocket.TextMessage, []byte("Can't issue a move when not in a Game."))
 				continue
 			}
 			handleMovePiece(message, player)
@@ -58,7 +59,8 @@ func handleMessages(player *models.Player) {
 
 func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) {
 	if player.UpdatePlayerStatus(models.StatusInQueue) != nil {
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'queue'"))
+		player.WriteChan <- []byte("Invalid status transition to 'queue'")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'queue'"))
 		return
 	}
 	// update the player bet and push it to Redis
@@ -66,7 +68,8 @@ func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) 
 	err := json.Unmarshal(msg.Value, &betValue)
 	if err != nil {
 		fmt.Printf("Error determinng player bet value: %v\n", err)
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error determinng player bet value"))
+		player.WriteChan <- []byte("Error determinng player bet value")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error determinng player bet value"))
 		return
 	}
 
@@ -82,7 +85,8 @@ func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) 
 	err = redisClient.RPush(queueName, player) //
 	if err != nil {
 		fmt.Printf("Error pushing player to Redis queue: %v\n", err)
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
+		player.WriteChan <- []byte("Error adding player to queue")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
 		return
 	}
 
@@ -90,15 +94,18 @@ func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) 
 	m, err := messages.GenerateQueueConfirmationMessage(true)
 	if err != nil {
 		fmt.Println("Error generating queue confirmation:", err)
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error generating confirmation"))
+		player.WriteChan <- []byte("Error generating confirmation")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error generating confirmation"))
 		return
 	}
-	player.Conn.WriteMessage(websocket.TextMessage, m)
+	player.WriteChan <- m
+	//player.Conn.WriteMessage(websocket.TextMessage, m)
 }
 
 func handleLeaveQueue(msg *messages.Message[json.RawMessage], player *models.Player) {
 	if player.UpdatePlayerStatus(models.StatusOnline) != nil {
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'Online'"))
+		player.WriteChan <- []byte("Invalid status transition to 'Online'")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'Online'"))
 		return
 	}
 	redisClient.UpdatePlayersInQueueSet(player.ID, models.StatusOnline)
@@ -107,7 +114,8 @@ func handleLeaveQueue(msg *messages.Message[json.RawMessage], player *models.Pla
 	err := redisClient.RemovePlayerFromQueue(queueName, player)
 	if err != nil {
 		fmt.Printf("Error removing player from Redis queue: %v\n", err)
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error removing player to queue"))
+		player.WriteChan <- []byte("Error removing player to queue")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error removing player to queue"))
 		return
 	}
 	// we update out player status.
@@ -115,10 +123,12 @@ func handleLeaveQueue(msg *messages.Message[json.RawMessage], player *models.Pla
 	m, err := messages.GenerateQueueConfirmationMessage(false)
 	if err != nil {
 		fmt.Println("Error generating queue confirmation false:", err)
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error generating confirmation"))
+		player.WriteChan <- []byte("Error generating confirmation")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error generating confirmation"))
 		return
 	}
-	player.Conn.WriteMessage(websocket.TextMessage, m)
+	player.WriteChan <- m
+	//player.Conn.WriteMessage(websocket.TextMessage, m)
 }
 
 func handleReadyQueue(msg *messages.Message[json.RawMessage], player *models.Player) {
@@ -128,29 +138,34 @@ func handleReadyQueue(msg *messages.Message[json.RawMessage], player *models.Pla
 	if value {
 		// update the player status to ready / awaiting opponent.
 		if player.UpdatePlayerStatus(models.StatusInRoomReady) != nil {
-			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'ready_queue true'"))
+			player.WriteChan <- []byte("Invalid status transition to 'ready_queue true'")
+			//player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'ready_queue true'"))
 			return
 		}
 	} else {
 		// update the player status, to unready / waiting ready.
 		if player.UpdatePlayerStatus(models.StatusInRoom) != nil {
-			player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'ready_queue false'"))
+			player.WriteChan <- []byte("Invalid status transition to 'ready_queue false'")
+			//player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'ready_queue false'"))
 			return
 		}
 	}
-	player.Conn.WriteMessage(websocket.TextMessage, []byte("processing 'ready_queue'"))
+	player.WriteChan <- []byte("processing 'ready_queue'")
+	//player.Conn.WriteMessage(websocket.TextMessage, []byte("processing 'ready_queue'"))
 	// we update our player to redis.
 	redisClient.UpdatePlayersInQueueSet(player.ID, player.Status)
 	err := redisClient.UpdatePlayer(player)
 	if err != nil {
 		fmt.Printf("Error adding player to Redis: %v\n", err)
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player"))
+		player.WriteChan <- []byte("Error adding player")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player"))
 		return
 	}
 	err = redisClient.RPush("ready_queue", player) // now we tell roomworker to process this player ready.
 	if err != nil {
 		fmt.Printf("Error pushing player to Redis ready queue: %v\n", err)
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
+		player.WriteChan <- []byte("Error adding player to queue")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
 		return
 	}
 
@@ -159,21 +174,25 @@ func handleReadyQueue(msg *messages.Message[json.RawMessage], player *models.Pla
 func handleLeaveRoom(player *models.Player) {
 	// update the player status
 	if player.UpdatePlayerStatus(models.StatusOnline) != nil {
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'leave_room'"))
+		player.WriteChan <- []byte("Invalid status transition to 'leave_room'")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'leave_room'"))
 		return
 	}
-	player.Conn.WriteMessage(websocket.TextMessage, []byte("processing 'leave_room'"))
+	player.WriteChan <- []byte("processing 'leave_room'")
+	//player.Conn.WriteMessage(websocket.TextMessage, []byte("processing 'leave_room'"))
 	// we update our player to redis.
 	err := redisClient.UpdatePlayer(player)
 	if err != nil {
 		fmt.Printf("Error adding player to Redis: %v\n", err)
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player"))
+		player.WriteChan <- []byte("Error adding player")
+		// player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player"))
 		return
 	}
 	err = redisClient.RPush("leave_room", player)
 	if err != nil {
 		fmt.Printf("Error pushing player to Redis leave_room queue: %v\n", err)
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
+		player.WriteChan <- []byte("Error adding player to queue")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
 		return
 	}
 
@@ -181,22 +200,25 @@ func handleLeaveRoom(player *models.Player) {
 
 func handleMovePiece(message *messages.Message[json.RawMessage], player *models.Player) {
 	var move models.Move
-	err := json.Unmarshal([]byte(message.Value), &move) 
+	err := json.Unmarshal([]byte(message.Value), &move)
 	if err != nil {
 		fmt.Printf("[Handlers] - Handle Move Piece - JSON Unmarshal Error: %v\n", err)
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("[Handlers] - Handle Move Piece - JSON Unmarshal Error"))
+		player.WriteChan <- []byte("[Handlers] - Handle Move Piece - JSON Unmarshal Error")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("[Handlers] - Handle Move Piece - JSON Unmarshal Error"))
 		return
 	}
 	if move.PlayerID != player.ID {
 		fmt.Printf("[Handlers] - Handle Move Piece - move.PlayerID != player.ID\n")
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("[Handlers] - Handle Move Piece - move.PlayerID != player.ID"))
+		player.WriteChan <- []byte("[Handlers] - Handle Move Piece - move.PlayerID != player.ID")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("[Handlers] - Handle Move Piece - move.PlayerID != player.ID"))
 		return
 	}
 	// movement message is sent to the game worker
 	err = redisClient.RPushGeneric("move_piece", message.Value)
 	if err != nil {
 		fmt.Printf("Error pushing move to Redis handleMovePiece queue: %v\n", err)
-		player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
+		player.WriteChan <- []byte("Error adding player to queue")
+		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
 		return
 	}
 }
