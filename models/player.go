@@ -29,6 +29,19 @@ type Player struct {
 	SelectedBet    float64         `json:"selected_bet"`
 	Name           string          `json:"name"`
 	Conn           *websocket.Conn `json:"-"` // Exclude Conn from JSON
+	WriteChan      chan []byte // Channel for serialized writes
+}
+func (p *Player) StartWriteGoroutine() {
+	go func() {
+		for message := range p.WriteChan {
+			err := p.Conn.WriteMessage(websocket.TextMessage, message)
+			if err != nil {
+				fmt.Println("[wsapi] - Failed to send message to player:", err)
+				p.Conn.Close()
+				return
+			}
+		}
+	}()
 }
 
 var ValidBetAmounts = []float64{0.5, 1, 3, 5, 10, 25, 50, 100}
