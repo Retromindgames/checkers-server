@@ -29,7 +29,8 @@ type Player struct {
 	SelectedBet    float64         `json:"selected_bet"`
 	Name           string          `json:"name"`
 	Conn           *websocket.Conn `json:"-"` // Exclude Conn from JSON
-	WriteChan      chan []byte     // Channel for serialized writes
+	WriteChan      chan []byte     `json:"-"` // Channel for serialized writes
+	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
 }
 
 func (p *Player) StartWriteGoroutine() {

@@ -51,12 +51,24 @@ func (pc *PostgresCli) SaveGame(game models.Game) error {
 	// SQL query to insert the game data
 	query := `
 		INSERT INTO games (
-			operator_name, start_date, end_date, moves, bet_amount, winner, game_players
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+			OperatorName, OperatorGameName, GameName, StartDate, EndDate, Moves, BetAmount, Winner, GamePlayers
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 	`
 	var gameID int
-	err = pc.DB.QueryRow(query, game.OperatorName, game.StartTime, game.EndTime, movesJSON, game.BetValue, game.Winner, playersJSON).Scan(&gameID)
+	err = pc.DB.QueryRow(
+		query, 
+		game.OperatorIdentifier.OperatorName, 
+		game.OperatorIdentifier.OperatorGameName, 
+		game.OperatorIdentifier.GameName, 
+		game.StartTime, 
+		game.EndTime, 
+		movesJSON, 
+		game.BetValue, 
+		game.Winner, 
+		playersJSON,
+	).Scan(&gameID)
+
 	if err != nil {
 		return fmt.Errorf("error inserting game: %w", err)
 	}
@@ -65,12 +77,12 @@ func (pc *PostgresCli) SaveGame(game models.Game) error {
 	return nil
 }
 
-// FetchOperator fetches an operator from the database using operator_name and game_name
+// FetchOperator fetches an operator from the database using OperatorName and OperatorGameName
 func (pc *PostgresCli) FetchOperator(operatorName, operatorGameName string) (*models.Operator, error) {
 	query := `
-		SELECT id, operator_name, operator_game_name, game_name, active, game_base_url, operator_wallet_base_url
+		SELECT ID, OperatorName, OperatorGameName, GameName, Active, GameBaseUrl, OperatorWalletBaseUrl
 		FROM operators
-		WHERE operator_name = $1 AND operator_game_name = $2
+		WHERE OperatorName = $1 AND OperatorGameName = $2
 	`
 	row := pc.DB.QueryRow(query, operatorName, operatorGameName)
 
@@ -86,7 +98,7 @@ func (pc *PostgresCli) FetchOperator(operatorName, operatorGameName string) (*mo
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("operator not found with operator_name=%s and game_name=%s", operatorName, operatorGameName)
+			return nil, fmt.Errorf("operator not found with OperatorName=%s and OperatorGameName=%s", operatorName, operatorGameName)
 		}
 		return nil, fmt.Errorf("error fetching operator: %w", err)
 	}

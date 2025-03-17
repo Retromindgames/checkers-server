@@ -17,6 +17,12 @@ type Session struct {
 	CreatedAt       time.Time `json:"created_at"`
 }
 
+type OperatorIdentifier struct {
+	OperatorName	 string  `json:"operator_name"`
+	OperatorGameName string	 `json:"operator_game_name"`
+	GameName		 string	 `json:"game_name"`
+}
+
 type RoomAggregate struct {
 	AggregateValue float64 `json:"aggregate_value"`
 	Count          int64   `json:"count"`

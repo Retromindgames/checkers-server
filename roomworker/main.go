@@ -212,6 +212,7 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		StartDate: time.Now(),
 		Currency:  player1.Currency,
 		BetValue:  player1.SelectedBet,
+		OperatorIdentifier: player1.OperatorIdentifier,
 	}
 
 	player1.RoomID = room.ID
