@@ -13,40 +13,6 @@ type PostgresCli struct {
 	DB *sql.DB
 }
 
-/*  USAGE EXAMPLE
-
-    // Create a new PostgresCli instance
-	pgCli, err := NewPostgresCli("sa", "checkersdb", "checkers", "localhost", "5432")
-	if err != nil {
-		log.Fatal("Error connecting to the database: ", err)
-	}
-	defer pgCli.Close()
-
-	// Example game data
-	game := Game{
-		ID:              "123",
-		OperatorName:    "Operator A",
-		StartTime:       time.Now(),
-		EndTime:         time.Now().Add(time.Hour * 1), // just for example
-		BetValue:        50.00,
-		Winner:          "Player 1",
-		TimerSetting:    "60",
-		Players: []GamePlayer{
-			{ID: "player1", Token: "token1", Name: "Player 1", Timer: 60, Color: "red", SessionID: "session1", NumPieces: 12},
-			{ID: "player2", Token: "token2", Name: "Player 2", Timer: 60, Color: "black", SessionID: "session2", NumPieces: 12},
-		},
-		Moves: []Move{
-			{PlayerID: "player1", PieceID: "piece1", From: "A1", To: "A2", IsCapture: false, IsKinged: false},
-			{PlayerID: "player2", PieceID: "piece2", From: "B1", To: "B2", IsCapture: true, IsKinged: false},
-		},
-	}
-
-	// Save the game to the database
-	if err := pgCli.SaveGame(game); err != nil {
-		log.Fatal("Error saving game: ", err)
-	}
-*/
-
 func NewPostgresCli(user, password, dbname, host, port string) (*PostgresCli, error) {
 	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable", user, password, dbname, host, port)
 	db, err := sql.Open("postgres", connStr)
@@ -97,4 +63,33 @@ func (pc *PostgresCli) SaveGame(game models.Game) error {
 
 	fmt.Printf("Game saved with ID: %d\n", gameID)
 	return nil
+}
+
+// FetchOperator fetches an operator from the database using operator_name and game_name
+func (pc *PostgresCli) FetchOperator(operatorName, operatorGameName string) (*models.Operator, error) {
+	query := `
+		SELECT id, operator_name, operator_game_name, game_name, active, game_base_url, operator_wallet_base_url
+		FROM operators
+		WHERE operator_name = $1 AND operator_game_name = $2
+	`
+	row := pc.DB.QueryRow(query, operatorName, operatorGameName)
+
+	var operator models.Operator
+	err := row.Scan(
+		&operator.ID,
+		&operator.OperatorName,
+		&operator.OperatorGameName,
+		&operator.GameName,
+		&operator.Active,
+		&operator.GameBaseUrl,
+		&operator.OperatorWalletBaseUrl,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("operator not found with operator_name=%s and game_name=%s", operatorName, operatorGameName)
+		}
+		return nil, fmt.Errorf("error fetching operator: %w", err)
+	}
+
+	return &operator, nil
 }
