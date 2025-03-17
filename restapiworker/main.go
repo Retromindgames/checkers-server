@@ -2,17 +2,15 @@ package main
 
 import (
 	"checkers-server/config"
+	"checkers-server/interfaces"
 	"checkers-server/models"
 	"checkers-server/postgrescli"
 	"checkers-server/redisdb"
-	"checkers-server/walletrequests"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
-	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -46,56 +44,6 @@ func init() {
 	postgresClient = sqlcliente
 }
 
-// OperatorModule defines the interface for operator-specific code
-type OperatorInterface interface {
-	HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator)
-}
-
-// OperatorModules maps operator names to their respective modules
-var OperatorModules = map[string]OperatorInterface{
-	"SokkerDuel": &SokkerDuelModule{},
-	//"AnotherOperator": &AnotherOperatorModule{},
-	// Add more operators as needed
-}
-
-// SokkerDuelModule handles requests for the SokkerDuel operator
-type SokkerDuelModule struct{}
-
-func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator) {
-	// Fetch wallet information
-	logInResponse, err := walletrequests.SokkerDuelGetWallet(op, req.Token)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to fetch wallet: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	session, err := generatePlayerSession(
-		op,
-		req.Token,
-		logInResponse.Data.Username,
-		logInResponse.Data.Currency,
-		logInResponse.Data.Balance,
-	)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to generate session: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, session.ID, logInResponse.Data.Currency)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to generate game URL: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	response := models.SokkerDuelGamelaunchResponse{
-		Token: req.Token,
-		Url:   gameURL,
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-}
-
 func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.GameLaunchRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -117,48 +65,14 @@ func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Inactive game for operator: %s", req.OperatorName), http.StatusBadRequest)
 		return
 	}
-	module, exists := OperatorModules[req.OperatorName]
+	module, exists := interfaces.OperatorModules[req.OperatorName]
 	if !exists {
 		http.Error(w, fmt.Sprintf("Unsupported operator: %s", req.OperatorName), http.StatusBadRequest)
 		return
 	}
 
 	// Delegate the request to the module
-	module.HandleGameLaunch(w, r, req, *operator)
-}
-
-// Helper function to generate the game URL
-func generateGameURL(baseURL, token, sessionID, currency string) (string, error) {
-	// Parse the base URL
-	parsedURL, err := url.Parse(baseURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse base URL: %v", err)
-	}
-
-	// Add query parameters
-	query := url.Values{}
-	query.Add("token", token)
-	query.Add("sessionId", sessionID)
-	query.Add("currency", currency)
-	parsedURL.RawQuery = query.Encode()
-
-	// Return the full URL as a string
-	return parsedURL.String(), nil
-}
-
-func generatePlayerSession(op models.Operator, token, username, currency string, balance int64) (models.Session, error) {
-	session := models.Session{
-		ID:              models.GenerateUUID(),
-		Token:           token,
-		PlayerName:      username,
-		Balance:         balance,
-		Currency:        currency,
-		OperatorName:    op.OperatorName,
-		OperatorBaseUrl: op.OperatorWalletBaseUrl,
-		CreatedAt:       time.Now(),
-	}
-	err := redisClient.AddSession(&session)
-	return session, err
+	module.HandleGameLaunch(w, r, req, *operator, redisClient)
 }
 
 func main() {

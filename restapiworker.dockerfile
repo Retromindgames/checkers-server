@@ -8,6 +8,7 @@ WORKDIR /app/
 COPY go.mod go.sum /app/
 COPY messages /app/messages
 COPY models /app/models
+COPY interfaces /app/interfaces
 COPY config /app/config
 COPY walletrequests /app/walletrequests
 COPY postgrescli /app/postgrescli
