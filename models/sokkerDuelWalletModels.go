@@ -31,6 +31,14 @@ type SokkerDuelBet struct {
 	TransactionID    string `json:"transaction_id"`
 }
 
+type SokkerDuelWin struct {
+	OperatorGameName string `json:"game_id"`
+	Currency         string `json:"currency"`
+	Amount           int    `json:"amount"`
+	TransactionID    string `json:"transaction_id"`
+	ExtractID        string `json:"extract_id"`
+}
+
 type SokkerDuelBetAndWinResponse struct {
 	Status string `json:"status"`
 	Data   struct {

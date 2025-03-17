@@ -199,41 +199,6 @@ func processRoomEnding() {
 	}
 }
 
-func handleCreateRoom(player *models.Player) {
-	fmt.Printf("[RoomWorker-%d] - Handling player (CREATE ROOM): %s (Session: %s, Currency: %s)\n",
-		pid, player.ID, player.SessionID, player.Currency)
-
-	room := &models.Room{
-		ID:        models.GenerateUUID(),
-		Player1:   player,
-		StartDate: time.Now(),
-		Currency:  player.Currency,
-		BetValue:  player.SelectedBet,
-	}
-	err := redisClient.AddRoom(room)
-	if err != nil {
-		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
-		return
-	}
-
-	player.RoomID = room.ID
-	player.Status = "waiting_oponente"
-	redisClient.UpdatePlayer(player) // This should update out player room info.
-
-	messageBytes, err := messages.GenerateRoomCreatedMessage(*room)
-	if err != nil {
-		fmt.Printf("[RoomWorker-%d] - Invalid message format: %v\n", pid, err)
-		return
-	}
-	// Publish the validated message to Redis
-	err = redisClient.PublishToPlayer(*player, string(messageBytes))
-	if err != nil {
-		fmt.Printf("[RoomWorker-%d] - Failed to publish message to player: %v\n", pid, err)
-		return
-	}
-	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
-}
-
 func handleQueuePaired(player1, player2 *models.Player) {
 	fmt.Printf("[RoomWorker-%d] - Handling player1 (CREATE ROOM): %s (Session: %s, Currency: %s)\n",
 		pid, player1.ID, player1.SessionID, player1.Currency)
@@ -351,6 +316,9 @@ func handleReadyQueue(player *models.Player) {
 		fmt.Print(err)
 		return
 	}
+	// Before we start the game, we will need to post to the wallet api of the bet.
+
+	// Now that everything is OK, we will start up the game
 	msgP1, err := messages.NewMessage("balance_update", player.CurrencyAmount)
 	msgP2, err := messages.NewMessage("balance_update", player2.CurrencyAmount)
 	// then notify player and store it in redis.
@@ -436,4 +404,39 @@ func handleJoinRoom(player *models.Player) {
 
 	redisClient.PublishPlayerEvent(rooms[0].Player1, string(message))
 	redisClient.PublishPlayerEvent(player, string(message2))
+}
+
+func handleCreateRoom(player *models.Player) {
+	fmt.Printf("[RoomWorker-%d] - Handling player (CREATE ROOM): %s (Session: %s, Currency: %s)\n",
+		pid, player.ID, player.SessionID, player.Currency)
+
+	room := &models.Room{
+		ID:        models.GenerateUUID(),
+		Player1:   player,
+		StartDate: time.Now(),
+		Currency:  player.Currency,
+		BetValue:  player.SelectedBet,
+	}
+	err := redisClient.AddRoom(room)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
+		return
+	}
+
+	player.RoomID = room.ID
+	player.Status = "waiting_oponente"
+	redisClient.UpdatePlayer(player) // This should update out player room info.
+
+	messageBytes, err := messages.GenerateRoomCreatedMessage(*room)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Invalid message format: %v\n", pid, err)
+		return
+	}
+	// Publish the validated message to Redis
+	err = redisClient.PublishToPlayer(*player, string(messageBytes))
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Failed to publish message to player: %v\n", pid, err)
+		return
+	}
+	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
 }
