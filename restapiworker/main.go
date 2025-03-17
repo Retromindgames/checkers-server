@@ -4,6 +4,7 @@ import (
 	"checkers-server/config"
 	"checkers-server/models"
 	"checkers-server/postgrescli"
+	"checkers-server/redisdb"
 	"checkers-server/walletrequests"
 	"encoding/json"
 	"fmt"
@@ -11,16 +12,26 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 )
 
 var pid int
 var postgresClient *postgrescli.PostgresCli
+var redisClient *redisdb.RedisClient
+var name = "restapiworker"
 
 func init() {
 	pid = os.Getpid()
 	config.LoadConfig()
+
+	redisAddr := config.Cfg.Redis.Addr
+	client, err := redisdb.NewRedisClient(redisAddr)
+	if err != nil {
+		log.Fatalf("[%s-Redis] Error initializing Redis client: %v\n", name, err)
+	}
+	redisClient = client
 
 	sqlcliente, err := postgrescli.NewPostgresCli(
 		config.Cfg.Postgres.User,
@@ -58,20 +69,29 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Generate the custom URL
-	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, logInResponse.Data.Currency)
+	session, err := generatePlayerSession(
+		op,
+		req.Token,
+		logInResponse.Data.Username,
+		logInResponse.Data.Currency,
+		logInResponse.Data.Balance,
+	)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to generate session: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, session.ID, logInResponse.Data.Currency)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to generate game URL: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Create the response
 	response := models.SokkerDuelGamelaunchResponse{
 		Token: req.Token,
 		Url:   gameURL,
 	}
 
-	// Write the response
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
@@ -108,7 +128,7 @@ func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Helper function to generate the game URL
-func generateGameURL(baseURL, token, currency string) (string, error) {
+func generateGameURL(baseURL, token, sessionID, currency string) (string, error) {
 	// Parse the base URL
 	parsedURL, err := url.Parse(baseURL)
 	if err != nil {
@@ -118,12 +138,26 @@ func generateGameURL(baseURL, token, currency string) (string, error) {
 	// Add query parameters
 	query := url.Values{}
 	query.Add("token", token)
-	query.Add("sessionId", "PLACEHOLDER")
+	query.Add("sessionId", sessionID)
 	query.Add("currency", currency)
 	parsedURL.RawQuery = query.Encode()
 
 	// Return the full URL as a string
 	return parsedURL.String(), nil
+}
+
+func generatePlayerSession(op models.Operator, token, username, currency string, balance int64) (models.Session, error) {
+	session := models.Session{
+		ID:           models.GenerateUUID(),
+		Token:        token,
+		PlayerName:   username,
+		Balance:      balance,
+		Currency:     currency,
+		OperatorName: op.OperatorName,
+		CreatedAt:    time.Now(),
+	}
+	err := redisClient.AddSession(&session)
+	return session, err
 }
 
 func main() {

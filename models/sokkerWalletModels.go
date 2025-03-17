@@ -14,7 +14,7 @@ type WalletResponse struct {
 	Status string `json:"status"`
 	Data   struct {
 		Username string `json:"username"`
-		Balance  int    `json:"balance"`
+		Balance  int64  `json:"balance"`
 		Currency string `json:"currency"`
 	} `json:"data"`
 }

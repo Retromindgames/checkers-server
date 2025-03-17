@@ -1,16 +1,19 @@
 package models
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
-
 type Session struct {
-	ID 			string  	`json:"session_id"`
-	Token 		float64 	`json:"token"`
-	PlayerName   	 int64  `json:"player_name"`
-	Currency 	int64   	`json:"currency"`
-	OperatorName string		`json:"operator_name"`
+	ID           string    `json:"session_id"`
+	Token        string    `json:"token"`
+	PlayerName   string    `json:"player_name"`
+	Balance      int64     `json:"balance"`
+	Currency     string    `json:"currency"`
+	OperatorName string    `json:"operator_name"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type RoomAggregate struct {
