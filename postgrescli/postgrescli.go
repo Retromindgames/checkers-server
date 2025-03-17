@@ -64,6 +64,39 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 	return nil
 }
 
+func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
+	query := `
+		INSERT INTO transactions (
+			SessionID, Type, Amount, Currency, Platform, Operator, Client, Game, Status, Description, RoundID, Timestamp
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		RETURNING TransactionID
+	`
+
+	var transactionID int
+	err := pc.DB.QueryRow(
+		query,
+		transaction.SessionID,
+		transaction.Type,
+		transaction.Amount,
+		transaction.Currency,
+		transaction.Platform,
+		transaction.Operator,
+		transaction.Client,
+		transaction.Game,
+		transaction.Status,
+		transaction.Description,
+		transaction.RoundID,
+		transaction.Timestamp,
+	).Scan(&transactionID)
+
+	if err != nil {
+		return fmt.Errorf("error inserting transaction: %w", err)
+	}
+
+	fmt.Printf("Transaction saved with ID: %d\n", transactionID)
+	return nil
+}
+
 // SaveGame method to save a game to the database
 func (pc *PostgresCli) SaveGame(game models.Game) error {
 	// Convert moves to JSONB
