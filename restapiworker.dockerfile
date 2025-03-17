@@ -9,6 +9,7 @@ COPY go.mod go.sum /app/
 COPY messages /app/messages
 COPY models /app/models
 COPY config /app/config
+COPY walletrequests /app/walletrequests
 COPY postgrescli /app/postgrescli
 COPY redisdb /app/redisdb
 
@@ -24,7 +25,7 @@ FROM alpine:latest
 WORKDIR /root/
 
 # Copy the built binary from the builder stage
-COPY --from=builder /app/restapiworker .
+COPY --from=builder /app/ .
 
 # Set environment variables
 ENV CONFIG_PATH=/root/config/config.json
