@@ -2,6 +2,7 @@ package interfaces
 
 import (
 	"checkers-server/models"
+	"checkers-server/postgrescli"
 	"checkers-server/redisdb"
 	"checkers-server/walletrequests"
 	"encoding/json"
@@ -13,7 +14,7 @@ import (
 
 // OperatorModule defines the interface for operator-specific code
 type OperatorInterface interface {
-	HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient)
+	HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli)
 }
 
 // OperatorModules maps operator names to their respective modules
@@ -26,7 +27,7 @@ var OperatorModules = map[string]OperatorInterface{
 // SokkerDuelModule handles requests for the SokkerDuel operator
 type SokkerDuelModule struct{}
 
-func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient) {
+func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli) {
 	// Fetch wallet information
 	logInResponse, err := walletrequests.SokkerDuelGetWallet(op, req.Token)
 	if err != nil {
@@ -46,7 +47,11 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 		http.Error(w, fmt.Sprintf("Failed to generate session: %v", err), http.StatusInternalServerError)
 		return
 	}
-
+	err = pgs.SaveSession(session)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to save session to postgres session: %v", err), http.StatusInternalServerError)
+		return
+	}
 	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, session.ID, logInResponse.Data.Currency)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to generate game URL: %v", err), http.StatusInternalServerError)
@@ -88,7 +93,12 @@ func generatePlayerSession(op models.Operator, token, username, currency string,
 		PlayerName:      username,
 		Balance:         balance,
 		Currency:        currency,
-		OperatorName:    op.OperatorName,
+		OperatorIdentifier: models.OperatorIdentifier{
+			OperatorName:    	 op.OperatorName,
+			OperatorGameName:    op.OperatorGameName,
+			GameName:    		 op.GameName,
+
+		},
 		OperatorBaseUrl: op.OperatorWalletBaseUrl,
 		CreatedAt:       time.Now(),
 	}

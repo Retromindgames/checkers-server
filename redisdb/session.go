@@ -28,7 +28,7 @@ func (r *RedisClient) AddSession(session *models.Session) error {
 		"player_name":       session.PlayerName,
 		"balance":           session.Balance,
 		"currency":          session.Currency,
-		"operator_name":     session.OperatorName,
+		"operator_identifier":     session.OperatorIdentifier,
 		"operator_base_url": session.OperatorBaseUrl,
 		"created_at":        session.CreatedAt.Format(time.RFC3339), // Store timestamp as string
 		"data":              string(data),                           // Store full session JSON

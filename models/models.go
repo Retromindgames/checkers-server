@@ -12,9 +12,9 @@ type Session struct {
 	PlayerName      string    `json:"player_name"`
 	Balance         int64     `json:"balance"`
 	Currency        string    `json:"currency"`
-	OperatorName    string    `json:"operator_name"`
 	OperatorBaseUrl string    `json:"operator_base_url"`
 	CreatedAt       time.Time `json:"created_at"`
+	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
 }
 
 type OperatorIdentifier struct {

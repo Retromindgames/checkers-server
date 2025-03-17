@@ -34,6 +34,36 @@ func (pc *PostgresCli) Close() {
 	pc.DB.Close()
 }
 
+func (pc *PostgresCli) SaveSession(session models.Session) error {
+	query := `
+		INSERT INTO sessions (
+			SessionId, Token, PlayerName, Balance, Currency, OperatorBaseUrl, CreatedAt, OperatorName, OperatorGameName, GameName
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	`
+
+	// Execute the query
+	_, err := pc.DB.Exec(
+		query,
+		session.ID,
+		session.Token,
+		session.PlayerName,
+		session.Balance,
+		session.Currency,
+		session.OperatorBaseUrl,
+		session.CreatedAt,
+		session.OperatorIdentifier.OperatorName,
+		session.OperatorIdentifier.OperatorGameName,
+		session.OperatorIdentifier.GameName,
+	)
+
+	if err != nil {
+		return fmt.Errorf("error inserting session: %w", err)
+	}
+
+	fmt.Printf("Session saved with ID: %s\n", session.ID)
+	return nil
+}
+
 // SaveGame method to save a game to the database
 func (pc *PostgresCli) SaveGame(game models.Game) error {
 	// Convert moves to JSONB
