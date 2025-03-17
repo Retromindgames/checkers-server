@@ -23,14 +23,15 @@ func (r *RedisClient) AddSession(session *models.Session) error {
 	// Store session data in a hash
 	sessionKey := fmt.Sprintf("session:%s", session.ID)
 	err = r.Client.HSet(ctx, sessionKey, map[string]interface{}{
-		"id":            session.ID,
-		"token":         session.Token,
-		"player_name":   session.PlayerName,
-		"balance":       session.Balance,
-		"currency":      session.Currency,
-		"operator_name": session.OperatorName,
-		"created_at":    session.CreatedAt.Format(time.RFC3339), // Store timestamp as string
-		"data":          string(data),                           // Store full session JSON
+		"id":                session.ID,
+		"token":             session.Token,
+		"player_name":       session.PlayerName,
+		"balance":           session.Balance,
+		"currency":          session.Currency,
+		"operator_name":     session.OperatorName,
+		"operator_base_url": session.OperatorBaseUrl,
+		"created_at":        session.CreatedAt.Format(time.RFC3339), // Store timestamp as string
+		"data":              string(data),                           // Store full session JSON
 	}).Err()
 	if err != nil {
 		return fmt.Errorf("[RedisClient] (Session) - failed to store session data: %v", err)

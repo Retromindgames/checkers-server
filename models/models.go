@@ -7,13 +7,14 @@ import (
 )
 
 type Session struct {
-	ID           string    `json:"session_id"`
-	Token        string    `json:"token"`
-	PlayerName   string    `json:"player_name"`
-	Balance      int64     `json:"balance"`
-	Currency     string    `json:"currency"`
-	OperatorName string    `json:"operator_name"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID              string    `json:"session_id"`
+	Token           string    `json:"token"`
+	PlayerName      string    `json:"player_name"`
+	Balance         int64     `json:"balance"`
+	Currency        string    `json:"currency"`
+	OperatorName    string    `json:"operator_name"`
+	OperatorBaseUrl string    `json:"operator_base_url"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 type RoomAggregate struct {

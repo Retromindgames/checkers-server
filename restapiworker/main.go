@@ -148,13 +148,14 @@ func generateGameURL(baseURL, token, sessionID, currency string) (string, error)
 
 func generatePlayerSession(op models.Operator, token, username, currency string, balance int64) (models.Session, error) {
 	session := models.Session{
-		ID:           models.GenerateUUID(),
-		Token:        token,
-		PlayerName:   username,
-		Balance:      balance,
-		Currency:     currency,
-		OperatorName: op.OperatorName,
-		CreatedAt:    time.Now(),
+		ID:              models.GenerateUUID(),
+		Token:           token,
+		PlayerName:      username,
+		Balance:         balance,
+		Currency:        currency,
+		OperatorName:    op.OperatorName,
+		OperatorBaseUrl: op.OperatorWalletBaseUrl,
+		CreatedAt:       time.Now(),
 	}
 	err := redisClient.AddSession(&session)
 	return session, err
