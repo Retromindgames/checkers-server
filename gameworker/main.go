@@ -28,7 +28,14 @@ func init() {
 		log.Fatalf("[%s-Redis] Error initializing Redis client: %v\n", name, err)
 	}
 	redisClient = client
-	sqlcliente, err := postgrescli.NewPostgresCli("sa", "checkersdb", "checkers", "postgres", "5432")
+
+	sqlcliente, err := postgrescli.NewPostgresCli(
+		config.Cfg.Postgres.User,
+		config.Cfg.Postgres.Password,
+		config.Cfg.Postgres.DBName,
+		config.Cfg.Postgres.Host,
+		config.Cfg.Postgres.Port,
+	)
 	if err != nil {
 		log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)
 	}
