@@ -78,6 +78,9 @@ func (m *SokkerDuelModule) HandlePostToWallet(pgs *postgrescli.PostgresCli, sess
 	}
 	
 	betResponse, err := walletrequests.SokkerDuelPostBet(session, betData)
+	if err != nil {
+		
+	}	
 	trans := models.Transaction {
 		ID: betData.TransactionID,
 		SessionID: session.ID,
@@ -89,11 +92,11 @@ func (m *SokkerDuelModule) HandlePostToWallet(pgs *postgrescli.PostgresCli, sess
 		Client: session.PlayerName,
 		Game: session.OperatorIdentifier.GameName,
 		Status: betResponse.Status,
-		Description: betResponse.Data,
 		RoundID: gameID,
 		Timestamp: time.Now(),
 	}
-	if err != nil || betResponse.Status != "success"{
+	marshalResponseData := json.Marshal(betResponse.Data)
+	if betResponse.Status != "success"{
 		
 	}	
 	
