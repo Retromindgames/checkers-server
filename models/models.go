@@ -18,8 +18,8 @@ type Session struct {
 }
 
 type Transaction struct {
-	ID int       			`json:"transaction_id"` // Unique ID for each transaction (auto-incremented by the database)
-	SessionID     string    `json:"session_id"`     // Session ID for the player
+	ID 			 string    `json:"transaction_id"` // Unique ID for each transaction (auto-incremented by the database)
+	SessionID    string    `json:"session_id"`     // Session ID for the player
 	Type         string    `json:"type"`           // Type of transaction: 'bet' or 'win'
 	Amount       int       `json:"amount"`         // Amount in cents
 	Currency     string    `json:"currency"`       // Currency code (e.g., EUR, USD)
@@ -27,9 +27,9 @@ type Transaction struct {
 	Operator     string    `json:"operator"`       // Operator name (e.g., SokkerDuel)
 	Client       string    `json:"client"`         // Client ID (player ID)
 	Game         string    `json:"game"`           // Internal game name
-	Status       int       `json:"status"`         // HTTP status code
+	Status       string    `json:"status"`         // HTTP status code
 	Description  string    `json:"description"`    // Description (e.g., "Insufficient Funds" or "OK")
-	RoundID      int       `json:"round_id"`       // Foreign key to the round / game
+	RoundID      string    `json:"round_id"`       // Foreign key to the round / game
 	Timestamp    time.Time `json:"timestamp"`      // Timestamp in UTC
 }
 

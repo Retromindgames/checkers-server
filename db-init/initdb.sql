@@ -69,8 +69,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     Operator VARCHAR(100) NOT NULL, -- Operator name (e.g., SokkerDuel)
     Client VARCHAR(255) NOT NULL,   -- Client ID (player ID)
     Game VARCHAR(100) NOT NULL,     -- Internal game name
-    Status INTEGER NOT NULL,        -- HTTP status code
-    Description VARCHAR(600),       -- Description (e.g., "Insufficient Funds" or "OK")
-    RoundID INTEGER,                -- Foreign key to the round / game
+    Status VARCHAR(100) NOT NULL,        -- HTTP status code
+    Description VARCHAR(600),           -- Description (e.g., "Insufficient Funds" or "OK")
+    RoundID VARCHAR(255),                -- Foreign key to the round / game
     Timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP  -- Timestamp in UTC
 );

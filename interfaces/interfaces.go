@@ -15,6 +15,7 @@ import (
 // OperatorModule defines the interface for operator-specific code
 type OperatorInterface interface {
 	HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli)
+	HandlePostToWallet(pgs *postgrescli.PostgresCli, session models.Session, betValue int, gameID string) error
 }
 
 // OperatorModules maps operator names to their respective modules
@@ -30,8 +31,8 @@ type SokkerDuelModule struct{}
 func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli) {
 	// Fetch wallet information
 	logInResponse, err := walletrequests.SokkerDuelGetWallet(op, req.Token)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to fetch wallet: %v", err), http.StatusInternalServerError)
+	if err != nil || logInResponse.Status != status {
+		http.Error(w, fmt.Sprintf("Failed to fetch wallet: %v, api err:%v", err, logInResponse.Data), http.StatusInternalServerError)
 		return
 	}
 
@@ -65,6 +66,39 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
+}
+
+func (m *SokkerDuelModule) HandlePostToWallet(pgs *postgrescli.PostgresCli, session models.Session, betValue int, gameID string) (error) {
+	
+	betData := models.SokkerDuelBet {
+		OperatorGameName: session.OperatorIdentifier.GameName,
+		Currency: session.Currency,
+		Amount: int(betValue),
+		TransactionID: models.GenerateUUID(),
+	}
+	
+	betResponse, err := walletrequests.SokkerDuelPostBet(session, betData)
+	trans := models.Transaction {
+		ID: betData.TransactionID,
+		SessionID: session.ID,
+		Type: "bet",
+		Amount: betValue,
+		Currency: session.Currency,
+		Platform: "sokkerpro",
+		Operator: "sokkerduel",
+		Client: session.PlayerName,
+		Game: session.OperatorIdentifier.GameName,
+		Status: betResponse.Status,
+		Description: betResponse.Data,
+		RoundID: gameID,
+		Timestamp: time.Now(),
+	}
+	if err != nil || betResponse.Status != "success"{
+		
+	}	
+	
+	pgs.SaveTransaction(trans)
+	return fmt.Errorf("")
 }
 
 // Helper function to generate the game URL

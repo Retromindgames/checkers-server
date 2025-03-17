@@ -2,8 +2,10 @@ package main
 
 import (
 	"checkers-server/config"
+	"checkers-server/interfaces"
 	"checkers-server/messages"
 	"checkers-server/models"
+	"checkers-server/postgrescli"
 	"checkers-server/redisdb"
 	"encoding/json"
 	"fmt"
@@ -15,6 +17,8 @@ import (
 
 var pid int
 var redisClient *redisdb.RedisClient
+var postgresClient *postgrescli.PostgresCli
+var name = "roomworker"
 
 func init() {
 	pid = os.Getpid()
@@ -25,6 +29,18 @@ func init() {
 		log.Fatalf("[Redis] Error initializing Redis client: %v\n", err)
 	}
 	redisClient = client
+
+	sqlcliente, err := postgrescli.NewPostgresCli(
+		config.Cfg.Postgres.User,
+		config.Cfg.Postgres.Password,
+		config.Cfg.Postgres.DBName,
+		config.Cfg.Postgres.Host,
+		config.Cfg.Postgres.Port,
+	)
+	if err != nil {
+		log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)
+	}
+	postgresClient = sqlcliente
 }
 
 func main() {
@@ -217,12 +233,11 @@ func handleQueuePaired(player1, player2 *models.Player) {
 
 	player1.RoomID = room.ID
 	player2.RoomID = room.ID
-	// TODO: review this
 	player1.Status = models.StatusInRoom
 	player2.Status = models.StatusInRoom
 	redisClient.UpdatePlayer(player1)
 	redisClient.UpdatePlayer(player2)
-	// Now we set the player colors. TODO: This is ugly, this should be changed.
+	// Now we set the player colors. 
 	colorp1 := rand.Intn(2)
 	colorp2 := 1
 	if colorp1 == 1 {
@@ -231,7 +246,6 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	} else {
 		room.CurrentPlayerID = player2.ID
 	}
-	// we save the room
 	err := redisClient.AddRoom(room)
 	if err != nil {
 		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
@@ -317,8 +331,27 @@ func handleReadyQueue(player *models.Player) {
 		fmt.Print(err)
 		return
 	}
-	// Before we start the game, we will need to post to the wallet api of the bet.
 
+	// TODO: I might need to buff up this validation / check if something faills.
+	// Before we start the game, we will need to post to the wallet api of the bet, we will use our api interface for that.
+	module, exists := interfaces.OperatorModules[proom.OperatorIdentifier.OperatorName]
+	if !exists {
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue getting GenerateOpponentReadyMessage(true) for opponent:%s\n", pid, err)
+		return
+	}
+	session1, err := redisClient.GetSessionByID(player.SessionID)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue fetching player1 sessionID:%s\n", pid, err)
+		return
+	}
+	session2, err := redisClient.GetSessionByID(player2.SessionID)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue fetching player2 sessionID:%s\n", pid, err)
+		return
+	}
+	module.HandlePostToWallet(postgresClient, *session1, int(proom.BetValue*100), proom.ID)
+	module.HandlePostToWallet(postgresClient, *session2, int(proom.BetValue*100), proom.ID)
+	
 	// Now that everything is OK, we will start up the game
 	msgP1, err := messages.NewMessage("balance_update", player.CurrencyAmount)
 	msgP2, err := messages.NewMessage("balance_update", player2.CurrencyAmount)
