@@ -104,7 +104,7 @@ func processQueueForBet(bet float64) {
 		fmt.Printf("[RoomWorker-%d] - Retrieved player 2 from %s: %v\n", pid, queueName, player2)
 
 		player2Details, err := redisClient.GetPlayer(player2.ID)
-		
+
 		if player1Details.ID == player2Details.ID {
 			fmt.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
 			redisClient.RPush(queueName, player1)
@@ -341,12 +341,12 @@ func handleReadyQueue(player *models.Player) {
 	// Now! If both players are ready...!!
 	// We are ready to start a match!!
 	// Fist we update player balance.
-	err = player.UpdateBalance(-player.SelectedBet)
+	err = player.UpdateBalance(int64(-player.SelectedBet * 100))
 	if err != nil {
 		fmt.Print(err)
 		return
 	}
-	err = player2.UpdateBalance(-player.SelectedBet)
+	err = player2.UpdateBalance(int64(-player.SelectedBet * 100))
 	if err != nil {
 		fmt.Print(err)
 		return

@@ -456,7 +456,7 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 		// Update status and game Id of players
 		winnerPlayer.GameID = ""
 		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
-		winnerPlayer.UpdateBalance(game.BetValue * 1.75)
+		winnerPlayer.UpdateBalance(int64(game.BetValue*100) * 2)
 		msgP1, _ := messages.NewMessage("balance_update", winnerPlayer.CurrencyAmount)
 		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
 		redisClient.UpdatePlayer(winnerPlayer)

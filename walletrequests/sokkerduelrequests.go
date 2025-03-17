@@ -46,3 +46,11 @@ func SokkerDuelGetWallet(op models.Operator, token string) (*models.WalletRespon
 	// Return the parsed WalletResponse
 	return &walletResponse, nil
 }
+
+func SokkerDuelPostBet() {
+
+}
+
+func SokkerDuelPostWin() {
+
+}
