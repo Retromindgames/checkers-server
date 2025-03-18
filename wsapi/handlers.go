@@ -72,8 +72,8 @@ func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) 
 		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error determinng player bet value"))
 		return
 	}
-	convertedBet := int64(betValue * 100)
-	if player.CurrencyAmount < convertedBet { // *100 to convert float bet to int, that is used internally.
+	convertedBet := int64(betValue * 100) // *100 to convert float bet to int, that is used internally.
+	if player.CurrencyAmount < convertedBet {
 		printMsg := fmt.Sprintf("Error: Player doesnt have enough currency to place bet, player currency: [%v] betValue in int: [%v]\n", player.CurrencyAmount, convertedBet)
 		fmt.Println(printMsg)
 		player.WriteChan <- []byte(printMsg)

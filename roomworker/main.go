@@ -222,12 +222,12 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		pid, player2.ID, player2.SessionID, player2.Currency)
 
 	room := &models.Room{
-		ID:        models.GenerateUUID(),
-		Player1:   player1,
-		Player2:   player2,
-		StartDate: time.Now(),
-		Currency:  player1.Currency,
-		BetValue:  player1.SelectedBet,
+		ID:                 models.GenerateUUID(),
+		Player1:            player1,
+		Player2:            player2,
+		StartDate:          time.Now(),
+		Currency:           player1.Currency,
+		BetValue:           player1.SelectedBet,
 		OperatorIdentifier: player1.OperatorIdentifier,
 	}
 
@@ -237,7 +237,7 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	player2.Status = models.StatusInRoom
 	redisClient.UpdatePlayer(player1)
 	redisClient.UpdatePlayer(player2)
-	// Now we set the player colors. 
+	// Now we set the player colors.
 	colorp1 := rand.Intn(2)
 	colorp2 := 1
 	if colorp1 == 1 {
@@ -349,9 +349,9 @@ func handleReadyQueue(player *models.Player) {
 		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue fetching player2 sessionID:%s\n", pid, err)
 		return
 	}
-	module.HandlePostToWallet(postgresClient, *session1, int(proom.BetValue*100), proom.ID)
-	module.HandlePostToWallet(postgresClient, *session2, int(proom.BetValue*100), proom.ID)
-	
+	module.HandlePostBet(postgresClient, redisClient, *session1, int(proom.BetValue*100), proom.ID)
+	module.HandlePostBet(postgresClient, redisClient, *session2, int(proom.BetValue*100), proom.ID)
+
 	// Now that everything is OK, we will start up the game
 	msgP1, err := messages.NewMessage("balance_update", player.CurrencyAmount)
 	msgP2, err := messages.NewMessage("balance_update", player2.CurrencyAmount)
