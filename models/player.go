@@ -18,18 +18,18 @@ const (
 )
 
 type Player struct {
-	ID             string          `json:"id"`
-	Token          string          `json:"token"`
-	RoomID         string          `json:"room_id"`
-	GameID         string          `json:"game_id"`
-	SessionID      string          `json:"session_id"`
-	Currency       string          `json:"currency"`
-	CurrencyAmount int64           `json:"currency_amount"`
-	Status         PlayerStatus    `json:"status"`
-	SelectedBet    float64         `json:"selected_bet"`
-	Name           string          `json:"name"`
-	Conn           *websocket.Conn `json:"-"` // Exclude Conn from JSON
-	WriteChan      chan []byte     `json:"-"` // Channel for serialized writes
+	ID                 string             `json:"id"`
+	Token              string             `json:"token"`
+	RoomID             string             `json:"room_id"`
+	GameID             string             `json:"game_id"`
+	SessionID          string             `json:"session_id"`
+	Currency           string             `json:"currency"`
+	CurrencyAmount     int64              `json:"currency_amount"`
+	Status             PlayerStatus       `json:"status"`
+	SelectedBet        float64            `json:"selected_bet"`
+	Name               string             `json:"name"`
+	Conn               *websocket.Conn    `json:"-"` // Exclude Conn from JSON
+	WriteChan          chan []byte        `json:"-"` // Channel for serialized writes
 	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
 }
 

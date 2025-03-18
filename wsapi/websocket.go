@@ -55,6 +55,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println("Failed to upgrade:", err)
+		conn.Close()
 		return
 	}
 	var player *models.Player
@@ -102,6 +103,11 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	err = redisClient.RPush("player_online", player)
 	if err != nil {
 		fmt.Println("[wsapi] - Failed to push player online", err)
+		playersMutex.Lock()
+		delete(players, player.ID)
+		playersMutex.Unlock()
+		unsubscribeFromPlayerChannel(player)
+		conn.Close()
 		return
 	}
 	fmt.Println("[wsapi] - Player added online:", player.ID)
