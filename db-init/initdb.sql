@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS games (
     ID SERIAL PRIMARY KEY,
     OperatorName VARCHAR(100) NOT NULL,
     OperatorGameName VARCHAR(100) NOT NULL,
-    GameName    VARCHAR(100) NOT NULL
+    GameName    VARCHAR(100) NOT NULL,
     StartDate TIMESTAMP NOT NULL,
     EndDate TIMESTAMP,
     Moves JSONB NOT NULL DEFAULT '[]',       -- JSON array for moves

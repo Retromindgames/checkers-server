@@ -32,7 +32,7 @@ type SokkerDuelModule struct{}
 func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli) {
 	// Fetch wallet information
 	logInResponse, err := walletrequests.SokkerDuelGetWallet(op, req.Token)
-	if err != nil || logInResponse.Status != "status" {
+	if err != nil || logInResponse.Status != "success" {
 		http.Error(w, fmt.Sprintf("Failed to fetch wallet: %v, api err:%v", err, logInResponse.Data), http.StatusInternalServerError)
 		return
 	}
@@ -66,7 +66,13 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	encoder := json.NewEncoder(w)
+	encoder.SetEscapeHTML(false)
+	// Encode the response
+	if err := encoder.Encode(response); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+		return
+	}
 }
 
 func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) error {
