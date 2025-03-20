@@ -489,14 +489,15 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 	// Now we handle the wallet side of things.
 	module, exists := interfaces.OperatorModules[winnerPlayer.OperatorIdentifier.OperatorName]
 	if !exists {
-		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue getting GenerateOpponentReadyMessage(true) for opponent:%s\n", pid, err)
+		fmt.Printf("[RoomWorker-%d] - Error handleGameEnd getting GenerateOpponentReadyMessage(true) for opponent:%s\n", pid, err)
 		return
 	}
 	session, err := redisClient.GetSessionByID(winnerPlayer.SessionID)
 	if err != nil {
-		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue fetching player1 sessionID:%s\n", pid, err)
+		fmt.Printf("[RoomWorker-%d] - Error handleGameEnd fetching player1 sessionID:%s\n", pid, err)
 		return
 	}
+	fmt.Printf("[RoomWorker-%d] - Session extract ID, before posting bet :%s\n", pid, err)
 	module.HandlePostWin(postgresClient, redisClient, *session, int(game.BetValue*100), game.ID)
 }
 

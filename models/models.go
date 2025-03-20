@@ -14,7 +14,7 @@ type Session struct {
 	Currency           string             `json:"currency"`
 	OperatorBaseUrl    string             `json:"operator_base_url"`
 	CreatedAt          time.Time          `json:"created_at"`
-	ExtractID          string             `json:"extract_id"` // This was created to store the extract ID of a bet, so that we can later use it in the win post...
+	ExtractID          int64              `json:"extract_id"` // This was created to store the extract ID of a bet, so that we can later use it in the win post...
 	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
 }
 

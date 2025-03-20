@@ -32,11 +32,14 @@ type SokkerDuelModule struct{}
 func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli) {
 	// Fetch wallet information
 	logInResponse, err := walletrequests.SokkerDuelGetWallet(op, req.Token)
-	if err != nil || logInResponse.Status != "success" {
-		http.Error(w, fmt.Sprintf("Failed to fetch wallet: %v, api err:%v", err, logInResponse.Data), http.StatusInternalServerError)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to fetch wallet: %v", err), http.StatusInternalServerError)
 		return
 	}
-
+	if logInResponse.Status != "success" {
+		http.Error(w, fmt.Sprintf("Wallet request != success: %v, api err:%v", err, logInResponse.Data), http.StatusInternalServerError)
+		return
+	}
 	session, err := generatePlayerSession(
 		op,
 		req.Token,
@@ -114,10 +117,10 @@ func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redis
 		return fmt.Errorf("failed to save transaction: %v", err)
 	}
 	session.ExtractID = betResponse.Data.ExtractID
-	rc.AddSession(&session) // we save our session with the extract ID.
+	err = rc.AddSession(&session) // we save our session with the extract ID.
 	// Return the API error if there was one
 	if err != nil {
-		return fmt.Errorf("API call failed: %v", err)
+		return fmt.Errorf("Failed to save session: %v", err)
 	}
 
 	// If everything is successful, return nil
@@ -163,7 +166,7 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 		// If saving the transaction fails, return the error
 		return fmt.Errorf("failed to save transaction: %v", err)
 	}
-	session.ExtractID = ""
+	session.ExtractID = 0
 	rc.AddSession(&session) // we save our session with the extract ID.
 	// Return the API error if there was one
 	if err != nil {
@@ -182,7 +185,7 @@ func generateGameURL(baseURL, token, sessionID, currency string) (string, error)
 	// Add query parameters
 	query := url.Values{}
 	query.Add("token", token)
-	query.Add("sessionId", sessionID)
+	query.Add("sessionid", sessionID)
 	query.Add("currency", currency)
 	parsedURL.RawQuery = query.Encode()
 
@@ -190,12 +193,12 @@ func generateGameURL(baseURL, token, sessionID, currency string) (string, error)
 	return parsedURL.String(), nil
 }
 
-func generatePlayerSession(op models.Operator, token, username, currency string, balance int64, rc *redisdb.RedisClient) (models.Session, error) {
+func generatePlayerSession(op models.Operator, token, username, currency string, balance float64, rc *redisdb.RedisClient) (models.Session, error) {
 	session := models.Session{
 		ID:         models.GenerateUUID(),
 		Token:      token,
 		PlayerName: username,
-		Balance:    balance,
+		Balance:    int64(balance),
 		Currency:   currency,
 		OperatorIdentifier: models.OperatorIdentifier{
 			OperatorName:     op.OperatorName,

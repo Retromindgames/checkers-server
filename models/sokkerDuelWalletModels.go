@@ -13,9 +13,9 @@ type Operator struct {
 type WalletResponse struct {
 	Status string `json:"status"`
 	Data   struct {
-		Username string `json:"username"`
-		Balance  int64  `json:"balance"`
-		Currency string `json:"currency"`
+		Username string  `json:"username"`
+		Balance  float64 `json:"balance"`
+		Currency string  `json:"currency"`
 	} `json:"data"`
 }
 
@@ -36,17 +36,28 @@ type SokkerDuelWin struct {
 	Currency         string `json:"currency"`
 	Amount           int    `json:"amount"`
 	TransactionID    string `json:"transaction_id"`
-	ExtractID        string `json:"extract_id"`
+	ExtractID        int64  `json:"extract_id"`
 }
 
-type SokkerDuelBetAndWinResponse struct {
+type SokkerDuelBetResponse struct {
 	Status string `json:"status"`
 	Data   struct {
 		GameID        string `json:"game_id"`
 		Currency      string `json:"currency"`
 		Amount        int    `json:"amount"`
-		Balance       int64  `json:"balance"`
+		Balance       string `json:"balance"`
 		TransactionID string `json:"transaction_id"`
-		ExtractID     string `json:"extract_id"`
+		ExtractID     int64  `json:"extractSokkerDuelId"`
+	} `json:"data"`
+}
+type SokkerDuelWinResponse struct {
+	Status string `json:"status"`
+	Data   struct {
+		GameID        string `json:"game_id"`
+		Currency      string `json:"currency"`
+		Amount        int    `json:"amount"`
+		Balance       string `json:"balance"`
+		TransactionID string `json:"transaction_id"`
+		ExtractID     int64  `json:"extract_id"`
 	} `json:"data"`
 }

@@ -336,7 +336,7 @@ func handleReadyQueue(player *models.Player) {
 	// Before we start the game, we will need to post to the wallet api of the bet, we will use our api interface for that.
 	module, exists := interfaces.OperatorModules[proom.OperatorIdentifier.OperatorName]
 	if !exists {
-		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue getting GenerateOpponentReadyMessage(true) for opponent:%s\n", pid, err)
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue getting getting interfaces.OperatorModules[%v]:%s\n", pid, proom.OperatorIdentifier.OperatorName, err)
 		return
 	}
 	session1, err := redisClient.GetSessionByID(player.SessionID)

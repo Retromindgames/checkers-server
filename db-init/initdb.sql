@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS games (
     StartDate TIMESTAMP NOT NULL,
     EndDate TIMESTAMP,
     Moves JSONB NOT NULL DEFAULT '[]',       -- JSON array for moves
-    BetAmount DECIMAL(10,2) NOT NULL CHECK (bet_amount >= 0),
+    BetAmount DECIMAL(10,2) NOT NULL CHECK (BetAmount >= 0),  -- Corrected column name
     Winner VARCHAR(255),                     -- Store winner's name or ID
     GamePlayers JSONB NOT NULL DEFAULT '[]'  -- JSON array for players
 );
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS games (
 CREATE TABLE IF NOT EXISTS transactions (
     TransactionID SERIAL PRIMARY KEY, -- Unique ID for each transaction
     SessionID VARCHAR(255) NOT NULL,  -- Session ID for the player
-    Type VARCHAR(50) NOT NULL CHECK (Type IN ('bet', 'win'),  -- Type of transaction: bet or win
+    Type VARCHAR(50) NOT NULL CHECK (Type IN ('bet', 'win')),  -- Corrected CHECK constraint
     Amount INTEGER NOT NULL CHECK (Amount >= 0),  -- Amount in cents
     Currency VARCHAR(10) NOT NULL,  -- Currency code (e.g., EUR, USD)
     Platform VARCHAR(100) NOT NULL, -- Platform name

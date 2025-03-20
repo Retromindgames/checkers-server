@@ -48,7 +48,7 @@ func SokkerDuelGetWallet(op models.Operator, token string) (*models.WalletRespon
 	return &walletResponse, nil
 }
 
-func SokkerDuelPostBet(session models.Session, betData models.SokkerDuelBet) (*models.SokkerDuelBetAndWinResponse, error) {
+func SokkerDuelPostBet(session models.Session, betData models.SokkerDuelBet) (*models.SokkerDuelBetResponse, error) {
 	baseUrl, err := url.Parse(session.OperatorBaseUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %v", err)
@@ -79,7 +79,7 @@ func SokkerDuelPostBet(session models.Session, betData models.SokkerDuelBet) (*m
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %v", err)
 	}
-	var walletResponse models.SokkerDuelBetAndWinResponse
+	var walletResponse models.SokkerDuelBetResponse
 	if err := json.Unmarshal(body, &walletResponse); err != nil {
 		return nil, fmt.Errorf("failed to parse bet response: %v. WiTH err %v", walletResponse, err)
 	}
@@ -87,7 +87,7 @@ func SokkerDuelPostBet(session models.Session, betData models.SokkerDuelBet) (*m
 	return &walletResponse, nil
 }
 
-func SokkerDuelPostWin(session models.Session, winData models.SokkerDuelWin) (*models.SokkerDuelBetAndWinResponse, error) {
+func SokkerDuelPostWin(session models.Session, winData models.SokkerDuelWin) (*models.SokkerDuelWinResponse, error) {
 	baseUrl, err := url.Parse(session.OperatorBaseUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %v", err)
@@ -118,7 +118,7 @@ func SokkerDuelPostWin(session models.Session, winData models.SokkerDuelWin) (*m
 	if err != nil {
 		return nil, fmt.Errorf("failed to read win response body: %v", err)
 	}
-	var walletResponse models.SokkerDuelBetAndWinResponse
+	var walletResponse models.SokkerDuelWinResponse
 	if err := json.Unmarshal(body, &walletResponse); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %v. WiTH err %v", walletResponse, err)
 	}
