@@ -29,6 +29,7 @@ type SokkerDuelBet struct {
 	Currency         string `json:"currency"`
 	Amount           int    `json:"amount"`
 	TransactionID    string `json:"transaction_id"`
+	RoundID          string `json:"round_id"`
 }
 
 type SokkerDuelWin struct {
@@ -36,7 +37,8 @@ type SokkerDuelWin struct {
 	Currency         string `json:"currency"`
 	Amount           int    `json:"amount"`
 	TransactionID    string `json:"transaction_id"`
-	ExtractID        int64  `json:"extract_id"`
+	ExtractID        int64  `json:"extractSokkerDuelId"`
+	RoundID          string `json:"round_id"`
 }
 
 type SokkerDuelBetResponse struct {
@@ -60,4 +62,10 @@ type SokkerDuelWinResponse struct {
 		TransactionID string `json:"transaction_id"`
 		ExtractID     int64  `json:"extract_id"`
 	} `json:"data"`
+}
+
+type SokkerDuelErrorResponse struct {
+	Status string `json:"status"`
+	Auth   bool   `json:"auth"`
+	Resp   string `json:"resp"`
 }

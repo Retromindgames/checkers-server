@@ -19,7 +19,7 @@ type Session struct {
 }
 
 type Transaction struct {
-	ID          string    `json:"transaction_id"` // Unique ID for each transaction (auto-incremented by the database)
+	ID          string    `json:"transaction_id"` // Unique ID for each transaction
 	SessionID   string    `json:"session_id"`     // Session ID for the player
 	Type        string    `json:"type"`           // Type of transaction: 'bet' or 'win'
 	Amount      int       `json:"amount"`         // Amount in cents

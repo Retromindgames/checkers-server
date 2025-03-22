@@ -32,7 +32,7 @@ func main() {
 	select {}
 }
 
-func processPlayerOnline(){
+func processPlayerOnline() {
 	for {
 		playerData, err := redisClient.BLPop("player_online", 0) // Block
 		if err != nil {
@@ -44,8 +44,7 @@ func processPlayerOnline(){
 	}
 }
 
-
-func processPlayerOffline(){
+func processPlayerOffline() {
 	for {
 		playerData, err := redisClient.BLPop("player_offline", 0) // Block
 		if err != nil {
@@ -55,7 +54,7 @@ func processPlayerOffline(){
 		fmt.Printf("[PStatus Worker-%d] - Player disconnected: %+v\n", pid, playerData)
 		playerData, err = redisClient.GetPlayer(playerData.ID)
 		if err == nil {
-			handleRemovePlayer(playerData)	
+			handleRemovePlayer(playerData)
 		}
 	}
 }
@@ -63,13 +62,36 @@ func processPlayerOffline(){
 func handleRemovePlayer(player *models.Player) {
 	fmt.Printf("[PStatus Worker-%d] - Removing player: %s (Session: %s, Currency: %s, RoomID: %s)\n",
 		pid, player.ID, player.SessionID, player.Currency, player.RoomID)
-	
+
 	// We dont need to issue a command to leave the queue, since the queue fetched the player-
-	if(player.RoomID != "" || player.Status == models.StatusInRoom || player.Status == models.StatusInRoomReady){
+	if player.RoomID != "" || player.Status == models.StatusInRoom || player.Status == models.StatusInRoomReady {
 		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Room, sending notification to room worker!: %v\n", pid, player)
 		redisClient.RPush("leave_room", player)
 	}
-	if(player.GameID != "" || player.Status == models.StatusInGame){
+	if player.GameID != "" || player.Status == models.StatusInGame {
+		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Game, sending notification to Game worker!: %v\n", pid, player)
+		redisClient.RPush("disconnect_game", player)
+	}
+
+	err := redisClient.RemovePlayer(string(player.ID))
+	if err != nil {
+		fmt.Printf("[PStatus Worker-%d] - Failed to remove player: %v\n", pid, err)
+		return
+	}
+	fmt.Printf("[PStatus Worker-%d] - Player successfully removed.\n", pid)
+}
+
+// TODO: Finish this.
+func handleDisconnectPlayer(player *models.Player) {
+	fmt.Printf("[PStatus Worker-%d] - Disconnecting player: %s (Session: %s, Currency: %s, RoomID: %s)\n",
+		pid, player.ID, player.SessionID, player.Currency, player.RoomID)
+
+	// We dont need to issue a command to leave the queue, since the queue fetched the player
+	if player.RoomID != "" || player.Status == models.StatusInRoom || player.Status == models.StatusInRoomReady {
+		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Room, sending notification to room worker!: %v\n", pid, player)
+		redisClient.RPush("leave_room", player)
+	}
+	if player.GameID != "" || player.Status == models.StatusInGame {
 		fmt.Printf("[PStatus Worker-%d] - Removed player is in a Game, sending notification to Game worker!: %v\n", pid, player)
 		redisClient.RPush("disconnect_game", player)
 	}
@@ -101,7 +123,7 @@ func handleNewPlayer(player *models.Player) {
 }
 
 func updatePlayerToRedis(player *models.Player) {
-	
+
 	err := redisClient.UpdatePlayer(player)
 	if err != nil {
 		fmt.Printf("[PStatus Worker-%d] - Failed to add player: %v\n", pid, err)

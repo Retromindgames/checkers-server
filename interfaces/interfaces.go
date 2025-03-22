@@ -9,14 +9,15 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
 // OperatorModule defines the interface for operator-specific code
 type OperatorInterface interface {
 	HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli)
-	HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) error
-	HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) error
+	HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) (int64, error)
+	HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) (int64, error)
 }
 
 // OperatorModules maps operator names to their respective modules
@@ -78,15 +79,17 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) error {
+func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) (int64, error) {
 
 	betData := models.SokkerDuelBet{
 		OperatorGameName: session.OperatorIdentifier.GameName,
 		Currency:         session.Currency,
 		Amount:           betValue,
 		TransactionID:    models.GenerateUUID(),
+		RoundID:          gameID,
 	}
 	betResponse, err := walletrequests.SokkerDuelPostBet(session, betData)
+
 	// Prepare the transaction record
 	trans := models.Transaction{
 		ID:        betData.TransactionID,
@@ -114,25 +117,34 @@ func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redis
 	}
 	if err := pgs.SaveTransaction(trans); err != nil {
 		// If saving the transaction fails, return the error
-		return fmt.Errorf("failed to save transaction: %v", err)
+		return -1, fmt.Errorf("failed to save transaction: %v", err)
 	}
 	session.ExtractID = betResponse.Data.ExtractID
 	err = rc.AddSession(&session) // we save our session with the extract ID.
 	// Return the API error if there was one
 	if err != nil {
-		return fmt.Errorf("Failed to save session: %v", err)
+		return -1, fmt.Errorf("Failed to save session: %v", err)
 	}
 
+	fbalance, err := strconv.ParseFloat(betResponse.Data.Balance, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return -1, err
+	}
+	fmt.Println("Float value:", fbalance)
+	intBalance := int64(fbalance * 100.) // Convert to int after multiplying by 100
+
 	// If everything is successful, return nil
-	return nil
+	return intBalance, nil
 }
 
-func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) error {
+func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) (int64, error) {
 	winData := models.SokkerDuelWin{
 		OperatorGameName: session.OperatorIdentifier.GameName,
 		Currency:         session.Currency,
 		Amount:           betValue,
 		TransactionID:    models.GenerateUUID(),
+		RoundID:          gameID,
 		ExtractID:        session.ExtractID,
 	}
 	betResponse, err := walletrequests.SokkerDuelPostWin(session, winData)
@@ -164,15 +176,25 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 	}
 	if err := pgs.SaveTransaction(trans); err != nil {
 		// If saving the transaction fails, return the error
-		return fmt.Errorf("failed to save transaction: %v", err)
+		return -1, fmt.Errorf("failed to save transaction: %v", err)
 	}
 	session.ExtractID = 0
 	rc.AddSession(&session) // we save our session with the extract ID.
 	// Return the API error if there was one
 	if err != nil {
-		return fmt.Errorf("API call failed: %v", err)
+		return -1, fmt.Errorf("API call failed: %v", err)
 	}
-	return nil
+
+	fbalance, err := strconv.ParseFloat(betResponse.Data.Balance, 64)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return -1, err
+	}
+	fmt.Println("Float value:", fbalance)
+	intBalance := int64(fbalance * 100.) // Convert to int after multiplying by 100
+
+	// If everything is successful, return nil
+	return intBalance, nil
 }
 
 func generateGameURL(baseURL, token, sessionID, currency string) (string, error) {

@@ -59,7 +59,13 @@ func SokkerDuelPostBet(session models.Session, betData models.SokkerDuelBet) (*m
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize bet data: %v", err)
 	}
-	// Create request with JSON body
+
+	// Print request
+	fmt.Println("===== API REQUEST =====")
+	fmt.Printf("URL: %s\n", baseUrl.String())
+	fmt.Printf("Headers: x-access-token=%s\n", session.Token)
+	fmt.Printf("Body: %s\n", string(jsonData))
+
 	req, err := http.NewRequest("POST", baseUrl.String(), bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bet request: %v", err)
@@ -74,14 +80,26 @@ func SokkerDuelPostBet(session models.Session, betData models.SokkerDuelBet) (*m
 	}
 	defer resp.Body.Close()
 
-	// Read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body: %v", err)
 	}
+
+	// Print response
+	fmt.Println("===== API RESPONSE =====")
+	fmt.Printf("Status: %s\n", resp.Status)
+	fmt.Printf("Body: %s\n", string(body))
+
+	// Try to unmarshal as an error first
+	var apiError models.SokkerDuelErrorResponse
+	if err := json.Unmarshal(body, &apiError); err == nil && apiError.Status == "error" {
+		return nil, fmt.Errorf("API error: %s", apiError.Resp)
+	}
+
+	// If no error, proceed with normal response
 	var walletResponse models.SokkerDuelBetResponse
 	if err := json.Unmarshal(body, &walletResponse); err != nil {
-		return nil, fmt.Errorf("failed to parse bet response: %v. WiTH err %v", walletResponse, err)
+		return nil, fmt.Errorf("failed to parse bet response: %v. With err: %v", walletResponse, err)
 	}
 
 	return &walletResponse, nil
@@ -98,7 +116,13 @@ func SokkerDuelPostWin(session models.Session, winData models.SokkerDuelWin) (*m
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize win data: %v", err)
 	}
-	// Create request with JSON body
+
+	// Print request
+	fmt.Println("===== API REQUEST =====")
+	fmt.Printf("URL: %s\n", baseUrl.String())
+	fmt.Printf("Headers: x-access-token=%s\n", session.Token)
+	fmt.Printf("Body: %s\n", string(jsonData))
+
 	req, err := http.NewRequest("POST", baseUrl.String(), bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create win request: %v", err)
@@ -113,14 +137,25 @@ func SokkerDuelPostWin(session models.Session, winData models.SokkerDuelWin) (*m
 	}
 	defer resp.Body.Close()
 
-	// Read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read win response body: %v", err)
 	}
+
+	// Print response
+	fmt.Println("===== API RESPONSE =====")
+	fmt.Printf("Status: %s\n", resp.Status)
+	fmt.Printf("Body: %s\n", string(body))
+
+	// Try to unmarshal as an error first
+	var apiError models.SokkerDuelErrorResponse
+	if err := json.Unmarshal(body, &apiError); err == nil && apiError.Status == "error" {
+		return nil, fmt.Errorf("API error: %s", apiError.Resp)
+	}
+
 	var walletResponse models.SokkerDuelWinResponse
 	if err := json.Unmarshal(body, &walletResponse); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %v. WiTH err %v", walletResponse, err)
+		return nil, fmt.Errorf("failed to parse response: %v. With err: %v", walletResponse, err)
 	}
 
 	return &walletResponse, nil

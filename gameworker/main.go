@@ -454,10 +454,23 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 		fmt.Printf("[%s-%d] - (Handle Game Over) - Failed to get winner player!: %v\n", name, pid, err)
 		return
 	} else {
+		// Now we handle the wallet side of things.
+		module, exists := interfaces.OperatorModules[winnerPlayer.OperatorIdentifier.OperatorName]
+		if !exists {
+			fmt.Printf("[RoomWorker-%d] - Error handleGameEnd getting GenerateOpponentReadyMessage(true) for opponent:%s\n", pid, err)
+			return
+		}
+		session, err := redisClient.GetSessionByID(winnerPlayer.SessionID)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error handleGameEnd fetching player1 sessionID:%s\n", pid, err)
+			return
+		}
+		fmt.Printf("[RoomWorker-%d] - Session extract ID, before posting bet :%s\n", pid, err)
+		newBalance, err := module.HandlePostWin(postgresClient, redisClient, *session, int(game.BetValue*100), game.ID)
 		// Update status and game Id of players
 		winnerPlayer.GameID = ""
 		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
-		winnerPlayer.UpdateBalance(int64(game.BetValue*100) * 2) // TODO: This is repeated code. I Should use the same value as the value sent to the wallet.
+		_ = winnerPlayer.SetBalance(newBalance)
 		msgP1, _ := messages.NewMessage("balance_update", winnerPlayer.CurrencyAmount)
 		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
 		redisClient.UpdatePlayer(winnerPlayer)
@@ -485,20 +498,6 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 	// We then save the game to POSTGRES.
 	postgresClient.SaveGame(game)
 
-	// TODO: Do I really want this here? Or above?
-	// Now we handle the wallet side of things.
-	module, exists := interfaces.OperatorModules[winnerPlayer.OperatorIdentifier.OperatorName]
-	if !exists {
-		fmt.Printf("[RoomWorker-%d] - Error handleGameEnd getting GenerateOpponentReadyMessage(true) for opponent:%s\n", pid, err)
-		return
-	}
-	session, err := redisClient.GetSessionByID(winnerPlayer.SessionID)
-	if err != nil {
-		fmt.Printf("[RoomWorker-%d] - Error handleGameEnd fetching player1 sessionID:%s\n", pid, err)
-		return
-	}
-	fmt.Printf("[RoomWorker-%d] - Session extract ID, before posting bet :%s\n", pid, err)
-	module.HandlePostWin(postgresClient, redisClient, *session, int(game.BetValue*100), game.ID)
 }
 
 func BroadCastToGamePlayers(msg []byte, game models.Game) {

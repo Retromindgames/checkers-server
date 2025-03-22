@@ -321,18 +321,6 @@ func handleReadyQueue(player *models.Player) {
 	// Now! If both players are ready...!!
 	// We are ready to start a match!!
 	// Fist we update player balance.
-	err = player.UpdateBalance(int64(-player.SelectedBet * 100))
-	if err != nil {
-		fmt.Print(err)
-		return
-	}
-	err = player2.UpdateBalance(int64(-player.SelectedBet * 100))
-	if err != nil {
-		fmt.Print(err)
-		return
-	}
-
-	// TODO: I might need to buff up this validation / check if something faills.
 	// Before we start the game, we will need to post to the wallet api of the bet, we will use our api interface for that.
 	module, exists := interfaces.OperatorModules[proom.OperatorIdentifier.OperatorName]
 	if !exists {
@@ -349,8 +337,10 @@ func handleReadyQueue(player *models.Player) {
 		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue fetching player2 sessionID:%s\n", pid, err)
 		return
 	}
-	module.HandlePostBet(postgresClient, redisClient, *session1, int(proom.BetValue*100), proom.ID)
-	module.HandlePostBet(postgresClient, redisClient, *session2, int(proom.BetValue*100), proom.ID)
+	newBalance1, err := module.HandlePostBet(postgresClient, redisClient, *session1, int(proom.BetValue*100), proom.ID)
+	newBalance2, err := module.HandlePostBet(postgresClient, redisClient, *session2, int(proom.BetValue*100), proom.ID)
+	_ = player.SetBalance(newBalance1)
+	_ = player2.SetBalance(newBalance2)
 
 	// Now that everything is OK, we will start up the game
 	msgP1, err := messages.NewMessage("balance_update", player.CurrencyAmount)

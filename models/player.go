@@ -31,6 +31,7 @@ type Player struct {
 	Conn               *websocket.Conn    `json:"-"` // Exclude Conn from JSON
 	WriteChan          chan []byte        `json:"-"` // Channel for serialized writes
 	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
+	DisconnectedAt     int64              `json:"disconnected_at"` // Unix timestamp
 }
 
 func (p *Player) StartWriteGoroutine() {
@@ -97,6 +98,11 @@ func (p *Player) UpdateBalance(value int64) error {
 		return fmt.Errorf("UpdateBalance failed, final balance less than zero. Currente balance [%f], final balanc [%f]", p.CurrencyAmount, newAmount)
 	}
 	p.CurrencyAmount = newAmount
+	return nil
+}
+
+func (p *Player) SetBalance(value int64) error {
+	p.CurrencyAmount = value
 	return nil
 }
 
