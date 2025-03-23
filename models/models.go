@@ -1,10 +1,17 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 )
+
+type GameLaunchResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
 
 type Session struct {
 	ID                 string             `json:"session_id"`
@@ -16,6 +23,31 @@ type Session struct {
 	CreatedAt          time.Time          `json:"created_at"`
 	ExtractID          int64              `json:"extract_id"` // This was created to store the extract ID of a bet, so that we can later use it in the win post...
 	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
+}
+
+// TODO: Where can I use this?
+func (s *Session) IsTokenExpired() bool {
+	token, _, err := new(jwt.Parser).ParseUnverified(s.Token, jwt.MapClaims{})
+	if err != nil {
+		fmt.Println("Error parsing token:", err)
+		return true // Assume expired if we can't parse
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		fmt.Println("Invalid token claims")
+		return true
+	}
+
+	// Extract expiration time (exp)
+	expFloat, ok := claims["exp"].(float64)
+	if !ok {
+		fmt.Println("Expiration claim missing")
+		return true
+	}
+
+	expTime := time.Unix(int64(expFloat), 0)
+	return time.Now().After(expTime)
 }
 
 type Transaction struct {

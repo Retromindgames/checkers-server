@@ -34,11 +34,11 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 	// Fetch wallet information
 	logInResponse, err := walletrequests.SokkerDuelGetWallet(op, req.Token)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to fetch wallet: %v", err), http.StatusInternalServerError)
+		respondWithError(w, "Failed to fetch wallet", err)
 		return
 	}
 	if logInResponse.Status != "success" {
-		http.Error(w, fmt.Sprintf("Wallet request != success: %v, api err:%v", err, logInResponse.Data), http.StatusInternalServerError)
+		respondWithError(w, "Wallet request != success", fmt.Errorf("api err: %v", logInResponse.Data))
 		return
 	}
 	session, err := generatePlayerSession(
@@ -50,33 +50,25 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 		rc,
 	)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to generate session: %v", err), http.StatusInternalServerError)
+		respondWithError(w, "Failed to generate session", err)
 		return
 	}
 	err = pgs.SaveSession(session)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save session to postgres session: %v", err), http.StatusInternalServerError)
+		respondWithError(w, "Failed to save session", err)
 		return
 	}
 	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, session.ID, logInResponse.Data.Currency)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to generate game URL: %v", err), http.StatusInternalServerError)
+		respondWithError(w, "Failed to generate game URL", err)
 		return
 	}
-
+	// Final response
 	response := models.SokkerDuelGamelaunchResponse{
 		Token: req.Token,
 		Url:   gameURL,
 	}
-
-	w.WriteHeader(http.StatusOK)
-	encoder := json.NewEncoder(w)
-	encoder.SetEscapeHTML(false)
-	// Encode the response
-	if err := encoder.Encode(response); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
+	respondWithJSON(w, http.StatusOK, response)
 }
 
 func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) (int64, error) {
@@ -232,4 +224,21 @@ func generatePlayerSession(op models.Operator, token, username, currency string,
 	}
 	err := rc.AddSession(&session)
 	return session, err
+}
+
+// Helper function to send JSON errors
+func respondWithError(w http.ResponseWriter, message string, err error) {
+	respondWithJSON(w, http.StatusInternalServerError, map[string]string{
+		"error":   message,
+		"details": err.Error(),
+	})
+}
+
+// Helper function to send JSON responses
+func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	encoder := json.NewEncoder(w)
+	encoder.SetEscapeHTML(false)
+	encoder.Encode(payload)
 }

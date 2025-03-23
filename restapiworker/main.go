@@ -47,32 +47,58 @@ func init() {
 func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.GameLaunchRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
+			Success: false,
+			Message: "Invalid request body",
+		})
 		return
 	}
+
 	if req.GameID == "" || req.OperatorName == "" {
-		http.Error(w, "Game ID and Operator Name are required", http.StatusBadRequest)
+		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
+			Success: false,
+			Message: "Game ID and Operator Name are required",
+		})
 		return
 	}
+
 	log.Printf("Received Game Launch Request: %+v", req)
 
 	operator, err := postgresClient.FetchOperator(req.OperatorName, req.GameID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid operator / gameID: %v", err), http.StatusBadRequest)
+		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
+			Success: false,
+			Message: fmt.Sprintf("Invalid operator / gameID: %v", err),
+		})
 		return
 	}
+
 	if !operator.Active {
-		http.Error(w, fmt.Sprintf("Inactive game for operator: %s", req.OperatorName), http.StatusBadRequest)
+		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
+			Success: false,
+			Message: fmt.Sprintf("Inactive game for operator: %s", req.OperatorName),
+		})
 		return
 	}
+
 	module, exists := interfaces.OperatorModules[req.OperatorName]
 	if !exists {
-		http.Error(w, fmt.Sprintf("Unsupported operator: %s", req.OperatorName), http.StatusBadRequest)
+		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
+			Success: false,
+			Message: fmt.Sprintf("Unsupported operator: %s", req.OperatorName),
+		})
 		return
 	}
 
 	// Delegate the request to the module
 	module.HandleGameLaunch(w, r, req, *operator, redisClient, postgresClient)
+}
+
+// Utility function to respond with JSON
+func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(payload)
 }
 
 func main() {

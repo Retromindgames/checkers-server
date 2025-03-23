@@ -77,7 +77,9 @@ func (r *RedisClient) GetNumberOfGames() int {
 // This should be called when a disconnect happens during a game, it will save the
 // session and some player data, to easily identify disconnected players.
 func (r *RedisClient) SaveDisconnectSessionPlayerData(playerData models.Player, game models.Game) {
-	playerData.DisconnectedAt = time.Now().Unix() // Set current timestamp
+	if playerData.DisconnectedAt == 0 { // Check if it's unset
+		playerData.DisconnectedAt = time.Now().Unix() // Set current timestamp
+	}
 
 	playerJSON, err := json.Marshal(playerData)
 	if err != nil {
@@ -94,7 +96,7 @@ func (r *RedisClient) SaveDisconnectSessionPlayerData(playerData models.Player, 
 	fmt.Println("Player saved to disconnected list with key:", key)
 }
 
-// This retrieves our player disconnect,should be used to check if the player that just logged in is in a match.
+// This retrieves our player disconnect, should be used to check if the player that just logged in is in a match.
 func (r *RedisClient) GetDisconnectedPlayerData(sessionID string) *models.Player {
 	key := fmt.Sprintf("players_disconnected:%s", sessionID)
 
@@ -128,34 +130,4 @@ func (r *RedisClient) DeleteDisconnectedPlayerSession(sessionID string) error {
 
 	fmt.Println("Player session deleted with key:", key)
 	return nil
-}
-
-func (r *RedisClient) GetDisconnectedPlayersFor(duration time.Duration) ([]models.Player, error) {
-	keys, err := r.Client.Keys(context.Background(), "players_disconnected:*").Result()
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch keys: %v", err)
-	}
-
-	var disconnectedPlayers []models.Player
-	now := time.Now().Unix()
-
-	for _, key := range keys {
-		data, err := r.Client.Get(context.Background(), key).Result()
-		if err != nil {
-			fmt.Println("Error fetching player data:", err)
-			continue
-		}
-
-		var player models.Player
-		if err := json.Unmarshal([]byte(data), &player); err != nil {
-			fmt.Println("Error unmarshaling player data:", err)
-			continue
-		}
-
-		if now-player.DisconnectedAt >= int64(duration.Seconds()) {
-			disconnectedPlayers = append(disconnectedPlayers, player)
-		}
-	}
-
-	return disconnectedPlayers, nil
 }

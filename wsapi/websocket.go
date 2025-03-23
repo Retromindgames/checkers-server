@@ -62,7 +62,8 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var player *models.Player
-	// We will just check if the player that connected is part of our disconnected players
+	// We will just check if the player that connected is part of our disconnected players, this is a list of in game players that disconnected.
+	// players not in game will just be deleted, and recreated when they are reconnected.
 	discPlayer := redisClient.GetDisconnectedPlayerData(sessionID)
 	if discPlayer != nil {
 		player = &models.Player{

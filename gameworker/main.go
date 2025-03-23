@@ -47,7 +47,7 @@ func main() {
 	fmt.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
 	go processGameCreation()
 	go processGameMoves()
-	go processLeaveGame()
+	//go processLeaveGame() 	// DISABLED, ACTIVATE WHEN IMPLEMENTING THE LEAVE GAME COMMAND.
 	go processDisconnectFromGame()
 	go processReconnectFromGame()
 	select {}
@@ -497,6 +497,24 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 
 	// We then save the game to POSTGRES.
 	postgresClient.SaveGame(game)
+	cleanUpGameDisconnectedPlayers(game)
+
+}
+
+func cleanUpGameDisconnectedPlayers(game models.Game) {
+	p1SessionId := game.Players[0].SessionID
+	p2SessionId := game.Players[1].SessionID
+
+	discPlayer1 := redisClient.GetDisconnectedPlayerData(p1SessionId)
+	if discPlayer1 != nil {
+		redisClient.DeleteDisconnectedPlayerSession(p1SessionId)
+		redisClient.RemovePlayer(discPlayer1.ID)
+	}
+	discPlayer2 := redisClient.GetDisconnectedPlayerData(p2SessionId)
+	if discPlayer2 != nil {
+		redisClient.DeleteDisconnectedPlayerSession(p2SessionId)
+		redisClient.RemovePlayer(discPlayer2.ID)
+	}
 
 }
 

@@ -64,7 +64,7 @@ func (r *RedisClient) RemovePlayer(playerID string) error {
 	}
 
 	if !exists {
-		return fmt.Errorf("[RedisClient] - atempting to delete player that does not exist: %s", playerID)
+		return fmt.Errorf("[RedisClient] - attempting to delete player that does not exist: %s", playerID)
 	}
 	return r.Client.HDel(context.Background(), "players", playerID).Err()
 }

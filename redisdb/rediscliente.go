@@ -67,6 +67,7 @@ func (r *RedisClient) BLPop(queue string, timeoutSecond int) (*models.Player, er
 
 	return nil, fmt.Errorf("no player found in queue")
 }
+
 // BLPop - Retrieve a player from Redis queue
 func (r *RedisClient) BLPopGeneric(queue string, timeoutSecond int) ([]string, error) {
 	result, err := r.Client.BLPop(context.Background(), time.Duration(timeoutSecond)*time.Second, queue).Result()
@@ -198,4 +199,47 @@ func (r *RedisClient) RemovePlayerFromQueue(queueName string, player *models.Pla
 	}
 
 	return nil
+}
+
+func (r *RedisClient) StartSessionCleanup(interval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			r.cleanupExpiredSessions()
+		}
+	}()
+}
+
+func (r *RedisClient) cleanupExpiredSessions() {
+	ctx := context.Background()
+	iter := r.Client.Scan(ctx, 0, "session:*", 0).Iterator()
+
+	for iter.Next(ctx) {
+		sessionKey := iter.Val()
+		data, err := r.Client.HGet(ctx, sessionKey, "data").Result()
+		if err != nil {
+			fmt.Printf("[RedisClient] (Session) - Failed to fetch session data: %v\n", err)
+			continue
+		}
+
+		var session models.Session
+		if err := json.Unmarshal([]byte(data), &session); err != nil {
+			fmt.Printf("[RedisClient] (Session) - Failed to deserialize session: %v\n", err)
+			continue
+		}
+
+		if session.IsTokenExpired() {
+			if err := r.Client.Del(ctx, sessionKey).Err(); err != nil {
+				fmt.Printf("[RedisClient] (Session) - Failed to remove expired session: %v\n", err)
+			} else {
+				fmt.Printf("[RedisClient] (Session) - Expired session removed: %s\n", session.ID)
+			}
+		}
+	}
+
+	if err := iter.Err(); err != nil {
+		fmt.Printf("[RedisClient] (Session) - Error iterating Redis keys: %v\n", err)
+	}
 }
