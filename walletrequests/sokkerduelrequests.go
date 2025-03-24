@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"path"
 	"time"
@@ -26,17 +27,22 @@ func SokkerDuelGetWallet(op models.Operator, token string) (*models.WalletRespon
 	}
 	req.Header.Set("x-access-token", token)
 	
-	// Minimal additions to bypass Cloudflare
+	//  bypass Cloudflare
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "*/*")
+    req.Header.Set("Accept", "application/json, text/html")
+    req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+    req.Header.Set("Connection", "keep-alive")
 
 	// Print request (updated to show all headers)
 	fmt.Println("===== API REQUEST =====")
 	fmt.Printf("URL: %s\n", baseUrl.String())
 	fmt.Printf("Headers: %v\n", req.Header)
-
+	
+	jar, _ := cookiejar.New(nil)
 	client := &http.Client{
-		Timeout: 10 * time.Second, // Added timeout for reliability
+		Timeout: 10 * time.Second, // Added timeout for reliability.
+		Jar:     jar,  // Enable cookies
+
 	}
 	resp, err := client.Do(req)
 	if err != nil {
