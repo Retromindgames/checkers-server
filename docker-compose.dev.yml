@@ -7,8 +7,8 @@ services:
       - "80:80"    # HTTP
       - "443:443"  # HTTPS
     volumes:
-      - ./nginx-staging.conf:/etc/nginx/nginx.conf
       - /home/ec2-user/ssl-gg:/etc/nginx/ssl:ro
+      - ./nginx-staging.conf:/etc/nginx/nginx.conf
     depends_on:
       - wsapi
       - restapi
