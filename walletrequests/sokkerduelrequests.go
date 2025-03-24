@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"time"
 )
 
 func SokkerDuelGetWallet(op models.Operator, token string) (*models.WalletResponse, error) {
@@ -24,13 +25,19 @@ func SokkerDuelGetWallet(op models.Operator, token string) (*models.WalletRespon
 		return nil, fmt.Errorf("Failed to create request: %v", err)
 	}
 	req.Header.Set("x-access-token", token)
+	
+	// Minimal additions to bypass Cloudflare
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
+	req.Header.Set("Accept", "*/*")
 
-	// Print request
+	// Print request (updated to show all headers)
 	fmt.Println("===== API REQUEST =====")
 	fmt.Printf("URL: %s\n", baseUrl.String())
-	fmt.Printf("Headers: x-access-token=%s\n", token)
+	fmt.Printf("Headers: %v\n", req.Header)
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 10 * time.Second, // Added timeout for reliability
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to send request: %v", err)
