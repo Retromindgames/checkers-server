@@ -5,7 +5,7 @@ services:
     ports:
       - "80:80"  # HTTP only
     volumes:
-      - ./nginxlocal.conf:/etc/nginx/nginx.conf  # Use local NGINX config
+      - ./nginx-local.conf:/etc/nginx/nginx.conf  # Use local NGINX config
     depends_on:
       - wsapi
       - restapi
