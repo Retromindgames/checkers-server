@@ -23,8 +23,8 @@ BEGIN
             'SokkerDuel',
             'damasSokkerDuel',
             'BatalhaDasDamas',
-            'https://play.retromindgames.pt/games/damasSokkerDuel/index.html',
-            'https://tt2.sokkerduel.com'
+            'http://play.retromindgames.pt/games/damasSokkerDuel/index.html',
+            'http://88.99.49.131:3000'
         );
     END IF;
 END $$;
