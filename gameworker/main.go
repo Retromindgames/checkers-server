@@ -47,7 +47,7 @@ func main() {
 	fmt.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
 	go processGameCreation()
 	go processGameMoves()
-	//go processLeaveGame() 	// DISABLED, ACTIVATE WHEN IMPLEMENTING THE LEAVE GAME COMMAND.
+	go processLeaveGame() 	// DISABLED, ACTIVATE WHEN IMPLEMENTING THE LEAVE GAME COMMAND.
 	go processDisconnectFromGame()
 	go processReconnectFromGame()
 	select {}
@@ -195,10 +195,9 @@ func processLeaveGame() {
 		// Block until there is a game over message
 		playerData, err := redisClient.BLPop("leave_game", 0)
 		if err != nil {
-			fmt.Printf("[%s-%d] - (Process Leave Game) - Error retrieving player data from queue: %v\n", name, pid, err)
+			fmt.Printf("[%s-%d] - (Process Leave Game) - Error retrieving player data from leave game queue: %v\n", name, pid, err)
 			continue
 		}
-		//playerData, err = redisClient.GetPlayer(playerData.ID)	// We cant do the get player, because it was already removed...
 		fmt.Printf("[%s-%d] - Processing the leave game: %+v\n", name, pid, playerData)
 		game, err := redisClient.GetGame(playerData.GameID)
 		if err != nil {

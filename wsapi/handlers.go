@@ -23,7 +23,6 @@ func handleMessages(player *models.Player) {
 		message, err := messages.ParseMessage(msg)
 		if err != nil {
 			player.WriteChan <- []byte("Invalid message format." + err.Error())
-			//player.Conn.WriteMessage(websocket.TextMessage, )
 			continue
 		}
 
@@ -41,7 +40,13 @@ func handleMessages(player *models.Player) {
 		case "leave_room":
 			if player.Status != models.StatusInRoom {
 				player.WriteChan <- []byte("Can't issue a leave room when not in a Room.")
-				//player.Conn.WriteMessage(websocket.TextMessage, []byte("Can't issue a leave room when not in a Room."))
+				continue
+			}
+			handleLeaveRoom(player)
+		
+		case "leave_game":
+			if player.Status != models.StatusInGame {
+				player.WriteChan <- []byte("Can't issue a leave game when not in a game.")
 				continue
 			}
 			handleLeaveRoom(player)
@@ -49,7 +54,6 @@ func handleMessages(player *models.Player) {
 		case "move_piece":
 			if player.Status != models.StatusInGame {
 				player.WriteChan <- []byte("Can't issue a move when not in a Game.")
-				//player.Conn.WriteMessage(websocket.TextMessage, []byte("Can't issue a move when not in a Game."))
 				continue
 			}
 			handleMovePiece(message, player)
@@ -210,6 +214,29 @@ func handleLeaveRoom(player *models.Player) {
 		fmt.Printf("Error pushing player to Redis leave_room queue: %v\n", err)
 		player.WriteChan <- []byte("Error adding player to queue")
 		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
+		return
+	}
+
+}
+
+func handleLeaveGame(player *models.Player) {
+	// update the player status
+	if player.UpdatePlayerStatus(models.StatusOnline) != nil {
+		player.WriteChan <- []byte("Invalid status transition to 'leave_game'")
+		return
+	}
+	player.WriteChan <- []byte("processing 'leave_game'")
+	
+	err := redisClient.UpdatePlayer(player)
+	if err != nil {
+		fmt.Printf("Error adding player to Redis: %v\n", err)
+		player.WriteChan <- []byte("Error adding player")
+		return
+	}
+	err = redisClient.RPush("leave_game", player)
+	if err != nil {
+		fmt.Printf("Error pushing player to Redis leave_game queue: %v\n", err)
+		player.WriteChan <- []byte("Error adding player to leave_game")
 		return
 	}
 

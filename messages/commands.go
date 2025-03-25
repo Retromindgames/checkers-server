@@ -17,6 +17,7 @@ var validCommands = map[string]CommandInfo{
 	"ready_queue": {Type: ClientCommand}, // This allows the player to issue a ready when in a room. Opponent receives an opponent_ready message
 	"leave_queue": {Type: ClientCommand}, // This allows the player to leave the queue.
 	"leave_room":  {Type: ClientCommand}, // This allows the player to leave the room. The opponent gets placed in the Queue, and received a ready_queue message
+	"leave_game":  {Type: ClientCommand}, // This allows the player to leave the game. The opponent wins the game
 	"join_room":   {Type: ClientCommand}, // DEPRECATED
 	"create_room": {Type: ClientCommand}, // DEPRECATED
 
