@@ -21,9 +21,9 @@ func (r *RedisClient) AddRoom(room *models.Room) error {
 	// Store full room data in a hash
 	roomKey := fmt.Sprintf("room:%s", room.ID)
 	err = r.Client.HSet(ctx, roomKey, map[string]interface{}{
-		"id":        room.ID,
+		"id":       room.ID,
 		"BetValue": room.BetValue,
-		"data":      string(data), // Store full room JSON
+		"data":     string(data), // Store full room JSON
 	}).Err()
 	if err != nil {
 		return fmt.Errorf("[RedisClient] (Room) - failed to store room data: %v", err)
@@ -39,13 +39,11 @@ func (r *RedisClient) AddRoom(room *models.Room) error {
 		return fmt.Errorf("[RedisClient] (Room) - failed to update room index: %v", err)
 	}
 
-	// Manage Room Aggregate
-	exists, err := r.CheckRoomAggregateExists(room.BetValue)
+	// Manage Queue Count
+	exists, err := r.CheckQueueCountExists(room.BetValue)
 	if err == nil {
-		if exists {
-			r.IncrementRoomAggregate(room.BetValue)
-		} else {
-			r.CreateRoomAggregate(room.BetValue)
+		if !exists {
+			r.CreateQueueCount(room.BetValue)
 		}
 	}
 
@@ -72,8 +70,6 @@ func (r *RedisClient) RemoveRoom(key string) error {
 
 	return nil
 }
-
-
 
 func (r *RedisClient) GetRoomByID(roomID string) (*models.Room, error) {
 	ctx := context.Background()
@@ -123,6 +119,7 @@ func (r *RedisClient) GetRoomsByBetValue(BetValue float64) ([]models.Room, error
 	return rooms, nil
 }
 
+// D
 func (r *RedisClient) GetEmptyRoomsByBetValue(BetValue float64) ([]models.Room, error) {
 	ctx := context.Background()
 	zsetKey := "rooms_by_bid"
@@ -147,7 +144,7 @@ func (r *RedisClient) GetEmptyRoomsByBetValue(BetValue float64) ([]models.Room, 
 
 		var room models.Room
 		if err := json.Unmarshal([]byte(data), &room); err == nil {
-			if room.Player2 == nil{
+			if room.Player2 == nil {
 				rooms = append(rooms, room)
 			}
 		}

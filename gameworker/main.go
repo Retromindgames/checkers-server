@@ -2,6 +2,7 @@ package main
 
 import (
 	"checkers-server/config"
+	"checkers-server/interfaces"
 	"checkers-server/messages"
 	"checkers-server/models"
 	"checkers-server/postgrescli"
@@ -28,7 +29,14 @@ func init() {
 		log.Fatalf("[%s-Redis] Error initializing Redis client: %v\n", name, err)
 	}
 	redisClient = client
-	sqlcliente, err := postgrescli.NewPostgresCli("sa", "checkersdb", "checkers", "postgres", "5432")
+
+	sqlcliente, err := postgrescli.NewPostgresCli(
+		config.Cfg.Postgres.User,
+		config.Cfg.Postgres.Password,
+		config.Cfg.Postgres.DBName,
+		config.Cfg.Postgres.Host,
+		config.Cfg.Postgres.Port,
+	)
 	if err != nil {
 		log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)
 	}
@@ -39,7 +47,7 @@ func main() {
 	fmt.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
 	go processGameCreation()
 	go processGameMoves()
-	go processLeaveGame()
+	//go processLeaveGame() 	// DISABLED, ACTIVATE WHEN IMPLEMENTING THE LEAVE GAME COMMAND.
 	go processDisconnectFromGame()
 	go processReconnectFromGame()
 	select {}
@@ -407,8 +415,8 @@ func startCumulativeTimer(game *models.Game) {
 			if activePlayerTimer <= 0 {
 				// The other player wins
 				winner := game.Players[1-activePlayerIndex].ID
-				handleGameEnd(*game, "timeout", winner)
 				fmt.Printf("Cumulative timer expired for player %s in game %s. Player %s wins.\n", activePlayer.ID, game.ID, winner)
+				handleGameEnd(*game, "timeout", winner)
 				return
 			}
 
@@ -440,16 +448,29 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 	redisClient.PublishToGamePlayer(*&game.Players[0], string(msg))
 	redisClient.PublishToGamePlayer(*&game.Players[1], string(msg))
 
-	// Now we update the winner player
+	// Now we update the winner player // TODO: I think this breaks the server when the winner is offline.
 	winnerPlayer, err := redisClient.GetPlayer(game.Winner)
 	if err != nil {
 		fmt.Printf("[%s-%d] - (Handle Game Over) - Failed to get winner player!: %v\n", name, pid, err)
 		return
 	} else {
+		// Now we handle the wallet side of things.
+		module, exists := interfaces.OperatorModules[winnerPlayer.OperatorIdentifier.OperatorName]
+		if !exists {
+			fmt.Printf("[RoomWorker-%d] - Error handleGameEnd getting GenerateOpponentReadyMessage(true) for opponent:%s\n", pid, err)
+			return
+		}
+		session, err := redisClient.GetSessionByID(winnerPlayer.SessionID)
+		if err != nil {
+			fmt.Printf("[RoomWorker-%d] - Error handleGameEnd fetching player1 sessionID:%s\n", pid, err)
+			return
+		}
+		fmt.Printf("[RoomWorker-%d] - Session extract ID, before posting bet :%s\n", pid, err)
+		newBalance, err := module.HandlePostWin(postgresClient, redisClient, *session, int(game.BetValue*100), game.ID)
 		// Update status and game Id of players
 		winnerPlayer.GameID = ""
 		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
-		winnerPlayer.UpdateBalance(game.BetValue * 1.75)
+		_ = winnerPlayer.SetBalance(newBalance)
 		msgP1, _ := messages.NewMessage("balance_update", winnerPlayer.CurrencyAmount)
 		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
 		redisClient.UpdatePlayer(winnerPlayer)
@@ -476,6 +497,25 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 
 	// We then save the game to POSTGRES.
 	postgresClient.SaveGame(game)
+	cleanUpGameDisconnectedPlayers(game)
+
+}
+
+func cleanUpGameDisconnectedPlayers(game models.Game) {
+	p1SessionId := game.Players[0].SessionID
+	p2SessionId := game.Players[1].SessionID
+
+	discPlayer1 := redisClient.GetDisconnectedPlayerData(p1SessionId)
+	if discPlayer1 != nil {
+		redisClient.DeleteDisconnectedPlayerSession(p1SessionId)
+		redisClient.RemovePlayer(discPlayer1.ID)
+	}
+	discPlayer2 := redisClient.GetDisconnectedPlayerData(p2SessionId)
+	if discPlayer2 != nil {
+		redisClient.DeleteDisconnectedPlayerSession(p2SessionId)
+		redisClient.RemovePlayer(discPlayer2.ID)
+	}
+
 }
 
 func BroadCastToGamePlayers(msg []byte, game models.Game) {

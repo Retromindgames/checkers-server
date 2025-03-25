@@ -33,6 +33,6 @@ docker rmi -f $(docker images -q)
 
 # Build and run Docker Compose
 echo "Running Docker Compose with build..."
-docker-compose -f docker-compose.dev.yml up --build -d
+docker-compose -f docker-compose.dev.nginx-local.yml up --build -d
 
 echo "Operation completed successfully."

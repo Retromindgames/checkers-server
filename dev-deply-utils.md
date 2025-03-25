@@ -57,22 +57,38 @@ scp -i pvp.pem -r C:\Projetos\SSH-AWS\damas-server\SSL\* ec2-user@remote_host:/h
 When the containers start up, if there is an existing database, the init script will be lost.
 These are the steps to remove the docker volume to create the database from scratch.
 
-Stop the containers:
+1. Stop the containers:
 
 ```
 docker-compose down
 ```
 
-Remove the volume:
+For staging:
+
+```
+docker-compose -f docker-compose.dev.nginx-local.yml down
+```
+
+2. Remove the volume:
 
 ```
 docker volume rm go-websocket-checkers_postgres_data
 ```
 
-and then we start up the containers again:
+For staging:
+```
+docker volume rm -f checkers-server_postgres_data
+```
+
+3. And then we start up the containers again:
 
 ```
 docker-compose up -d
+```
+
+For staging:
+```
+docker-compose -f docker-compose.dev.nginx-local.yml up -d
 ```
 
 

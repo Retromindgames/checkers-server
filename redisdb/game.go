@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 func (r *RedisClient) AddGame(game *models.Game) error {
@@ -12,8 +13,12 @@ func (r *RedisClient) AddGame(game *models.Game) error {
 	if err != nil {
 		return fmt.Errorf("[RedisClient] - failed to serialize game: %v", err)
 	}
-	// Uses a shared key ("games") , store the games data under their ID
-	return r.Client.HSet(context.Background(), "games", game.ID, data).Err()
+	err = r.Client.HSet(context.Background(), "games", game.ID, data).Err()
+	if err != nil {
+		return err
+	}
+	betKey := fmt.Sprintf("games:bet:%.2f", game.BetValue)
+	return r.Client.SAdd(context.Background(), betKey, game.ID).Err()
 }
 
 func (r *RedisClient) UpdateGame(game *models.Game) error {
@@ -48,14 +53,25 @@ func (r *RedisClient) GetGame(gameID string) (*models.Game, error) {
 }
 
 func (r *RedisClient) RemoveGame(gameID string) error {
-	exists, err := r.GameExists(gameID)
+	// First get the game to find its bet value
+	data, err := r.Client.HGet(context.Background(), "games", gameID).Result()
 	if err != nil {
-		return fmt.Errorf("[RedisClient] - failed to check if game exists: %v", err)
+		return fmt.Errorf("[RedisClient] - Error getting game: %s", gameID)
 	}
-	if !exists {
-		return fmt.Errorf("[RedisClient] - atempting to delete game that does not exist: %s", gameID)
+	var game models.Game
+	if err := json.Unmarshal([]byte(data), &game); err != nil {
+		return fmt.Errorf("[RedisClient] - failed to unmarshal game: %v", err)
 	}
-	return r.Client.HDel(context.Background(), "games", gameID).Err()
+	// Delete from main hash
+	if err := r.Client.HDel(context.Background(), "games", gameID).Err(); err != nil {
+		return fmt.Errorf("[RedisClient] - failed to delete game: %v", err)
+	}
+	// Remove from the specific bet value set
+	betKey := fmt.Sprintf("games:bet:%.2f", game.BetValue)
+	if err := r.Client.SRem(context.Background(), betKey, gameID).Err(); err != nil {
+		return fmt.Errorf("[RedisClient] - failed to remove from bet value set: %v", err)
+	}
+	return nil
 }
 
 func (r *RedisClient) GameExists(gameID string) (bool, error) {
@@ -73,9 +89,17 @@ func (r *RedisClient) GetNumberOfGames() int {
 	return int(count)
 }
 
+func (r *RedisClient) CountGamesByBetValue(betValue float64) (int64, error) {
+	betKey := fmt.Sprintf("games:bet:%.2f", betValue)
+	return r.Client.SCard(context.Background(), betKey).Result()
+}
+
 // This should be called when a disconnect happens during a game, it will save the
-// session and some player data, to easely identify disconnected players.
+// session and some player data, to easily identify disconnected players.
 func (r *RedisClient) SaveDisconnectSessionPlayerData(playerData models.Player, game models.Game) {
+	if playerData.DisconnectedAt == 0 { // Check if it's unset
+		playerData.DisconnectedAt = time.Now().Unix() // Set current timestamp
+	}
 
 	playerJSON, err := json.Marshal(playerData)
 	if err != nil {
@@ -84,7 +108,7 @@ func (r *RedisClient) SaveDisconnectSessionPlayerData(playerData models.Player, 
 	}
 	key := fmt.Sprintf("players_disconnected:%s", playerData.SessionID)
 
-	err = r.Client.Set(context.Background(), key, playerJSON, 0).Err() // 0 means no expiration
+	err = r.Client.Set(context.Background(), key, playerJSON, 0).Err()
 	if err != nil {
 		fmt.Println("Error saving player to Redis:", err)
 		return
@@ -92,7 +116,7 @@ func (r *RedisClient) SaveDisconnectSessionPlayerData(playerData models.Player, 
 	fmt.Println("Player saved to disconnected list with key:", key)
 }
 
-// This retrieves our player disconnect,should be used to check if the player that just logged in is in a match.
+// This retrieves our player disconnect, should be used to check if the player that just logged in is in a match.
 func (r *RedisClient) GetDisconnectedPlayerData(sessionID string) *models.Player {
 	key := fmt.Sprintf("players_disconnected:%s", sessionID)
 

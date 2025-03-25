@@ -3,6 +3,13 @@
     "addr": "redis:6379",
     "db": 0
   },
+  "postgres": {
+    "user": "sa",
+    "password": "checkersdb",
+    "dbname": "checkers",
+    "host": "postgres",
+    "port": "5432"
+  },
   "services": {
     "wsapi": { "ports": [80, 443] },
     "pstatusworker": {},
@@ -12,6 +19,6 @@
       "pieces_in_match": 12,
       "timer_setting": "cumulative"   
     },
-    "broadcastworker": { "timer": 2 }
+    "broadcastworker": { "timer": 5 }
   }
 }

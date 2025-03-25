@@ -2,8 +2,10 @@ package messages
 
 import (
 	"checkers-server/models"
+	"checkers-server/redisdb"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -108,11 +110,11 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 		return msg, nil
 
 	case "game_info":
-		var roomAggregateResponse models.RoomAggregateResponse
-		if err := json.Unmarshal(msg.Value, &roomAggregateResponse); err != nil {
+		var queueNumbersResponse models.QueueNumbersResponse
+		if err := json.Unmarshal(msg.Value, &queueNumbersResponse); err != nil {
 			return nil, fmt.Errorf("invalid value format for game_info: %w", err)
 		}
-		fmt.Printf("[Message Parser] Parsed game_info: %+v\n", roomAggregateResponse)
+		fmt.Printf("[Message Parser] Parsed game_info: %+v\n", queueNumbersResponse)
 	}
 
 	return msg, nil
@@ -122,7 +124,7 @@ func GenerateConnectedMessage(player models.Player) ([]byte, error) {
 	connectInfo := GameConnectedMessage{
 		PlayerID:   player.ID,
 		PlayerName: player.Name,
-		Money:      player.CurrencyAmount,
+		Money:      float64(player.CurrencyAmount) / 100.0,
 		Status:     string(player.Status),
 	}
 	return NewMessage("connected", connectInfo)
@@ -208,4 +210,20 @@ func GenerateMoveMessage(move models.Move) ([]byte, error) {
 func MustMarshal(v interface{}) json.RawMessage {
 	bytes, _ := json.Marshal(v)
 	return bytes
+}
+
+func GenerateGameInfoMessageBytes(redisClient *redisdb.RedisClient) ([]byte, error) {
+	aggregates, err := redisClient.GetQueueNumberResponse()
+	if err != nil {
+		log.Printf("[GenerateGameInfoMessageBytes] - Error getting QueueNumber: %v\n", err)
+		return nil, err
+	}
+	// Create a message with the game_info
+	messageBytes, err := NewMessage("game_info", aggregates)
+	if err != nil {
+		log.Printf("[GenerateGameInfoMessageBytes] - Error creating message: %v\n", err)
+		return nil, err
+	}
+
+	return messageBytes, nil
 }

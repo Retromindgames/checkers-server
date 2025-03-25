@@ -2,8 +2,10 @@ package main
 
 import (
 	"checkers-server/config"
+	"checkers-server/interfaces"
 	"checkers-server/messages"
 	"checkers-server/models"
+	"checkers-server/postgrescli"
 	"checkers-server/redisdb"
 	"encoding/json"
 	"fmt"
@@ -15,6 +17,8 @@ import (
 
 var pid int
 var redisClient *redisdb.RedisClient
+var postgresClient *postgrescli.PostgresCli
+var name = "roomworker"
 
 func init() {
 	pid = os.Getpid()
@@ -25,6 +29,18 @@ func init() {
 		log.Fatalf("[Redis] Error initializing Redis client: %v\n", err)
 	}
 	redisClient = client
+
+	sqlcliente, err := postgrescli.NewPostgresCli(
+		config.Cfg.Postgres.User,
+		config.Cfg.Postgres.Password,
+		config.Cfg.Postgres.DBName,
+		config.Cfg.Postgres.Host,
+		config.Cfg.Postgres.Port,
+	)
+	if err != nil {
+		log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)
+	}
+	postgresClient = sqlcliente
 }
 
 func main() {
@@ -62,7 +78,7 @@ func processRoomJoin() {
 
 func processQueue() {
 	// Launch a goroutine for each bet queue
-	for _, bet := range models.ValidBetAmounts {
+	for _, bet := range models.DamasValidBetAmounts {
 		go processQueueForBet(bet)
 	}
 
@@ -84,11 +100,13 @@ func processQueueForBet(bet float64) {
 		player1Details, err := redisClient.GetPlayer(player1.ID)
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - Error retrieving player 1 details, player removed from queue: %v\n", pid, err)
+			redisClient.DecrementQueueCount(bet)
 			continue
 		}
 		// we check to see if the player is eligible to be processed.
 		if !player1Details.IsEligibleForQueue() {
 			fmt.Printf("[RoomWorker-%d] - player1 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
+			redisClient.DecrementQueueCount(bet)
 			continue
 		}
 
@@ -104,10 +122,11 @@ func processQueueForBet(bet float64) {
 		fmt.Printf("[RoomWorker-%d] - Retrieved player 2 from %s: %v\n", pid, queueName, player2)
 
 		player2Details, err := redisClient.GetPlayer(player2.ID)
-		
+
 		if player1Details.ID == player2Details.ID {
 			fmt.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
 			redisClient.RPush(queueName, player1)
+			redisClient.DecrementQueueCount(bet)
 			continue
 		}
 
@@ -117,6 +136,7 @@ func processQueueForBet(bet float64) {
 			fmt.Printf("[RoomWorker-%d] - player2 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
 			time.Sleep(time.Second * 3)
 			redisClient.RPush(queueName, player1)
+			redisClient.DecrementQueueCount(bet)
 			continue
 		}
 
@@ -194,44 +214,9 @@ func processRoomEnding() {
 			fmt.Printf("[RoomWorker-%d] - Error removing room: %v\n", pid, err)
 			continue
 		}
-		redisClient.DecrementRoomAggregate(playerData.SelectedBet)
+		redisClient.DecrementQueueCount(playerData.SelectedBet)
 		fmt.Printf("[RoomWorker-%d] - End of room ending: %v\n", pid, err)
 	}
-}
-
-func handleCreateRoom(player *models.Player) {
-	fmt.Printf("[RoomWorker-%d] - Handling player (CREATE ROOM): %s (Session: %s, Currency: %s)\n",
-		pid, player.ID, player.SessionID, player.Currency)
-
-	room := &models.Room{
-		ID:        models.GenerateUUID(),
-		Player1:   player,
-		StartDate: time.Now(),
-		Currency:  player.Currency,
-		BetValue:  player.SelectedBet,
-	}
-	err := redisClient.AddRoom(room)
-	if err != nil {
-		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
-		return
-	}
-
-	player.RoomID = room.ID
-	player.Status = "waiting_oponente"
-	redisClient.UpdatePlayer(player) // This should update out player room info.
-
-	messageBytes, err := messages.GenerateRoomCreatedMessage(*room)
-	if err != nil {
-		fmt.Printf("[RoomWorker-%d] - Invalid message format: %v\n", pid, err)
-		return
-	}
-	// Publish the validated message to Redis
-	err = redisClient.PublishToPlayer(*player, string(messageBytes))
-	if err != nil {
-		fmt.Printf("[RoomWorker-%d] - Failed to publish message to player: %v\n", pid, err)
-		return
-	}
-	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
 }
 
 func handleQueuePaired(player1, player2 *models.Player) {
@@ -241,22 +226,22 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		pid, player2.ID, player2.SessionID, player2.Currency)
 
 	room := &models.Room{
-		ID:        models.GenerateUUID(),
-		Player1:   player1,
-		Player2:   player2,
-		StartDate: time.Now(),
-		Currency:  player1.Currency,
-		BetValue:  player1.SelectedBet,
+		ID:                 models.GenerateUUID(),
+		Player1:            player1,
+		Player2:            player2,
+		StartDate:          time.Now(),
+		Currency:           player1.Currency,
+		BetValue:           player1.SelectedBet,
+		OperatorIdentifier: player1.OperatorIdentifier,
 	}
 
 	player1.RoomID = room.ID
 	player2.RoomID = room.ID
-	// TODO: review this
 	player1.Status = models.StatusInRoom
 	player2.Status = models.StatusInRoom
 	redisClient.UpdatePlayer(player1)
 	redisClient.UpdatePlayer(player2)
-	// Now we set the player colors. TODO: This is ugly, this should be changed.
+	// Now we set the player colors.
 	colorp1 := rand.Intn(2)
 	colorp2 := 1
 	if colorp1 == 1 {
@@ -265,7 +250,6 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	} else {
 		room.CurrentPlayerID = player2.ID
 	}
-	// we save the room
 	err := redisClient.AddRoom(room)
 	if err != nil {
 		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
@@ -295,6 +279,9 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		return
 	}
 	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, of room pairing.\n", pid)
+	// We decrement it twice to account for both players starting a match.
+	redisClient.DecrementQueueCount(player1.SelectedBet)
+	redisClient.DecrementQueueCount(player1.SelectedBet)
 }
 
 func handleReadyQueue(player *models.Player) {
@@ -341,16 +328,28 @@ func handleReadyQueue(player *models.Player) {
 	// Now! If both players are ready...!!
 	// We are ready to start a match!!
 	// Fist we update player balance.
-	err = player.UpdateBalance(-player.SelectedBet)
-	if err != nil {
-		fmt.Print(err)
+	// Before we start the game, we will need to post to the wallet api of the bet, we will use our api interface for that.
+	module, exists := interfaces.OperatorModules[proom.OperatorIdentifier.OperatorName]
+	if !exists {
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue getting getting interfaces.OperatorModules[%v]:%s\n", pid, proom.OperatorIdentifier.OperatorName, err)
 		return
 	}
-	err = player2.UpdateBalance(-player.SelectedBet)
+	session1, err := redisClient.GetSessionByID(player.SessionID)
 	if err != nil {
-		fmt.Print(err)
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue fetching player1 sessionID:%s\n", pid, err)
 		return
 	}
+	session2, err := redisClient.GetSessionByID(player2.SessionID)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue fetching player2 sessionID:%s\n", pid, err)
+		return
+	}
+	newBalance1, err := module.HandlePostBet(postgresClient, redisClient, *session1, int(proom.BetValue*100), proom.ID)
+	newBalance2, err := module.HandlePostBet(postgresClient, redisClient, *session2, int(proom.BetValue*100), proom.ID)
+	_ = player.SetBalance(newBalance1)
+	_ = player2.SetBalance(newBalance2)
+
+	// Now that everything is OK, we will start up the game
 	msgP1, err := messages.NewMessage("balance_update", player.CurrencyAmount)
 	msgP2, err := messages.NewMessage("balance_update", player2.CurrencyAmount)
 	// then notify player and store it in redis.
@@ -436,4 +435,39 @@ func handleJoinRoom(player *models.Player) {
 
 	redisClient.PublishPlayerEvent(rooms[0].Player1, string(message))
 	redisClient.PublishPlayerEvent(player, string(message2))
+}
+
+func handleCreateRoom(player *models.Player) {
+	fmt.Printf("[RoomWorker-%d] - Handling player (CREATE ROOM): %s (Session: %s, Currency: %s)\n",
+		pid, player.ID, player.SessionID, player.Currency)
+
+	room := &models.Room{
+		ID:        models.GenerateUUID(),
+		Player1:   player,
+		StartDate: time.Now(),
+		Currency:  player.Currency,
+		BetValue:  player.SelectedBet,
+	}
+	err := redisClient.AddRoom(room)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
+		return
+	}
+
+	player.RoomID = room.ID
+	player.Status = "waiting_oponente"
+	redisClient.UpdatePlayer(player) // This should update out player room info.
+
+	messageBytes, err := messages.GenerateRoomCreatedMessage(*room)
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Invalid message format: %v\n", pid, err)
+		return
+	}
+	// Publish the validated message to Redis
+	err = redisClient.PublishToPlayer(*player, string(messageBytes))
+	if err != nil {
+		fmt.Printf("[RoomWorker-%d] - Failed to publish message to player: %v\n", pid, err)
+		return
+	}
+	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
 }

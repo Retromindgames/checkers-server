@@ -33,20 +33,27 @@ func init() {
 		log.Fatalf("[Redis] Error initializing Redis client: %v", err)
 	}
 	redisClient = client
-	go subscribeToBroadcastChannel() // This is a global channel. WSAPI will send the messages
-	// from this channel to all active ws connections
+	go subscribeToBroadcastChannel() // This is a global channel. WSAPI will send the messages from this channel to all active ws connections
 }
 
 func HandleConnection(w http.ResponseWriter, r *http.Request) {
+	//fmt.Printf("[wsapi] - HandleConnection: Raw query string: %s\n", r.URL.RawQuery)
+
 	token := r.URL.Query().Get("token")
 	sessionID := r.URL.Query().Get("sessionid")
 	currency := r.URL.Query().Get("currency")
 
-	valid, playerData := IsUserValid(token, sessionID) // TODO: Have this check against a valid DB
-	if !valid {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	fmt.Printf("[wsapi] - HandleConnection: token[%v], sessionid[%v], currency[%v]\n", token, sessionID, currency)
+	session, err := FetchAndValidateSession(token, sessionID, currency)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Unauthorized: token[%v], sessionid[%v], currency[%v]", token, sessionID, currency), http.StatusUnauthorized)
 		return
 	}
+	//valid, playerData := IsUserValid(token, sessionID)
+	//if !valid {
+	//	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	//	return
+	//}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -55,33 +62,36 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var player *models.Player
-	// We will just check if the player that connected is part of our disconnected players
+	// We will just check if the player that connected is part of our disconnected players, this is a list of in game players that disconnected.
+	// players not in game will just be deleted, and recreated when they are reconnected.
 	discPlayer := redisClient.GetDisconnectedPlayerData(sessionID)
 	if discPlayer != nil {
 		player = &models.Player{
-			ID:             discPlayer.ID,
-			Conn:           conn,
-			Token:          playerData.Token,
-			Name:           playerData.Name,
-			SessionID:      playerData.SessionID,
-			Currency:       currency,
-			CurrencyAmount: playerData.CurrencyAmount,
-			Status:         models.StatusInGame,
-			GameID:         discPlayer.GameID,
-			WriteChan:      make(chan []byte),
+			ID:                 discPlayer.ID,
+			Conn:               conn,
+			Token:              discPlayer.Token,
+			Name:               discPlayer.Name,
+			SessionID:          discPlayer.SessionID,
+			Currency:           currency,
+			CurrencyAmount:     discPlayer.CurrencyAmount,
+			Status:             models.StatusInGame,
+			GameID:             discPlayer.GameID,
+			WriteChan:          make(chan []byte),
+			OperatorIdentifier: session.OperatorIdentifier,
 		}
 	} else {
 		playerID := models.GenerateUUID()
 		newPlayer := &models.Player{
-			ID:             playerID,
-			Conn:           conn,
-			Token:          playerData.Token,
-			Name:           playerData.Name,
-			SessionID:      playerData.SessionID,
-			Currency:       currency,
-			CurrencyAmount: playerData.CurrencyAmount,
-			Status:         models.StatusOnline,
-			WriteChan:      make(chan []byte),
+			ID:                 playerID,
+			Conn:               conn,
+			Token:              session.Token,
+			Name:               session.PlayerName,
+			SessionID:          session.ID,
+			Currency:           currency,
+			CurrencyAmount:     session.Balance,
+			Status:             models.StatusOnline,
+			WriteChan:          make(chan []byte),
+			OperatorIdentifier: session.OperatorIdentifier,
 		}
 		player = newPlayer
 	}
@@ -124,7 +134,6 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	ready <- true // Notify that the subscription is ready
 }
 
-
 func subscribeToBroadcastChannel() {
 	redisClient.Subscribe("game_info", func(message string) {
 		fmt.Println("[wsapi] - Received BROADCAST message:", message)
@@ -164,4 +173,34 @@ func IsUserValid(token string, sessionID string) (bool, models.Player) {
 		return true, player
 	}
 	return false, models.Player{} // Invalid user
+}
+
+func FetchAndValidateSession(token, sessionID, currency string) (*models.Session, error) {
+	fmt.Print("[FetchAndValidateSession] - Validating token: %s, sessionID: %s, currency: %s\n", token, sessionID, currency)
+
+	// Fetch the session from Redis
+	session, err := redisClient.GetSessionByID(sessionID)
+	if err != nil {
+		fmt.Printf("[FetchAndValidateSession] - Error fetching session from Redis: %v\n", err)
+		return nil, fmt.Errorf("[Session] - failed to fetch session: %v", err)
+	}
+	fmt.Printf("[FetchAndValidateSession] - Session fetched from Redis: %+v\n", session)
+
+	// Validate the currency
+	if session.Currency != currency {
+		fmt.Printf("[FetchAndValidateSession] - Currency mismatch: expected %s, got %s\n", currency, session.Currency)
+		return nil, fmt.Errorf("[Session] - currency mismatch: expected %s, got %s", currency, session.Currency)
+	}
+	fmt.Printf("[FetchAndValidateSession] - Currency validation successful\n")
+
+	// Validate the token
+	if session.Token != token {
+		fmt.Printf("[FetchAndValidateSession] - Token mismatch: expected %s, got %s\n", token, session.Token)
+		return nil, fmt.Errorf("[Session] - token mismatch")
+	}
+	fmt.Printf("[FetchAndValidateSession] - Token validation successful\n")
+
+	// If all validations pass, return the session
+	fmt.Printf("[FetchAndValidateSession] - Session validation successful: %+v\n", session)
+	return session, nil
 }
