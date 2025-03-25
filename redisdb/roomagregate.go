@@ -45,14 +45,15 @@ func (r *RedisClient) CheckRoomAggregateExists(aggregateValue float64) (bool, er
 	return exists == 1, nil
 }
 
+// !TODO : Terminar isto.
 func (r *RedisClient) GetRoomAggregates() (*models.RoomAggregateResponse, error) {
 	keys, err := r.Client.Keys(context.Background(), "RoomAgreagate:*").Result()
 	if err != nil {
 		return nil, fmt.Errorf("Error retrieving room aggregates: %v", err)
 	}
-	var roomAggregate []models.RoomAggregate
-	var totalPlayers int64
-	totalPlayers, err = r.GetNumPlayersInQueue()
+	var playerCount []models.PlayerCountPerBetValue
+	//var totalPlayers int64
+	//totalPlayers, err = r.GetNumPlayersInQueue()
 	for _, key := range keys {
 		parts := strings.Split(key, ":")
 		if len(parts) < 2 {
@@ -67,21 +68,20 @@ func (r *RedisClient) GetRoomAggregates() (*models.RoomAggregateResponse, error)
 			return nil, fmt.Errorf("Error getting value for key %s: %v", key, err)
 		}
 
-		aggregate := models.RoomAggregate{
-			AggregateValue: aggregateValue, // The numeric part after the colon
-			Count:          value,
+		aggregate := models.PlayerCountPerBetValue{
+			BetValue:    aggregateValue, // The numeric part after the colon
+			PlayerCount: value,
 		}
-		roomAggregate = append(roomAggregate, aggregate)
+		playerCount = append(playerCount, aggregate)
 		//totalPlayers += int(value)
 	}
 
 	// Sort by Count in descending order (most players first)
-	sort.Slice(roomAggregate, func(i, j int) bool {
-		return roomAggregate[i].Count > roomAggregate[j].Count
+	sort.Slice(playerCount, func(i, j int) bool {
+		return playerCount[i].PlayerCount > playerCount[j].PlayerCount
 	})
 
 	return &models.RoomAggregateResponse{
-		PlayersWaiting: int(totalPlayers) + (r.GetNumberOfGames() * 2),
-		RoomAggregate:  roomAggregate,
+		RoomAggregate: playerCount,
 	}, nil
 }

@@ -72,14 +72,13 @@ type OperatorIdentifier struct {
 	GameName         string `json:"game_name"`
 }
 
-type RoomAggregate struct {
-	AggregateValue float64 `json:"aggregate_value"`
-	Count          int64   `json:"count"`
+type PlayerCountPerBetValue struct {
+	BetValue    float64 `json:"bet_value"`
+	PlayerCount int64   `json:"player_count"`
 }
 
 type RoomAggregateResponse struct {
-	PlayersWaiting int             `json:"players_waiting"`
-	RoomAggregate  []RoomAggregate `json:"room_aggregate"`
+	RoomAggregate []PlayerCountPerBetValue `json:"player_count_per_bet_value"`
 }
 
 type RoomValue struct {
