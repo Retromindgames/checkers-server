@@ -415,8 +415,8 @@ func startCumulativeTimer(game *models.Game) {
 			if activePlayerTimer <= 0 {
 				// The other player wins
 				winner := game.Players[1-activePlayerIndex].ID
-				handleGameEnd(*game, "timeout", winner)
 				fmt.Printf("Cumulative timer expired for player %s in game %s. Player %s wins.\n", activePlayer.ID, game.ID, winner)
+				handleGameEnd(*game, "timeout", winner)
 				return
 			}
 

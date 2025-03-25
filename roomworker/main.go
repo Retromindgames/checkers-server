@@ -78,7 +78,7 @@ func processRoomJoin() {
 
 func processQueue() {
 	// Launch a goroutine for each bet queue
-	for _, bet := range models.ValidBetAmounts {
+	for _, bet := range models.DamasValidBetAmounts {
 		go processQueueForBet(bet)
 	}
 
@@ -100,11 +100,13 @@ func processQueueForBet(bet float64) {
 		player1Details, err := redisClient.GetPlayer(player1.ID)
 		if err != nil {
 			fmt.Printf("[RoomWorker-%d] - Error retrieving player 1 details, player removed from queue: %v\n", pid, err)
+			redisClient.DecrementQueueCount(bet)
 			continue
 		}
 		// we check to see if the player is eligible to be processed.
 		if !player1Details.IsEligibleForQueue() {
 			fmt.Printf("[RoomWorker-%d] - player1 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
+			redisClient.DecrementQueueCount(bet)
 			continue
 		}
 
@@ -124,6 +126,7 @@ func processQueueForBet(bet float64) {
 		if player1Details.ID == player2Details.ID {
 			fmt.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
 			redisClient.RPush(queueName, player1)
+			redisClient.DecrementQueueCount(bet)
 			continue
 		}
 
@@ -133,6 +136,7 @@ func processQueueForBet(bet float64) {
 			fmt.Printf("[RoomWorker-%d] - player2 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
 			time.Sleep(time.Second * 3)
 			redisClient.RPush(queueName, player1)
+			redisClient.DecrementQueueCount(bet)
 			continue
 		}
 
@@ -210,7 +214,7 @@ func processRoomEnding() {
 			fmt.Printf("[RoomWorker-%d] - Error removing room: %v\n", pid, err)
 			continue
 		}
-		redisClient.DecrementRoomAggregate(playerData.SelectedBet)
+		redisClient.DecrementQueueCount(playerData.SelectedBet)
 		fmt.Printf("[RoomWorker-%d] - End of room ending: %v\n", pid, err)
 	}
 }
@@ -275,6 +279,9 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		return
 	}
 	fmt.Printf("[RoomWorker-%d] - Player successfully handled and notified, of room pairing.\n", pid)
+	// We decrement it twice to account for both players starting a match.
+	redisClient.DecrementQueueCount(player1.SelectedBet)
+	redisClient.DecrementQueueCount(player1.SelectedBet)
 }
 
 func handleReadyQueue(player *models.Player) {

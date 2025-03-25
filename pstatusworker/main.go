@@ -42,6 +42,13 @@ func processPlayerOnline() {
 		}
 		fmt.Printf("[PStatus Worker-%d] - Player connected: %+v\n", pid, playerData)
 		handleNewPlayer(playerData)
+		msg, _ := messages.GenerateGameInfoMessageBytes(redisClient)
+		err = redisClient.PublishToPlayer(*playerData, string(msg))
+		if err != nil {
+			fmt.Printf("[PStatus Worker-%d] - Failed to publish message to player: %v\n", pid, err)
+			return
+		}
+
 	}
 }
 

@@ -97,6 +97,16 @@ func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) 
 		return
 	}
 
+	// Manage Queue Count
+	exists, err := redisClient.CheckQueueCountExists(player.SelectedBet)
+	if err == nil {
+		if !exists {
+			redisClient.CreateQueueCount(player.SelectedBet)
+		} else {
+			redisClient.IncrementQueueCount(player.SelectedBet)
+		}
+	}
+
 	// send a confirmation message back to the player
 	m, err := messages.GenerateQueueConfirmationMessage(true)
 	if err != nil {

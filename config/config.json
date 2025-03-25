@@ -19,6 +19,6 @@
       "pieces_in_match": 12,
       "timer_setting": "cumulative"   
     },
-    "broadcastworker": { "timer": 200 }
+    "broadcastworker": { "timer": 5 }
   }
 }

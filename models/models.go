@@ -77,8 +77,8 @@ type PlayerCountPerBetValue struct {
 	PlayerCount int64   `json:"player_count"`
 }
 
-type RoomAggregateResponse struct {
-	RoomAggregate []PlayerCountPerBetValue `json:"player_count_per_bet_value"`
+type QueueNumbersResponse struct {
+	QueuNumbers []PlayerCountPerBetValue `json:"player_count_per_bet_value"`
 }
 
 type RoomValue struct {

@@ -55,10 +55,8 @@ func (r *RedisClient) GetGame(gameID string) (*models.Game, error) {
 func (r *RedisClient) RemoveGame(gameID string) error {
 	// First get the game to find its bet value
 	data, err := r.Client.HGet(context.Background(), "games", gameID).Result()
-	if err == nil {
-		return fmt.Errorf("[RedisClient] - game does not exist: %s", gameID)
-	} else if err != nil {
-		return fmt.Errorf("[RedisClient] - failed to get game: %v", err)
+	if err != nil {
+		return fmt.Errorf("[RedisClient] - Error getting game: %s", gameID)
 	}
 	var game models.Game
 	if err := json.Unmarshal([]byte(data), &game); err != nil {

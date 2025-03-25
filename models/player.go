@@ -47,7 +47,7 @@ func (p *Player) StartWriteGoroutine() {
 	}()
 }
 
-var ValidBetAmounts = []float64{0.5, 1, 3, 5, 10, 25, 50, 100}
+var DamasValidBetAmounts = []float64{0.5, 1, 3, 5, 10, 25, 50, 100}
 
 // This map will hold the valid status transition
 var validStatusTransitions = map[PlayerStatus]map[PlayerStatus]bool{
