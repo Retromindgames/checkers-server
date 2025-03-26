@@ -23,7 +23,7 @@ BEGIN
             'SokkerDuel',
             'damasSokkerDuel',
             'BatalhaDasDamas',
-            'http://play.retromindgames.pt/games/damasSokkerDuel/index.html',
+            'https://s3.eu-central-1.amazonaws.com/play.retromindgames.pt/games/damasSokkerDuel/index.html',
             'http://88.99.49.131:3000'
         );
     END IF;

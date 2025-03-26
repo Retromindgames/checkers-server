@@ -43,18 +43,27 @@ func (qh *QueueHandler) process() {
 }
 
 func (qh *QueueHandler) cleanup() {
+	var sendFailedQueueConfirmation = false
 	if qh.statusUpdated {
 		qh.player.UpdatePlayerStatus(models.StatusOnline)
 		qh.redisClient.UpdatePlayer(qh.player)
+		sendFailedQueueConfirmation = true
 	}
-
+	
 	if qh.addedToQueue {
 		queueName := fmt.Sprintf("queue:%f", qh.player.SelectedBet)
 		qh.redisClient.Client.LRem(context.Background(), queueName, 1, qh.player)
+		sendFailedQueueConfirmation = true
 	}
-
+	
 	if qh.queueCountIncr {
 		qh.redisClient.DecrementQueueCount(qh.player.SelectedBet)
+		sendFailedQueueConfirmation = true
+	}
+
+	if sendFailedQueueConfirmation {
+		msg, _ := messages.GenerateQueueConfirmationMessage(false);
+		qh.player.WriteChan <- msg
 	}
 }
 
