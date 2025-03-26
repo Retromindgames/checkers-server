@@ -43,7 +43,7 @@ func handleMessages(player *models.Player) {
 				continue
 			}
 			handleLeaveRoom(player)
-		
+
 		case "leave_game":
 			if player.Status != models.StatusInGame {
 				player.WriteChan <- []byte("Can't issue a leave game when not in a game.")
@@ -62,65 +62,12 @@ func handleMessages(player *models.Player) {
 }
 
 func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) {
-	if player.UpdatePlayerStatus(models.StatusInQueue) != nil {
-		player.WriteChan <- []byte("Invalid status transition to 'queue'")
-		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'queue'"))
-		return
+	qh := &QueueHandler{
+		player:      player,
+		redisClient: *redisClient,
+		msg:         msg,
 	}
-	// update the player bet and push it to Redis
-	var betValue float64
-	err := json.Unmarshal(msg.Value, &betValue)
-	if err != nil {
-		fmt.Printf("Error determinng player bet value: %v\n", err)
-		player.WriteChan <- []byte("Error determinng player bet value")
-		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error determinng player bet value"))
-		return
-	}
-	convertedBet := int64(betValue * 100) // *100 to convert float bet to int, that is used internally.
-	if player.CurrencyAmount < convertedBet {
-		printMsg := fmt.Sprintf("Error: Player doesnt have enough currency to place bet, player currency: [%v] betValue in int: [%v]\n", player.CurrencyAmount, convertedBet)
-		fmt.Println(printMsg)
-		player.WriteChan <- []byte(printMsg)
-		return
-	}
-
-	player.SelectedBet = betValue
-	player.Status = models.StatusInQueue
-
-	redisClient.UpdatePlayersInQueueSet(player.ID, models.StatusInQueue)
-	// we update out player status, I think this needs to happen before we add it to the queue.
-	redisClient.UpdatePlayer(player)
-
-	// Pushing the player to the "queue" Redis list
-	queueName := fmt.Sprintf("queue:%f", betValue)
-	err = redisClient.RPush(queueName, player) //
-	if err != nil {
-		fmt.Printf("Error pushing player to Redis queue: %v\n", err)
-		player.WriteChan <- []byte("Error adding player to queue")
-		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error adding player to queue"))
-		return
-	}
-
-	// Manage Queue Count
-	exists, err := redisClient.CheckQueueCountExists(player.SelectedBet)
-	if err == nil {
-		if !exists {
-			redisClient.CreateQueueCount(player.SelectedBet)
-		} else {
-			redisClient.IncrementQueueCount(player.SelectedBet)
-		}
-	}
-
-	// send a confirmation message back to the player
-	m, err := messages.GenerateQueueConfirmationMessage(true)
-	if err != nil {
-		fmt.Println("Error generating queue confirmation:", err)
-		player.WriteChan <- []byte("Error generating confirmation")
-		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Error generating confirmation"))
-		return
-	}
-	player.WriteChan <- m
-	//player.Conn.WriteMessage(websocket.TextMessage, m)
+	qh.process()
 }
 
 func handleLeaveQueue(msg *messages.Message[json.RawMessage], player *models.Player) {
@@ -226,7 +173,7 @@ func handleLeaveGame(player *models.Player) {
 		return
 	}
 	player.WriteChan <- []byte("processing 'leave_game'")
-	
+
 	err := redisClient.UpdatePlayer(player)
 	if err != nil {
 		fmt.Printf("Error adding player to Redis: %v\n", err)
