@@ -143,7 +143,7 @@ func (pc *PostgresCli) SaveGame(game models.Game) error {
 // FetchOperator fetches an operator from the database using OperatorName and OperatorGameName
 func (pc *PostgresCli) FetchOperator(operatorName, operatorGameName string) (*models.Operator, error) {
 	query := `
-		SELECT ID, OperatorName, OperatorGameName, GameName, Active, GameBaseUrl, OperatorWalletBaseUrl
+		SELECT ID, OperatorName, OperatorGameName, GameName, Active, GameBaseUrl, OperatorWalletBaseUrl, WinFactor
 		FROM operators
 		WHERE OperatorName = $1 AND OperatorGameName = $2
 	`
@@ -158,6 +158,7 @@ func (pc *PostgresCli) FetchOperator(operatorName, operatorGameName string) (*mo
 		&operator.Active,
 		&operator.GameBaseUrl,
 		&operator.OperatorWalletBaseUrl,
+		&operator.WinFactor,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {

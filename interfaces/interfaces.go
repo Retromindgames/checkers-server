@@ -70,6 +70,7 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 	}
 	respondWithJSON(w, http.StatusOK, response)
 }
+
 func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) (int64, error) {
 	// Validate input parameters
 	if betValue <= 0 {
@@ -89,12 +90,10 @@ func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redis
 		TransactionID:    models.GenerateUUID(),
 		RoundID:          gameID,
 	}
-
 	// Make API call - now we know it either returns success response or error
 	betResponse, err := walletrequests.SokkerDuelPostBet(session, betData)
 	if err != nil {
-		// Save failed transaction before returning
-		if saveErr := saveFailedTransaction(pgs, session, betData, err, gameID); saveErr != nil {
+		if saveErr := saveFailedBetTransaction(pgs, session, betData, err, gameID); saveErr != nil {
 			return -1, fmt.Errorf("API error: %v | Transaction save error: %v", err, saveErr)
 		}
 		return -1, err // Return original API error
@@ -116,8 +115,9 @@ func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redis
 		RoundID:   gameID,
 		Timestamp: time.Now(),
 		Status:    betResponse.Status,
-	}
+		Description: string(mustMarshal(betData)), // Safe because we know Data exists
 
+	}
 	// Marshal response data (safe because we know Data exists)
 	marshalResponseData, _ := json.Marshal(betResponse.Data)
 	trans.Description = string(marshalResponseData)
@@ -141,44 +141,6 @@ func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redis
 	return int64(fbalance * 100), nil
 }
 
-// Helper function to save failed transactions
-func saveFailedTransaction(pgs *postgrescli.PostgresCli, session models.Session, betData models.SokkerDuelBet, apiError error, gameID string) error {
-	trans := models.Transaction{
-		ID:          betData.TransactionID,
-		SessionID:   session.ID,
-		Type:        "bet",
-		Amount:      betData.Amount,
-		Currency:    session.Currency,
-		Platform:    "sokkerpro",
-		Operator:    "sokkerduel",
-		Client:      session.PlayerName,
-		Game:        session.OperatorIdentifier.GameName,
-		RoundID:     gameID,
-		Timestamp:   time.Now(),
-		Status:      "error",
-		Description: apiError.Error(),
-	}
-	return pgs.SaveTransaction(trans)
-}
-
-func saveFailedWinTransaction(pgs *postgrescli.PostgresCli, session models.Session, winData models.SokkerDuelWin, apiError error, gameID string) error {
-	trans := models.Transaction{
-		ID:          winData.TransactionID,
-		SessionID:   session.ID,
-		Type:        "win",
-		Amount:      winData.Amount,
-		Currency:    session.Currency,
-		Platform:    "sokkerpro",
-		Operator:    "sokkerduel",
-		Client:      session.PlayerName,
-		Game:        session.OperatorIdentifier.GameName,
-		RoundID:     gameID,
-		Timestamp:   time.Now(),
-		Status:      "error",
-		Description: apiError.Error(),
-	}
-	return pgs.SaveTransaction(trans)
-}
 
 func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, winValue int, gameID string) (int64, error) {
 	// Validate input parameters
@@ -191,7 +153,7 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 	if session.ID == "" {
 		return -1, fmt.Errorf("invalid session")
 	}
-	var finalWinAmmount = calculateWinAmount(winValue)
+	var finalWinAmmount = calculateWinAmount(winValue, session.OperatorIdentifier.WinFactor)
 	winData := models.SokkerDuelWin{
 		OperatorGameName: session.OperatorIdentifier.GameName,
 		Currency:         session.Currency,
@@ -248,6 +210,45 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 	return int64(fbalance * 100), nil
 }
 
+// Helper function to save failed transactions
+func saveFailedBetTransaction(pgs *postgrescli.PostgresCli, session models.Session, betData models.SokkerDuelBet, apiError error, gameID string) error {
+	trans := models.Transaction{
+		ID:          betData.TransactionID,
+		SessionID:   session.ID,
+		Type:        "bet",
+		Amount:      betData.Amount,
+		Currency:    session.Currency,
+		Platform:    "sokkerpro",
+		Operator:    "sokkerduel",
+		Client:      session.PlayerName,
+		Game:        session.OperatorIdentifier.GameName,
+		RoundID:     gameID,
+		Timestamp:   time.Now(),
+		Status:      "error",
+		Description: apiError.Error(),
+	}
+	return pgs.SaveTransaction(trans)
+}
+
+func saveFailedWinTransaction(pgs *postgrescli.PostgresCli, session models.Session, winData models.SokkerDuelWin, apiError error, gameID string) error {
+	trans := models.Transaction{
+		ID:          winData.TransactionID,
+		SessionID:   session.ID,
+		Type:        "win",
+		Amount:      winData.Amount,
+		Currency:    session.Currency,
+		Platform:    "sokkerpro",
+		Operator:    "sokkerduel",
+		Client:      session.PlayerName,
+		Game:        session.OperatorIdentifier.GameName,
+		RoundID:     gameID,
+		Timestamp:   time.Now(),
+		Status:      "error",
+		Description: apiError.Error(),
+	}
+	return pgs.SaveTransaction(trans)
+}
+
 func generateGameURL(baseURL, token, sessionID, currency string) (string, error) {
 	// Parse the base URL
 	parsedURL, err := url.Parse(baseURL)
@@ -277,6 +278,7 @@ func generatePlayerSession(op models.Operator, token, username, currency string,
 			OperatorName:     op.OperatorName,
 			OperatorGameName: op.OperatorGameName,
 			GameName:         op.GameName,
+			WinFactor: 		  op.WinFactor,	
 		},
 		OperatorBaseUrl: op.OperatorWalletBaseUrl,
 		CreatedAt:       time.Now(),
@@ -310,9 +312,9 @@ func mustMarshal(v interface{}) []byte {
 	return b
 }
 
-func calculateWinAmount(winValue int) int {
+func calculateWinAmount(winValue int, winFactor float64) int {
 	// Multiply by 2 then by 0.9 (equivalent to multiplying by 1.8)
 	// Using float64 for precise multiplication then converting back to int
-	winAmount := float64(winValue*2) * 0.9
+	winAmount := float64(winValue*2) * winFactor
 	return int(winAmount) // Truncates decimal places
 }

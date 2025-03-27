@@ -1,13 +1,14 @@
 package models
 
 type Operator struct {
-	ID                    int    `json:"id"`
-	OperatorName          string `json:"operator_name"`
-	OperatorGameName      string `json:"operator_game_name"`
-	GameName              string `json:"game_name"`
-	Active                bool   `json:"active"`
-	GameBaseUrl           string `json:"game_base_url"`
-	OperatorWalletBaseUrl string `json:"operator_wallet_base_url"`
+	ID                    int     `json:"id"`
+	OperatorName          string  `json:"operator_name"`
+	OperatorGameName      string  `json:"operator_game_name"`
+	GameName              string  `json:"game_name"`
+	Active                bool    `json:"active"`
+	GameBaseUrl           string  `json:"game_base_url"`
+	OperatorWalletBaseUrl string  `json:"operator_wallet_base_url"`
+	WinFactor             float64 `json:"win_factor"`
 }
 
 type WalletResponse struct {
