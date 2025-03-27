@@ -19,13 +19,13 @@ BEGIN
         );
 
         -- Insert a row into the table after creating it
-        INSERT INTO operators (OperatorName, OperatorGameName, GameName, GameBaseUrl, OperatorWalletBaseUrl)
+        INSERT INTO operators (OperatorName, OperatorGameName, GameName, GameBaseUrl, OperatorWalletBaseUrl, WinFactor)
         VALUES (
             'SokkerDuel',
             'damasSokkerDuel',
             'BatalhaDasDamas',
             'https://s3.eu-central-1.amazonaws.com/play.retromindgames.pt/games/damasSokkerDuel/index.html',
-            'http://88.99.49.131:3000',
+            'https://tt2.sokkerduel.com',
             0.9
         );
     END IF;
