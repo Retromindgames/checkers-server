@@ -344,6 +344,9 @@ func handleReadyQueue(player *models.Player) {
 		fmt.Printf("[RoomWorker-%d] - Error handleReadyQueue fetching player2 sessionID:%s\n", pid, err)
 		return
 	}
+	// TODO: This needs to handle a possible API failure.
+	// TODO: Maybe remove players from queue?
+	// TODO: Send error message to one or both players?
 	newBalance1, err := module.HandlePostBet(postgresClient, redisClient, *session1, int(proom.BetValue*100), proom.ID)
 	newBalance2, err := module.HandlePostBet(postgresClient, redisClient, *session2, int(proom.BetValue*100), proom.ID)
 	_ = player.SetBalance(newBalance1)
