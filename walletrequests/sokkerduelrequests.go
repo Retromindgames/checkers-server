@@ -28,11 +28,13 @@ func SokkerDuelGetWallet(op models.Operator, token string) (*models.WalletRespon
 	}
 	req.Header.Set("x-access-token", token)
 	
+    req.Header.Set("Content-Type", "application/json")
 	//  bypass Cloudflare
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
-    req.Header.Set("Accept", "application/json, text/html")
-    req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-    req.Header.Set("Connection", "keep-alive")
+	//req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36")
+    //req.Header.Set("Accept", "application/json, text/html")
+    //req.Header.Set("Accept", "application/json, text/html")
+    //req.Header.Set("Accept", "application/json, text/html")
+    //req.Header.Set("Connection", "keep-alive")
 
 	// Print request (updated to show all headers)
 	fmt.Println("===== API REQUEST =====")
@@ -42,7 +44,7 @@ func SokkerDuelGetWallet(op models.Operator, token string) (*models.WalletRespon
 	jar, _ := cookiejar.New(nil)
 	client := &http.Client{
 		Timeout: 10 * time.Second, // Added timeout for reliability.
-		Jar:     jar,  // Enable cookies
+		Jar:     jar,  // Enable cookies // TODO: Review this.
 
 	}
 	resp, err := client.Do(req)

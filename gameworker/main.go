@@ -449,7 +449,7 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 	redisClient.PublishToGamePlayer(*&game.Players[0], string(msg))
 	redisClient.PublishToGamePlayer(*&game.Players[1], string(msg))
 
-	// Now we update the winner player // TODO: I think this breaks the server when the winner is offline.
+	// Now we update the winner player 
 	winnerPlayer, err := redisClient.GetPlayer(game.Winner)
 	if err != nil {
 		log.Printf("[%s-%d] - (Handle Game Over) - Failed to get winner player!: %v\n", name, pid, err)

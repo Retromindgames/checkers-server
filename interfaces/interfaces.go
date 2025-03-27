@@ -210,6 +210,10 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 	return int64(fbalance * 100), nil
 }
 
+func tryFetchExistingSession(op models.Operator, token string, rc *redisdb.RedisClient) {
+
+}
+
 // Helper function to save failed transactions
 func saveFailedBetTransaction(pgs *postgrescli.PostgresCli, session models.Session, betData models.SokkerDuelBet, apiError error, gameID string) error {
 	trans := models.Transaction{
