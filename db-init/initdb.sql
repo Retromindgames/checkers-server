@@ -13,8 +13,9 @@ BEGIN
             OperatorGameName VARCHAR(255) NOT NULL,    -- Name of the game for the operator
             GameName VARCHAR(255) NOT NULL,             -- Internal game name.
             Active BOOLEAN NOT NULL DEFAULT TRUE,        -- Whether the operator is active or not, default to TRUE (1)
-            GameBaseUrl VARCHAR(255) NOT NULL,                       -- gamelaunch base url
-            OperatorWalletBaseUrl VARCHAR(255) NOT NULL
+            GameBaseUrl VARCHAR(255) NOT NULL,             -- gamelaunch base url
+            OperatorWalletBaseUrl VARCHAR(255) NOT NULL,
+            WinFactor DECIMAL(5,4)                      
         );
 
         -- Insert a row into the table after creating it
@@ -24,7 +25,8 @@ BEGIN
             'damasSokkerDuel',
             'BatalhaDasDamas',
             'https://s3.eu-central-1.amazonaws.com/play.retromindgames.pt/games/damasSokkerDuel/index.html',
-            'http://88.99.49.131:3000'
+            'http://88.99.49.131:3000',
+            0.9
         );
     END IF;
 END $$;
