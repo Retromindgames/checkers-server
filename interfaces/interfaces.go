@@ -191,11 +191,11 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 	if session.ID == "" {
 		return -1, fmt.Errorf("invalid session")
 	}
-
+	var finalWinAmmount = calculateWinAmount(winValue)
 	winData := models.SokkerDuelWin{
 		OperatorGameName: session.OperatorIdentifier.GameName,
 		Currency:         session.Currency,
-		Amount:           winValue,
+		Amount:           finalWinAmmount,
 		TransactionID:    models.GenerateUUID(),
 		RoundID:          gameID,
 		ExtractID:        session.ExtractID,
@@ -217,7 +217,7 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 		ID:          winData.TransactionID,
 		SessionID:   session.ID,
 		Type:        "win",
-		Amount:      winValue,
+		Amount:      finalWinAmmount,
 		Currency:    session.Currency,
 		Platform:    "sokkerpro",
 		Operator:    "sokkerduel",
@@ -308,4 +308,11 @@ func mustMarshal(v interface{}) []byte {
 		panic(fmt.Sprintf("failed to marshal API response: %v", err))
 	}
 	return b
+}
+
+func calculateWinAmount(winValue int) int {
+	// Multiply by 2 then by 0.9 (equivalent to multiplying by 1.8)
+	// Using float64 for precise multiplication then converting back to int
+	winAmount := float64(winValue*2) * 0.9
+	return int(winAmount) // Truncates decimal places
 }
