@@ -109,7 +109,7 @@ func (b *Board) GetPieceByID(pieceID string) *Piece {
 //func (b *Board) CanPieceCapture(pos string) bool {
 //	piece, exists := b.Grid[pos]
 //	if !exists || piece == nil {
-//		fmt.Printf("(CanPieceCapture) - Piece doesnt exist in the board")
+//		log.Printf("(CanPieceCapture) - Piece doesnt exist in the board")
 //		return false // No piece at this position
 //	}
 //	//var direction = piece.Type == "b" ? 1 : -1;
@@ -136,22 +136,22 @@ func (b *Board) GetPieceByID(pieceID string) *Piece {
 //		landRow := fromRow + rune(2*dir.rowDelta)
 //		landCol := fromCol + 2*dir.colDelta
 //		landPos := fmt.Sprintf("%c%d", landRow, landCol)
-//		fmt.Printf("(CanPieceCapture) - landPos [%s]", landPos)
+//		log.Printf("(CanPieceCapture) - landPos [%s]", landPos)
 //
 //		// Ensure middle square has an opponent piece
 //		midPiece, midExists := b.Grid[midPos]
 //		if !midExists || midPiece == nil || midPiece.PlayerID == piece.PlayerID {
-//			fmt.Printf("(CanPieceCapture) - middle piece doesnt exists!")
+//			log.Printf("(CanPieceCapture) - middle piece doesnt exists!")
 //			continue // No opponent to jump over
 //		}
-//		fmt.Printf("(CanPieceCapture) - middle piece  exists!")
+//		log.Printf("(CanPieceCapture) - middle piece  exists!")
 //		// Ensure landing square is empty
 //		if destPiece, destExists := b.Grid[landPos]; destExists && destPiece == nil {
-//			fmt.Printf("(CanPieceCapture) - Valid capture move found")
+//			log.Printf("(CanPieceCapture) - Valid capture move found")
 //			return true // Valid capture move found!
 //		}
 //	}
-//	fmt.Printf("(CanPieceCapture) - No captures available ")
+//	log.Printf("(CanPieceCapture) - No captures available ")
 //	return false // No captures available
 //}
 
@@ -288,11 +288,11 @@ func (b *Board) WasPieceKinged(pos string, piece Piece) bool {
     }
 	firstChar := pos[0]
 	if piece.Type == "b" && firstChar == 'H'{
-		fmt.Printf("(WasPieceKinged) - Black piece was kinged!")
+		log.Printf("(WasPieceKinged) - Black piece was kinged!")
 		return true
 	} 
 	if piece.Type == "w" && firstChar == 'A' {
-		fmt.Printf("(WasPieceKinged) - White piece was kinged!")
+		log.Printf("(WasPieceKinged) - White piece was kinged!")
 		return true
 	}
 	return false

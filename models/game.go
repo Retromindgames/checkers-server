@@ -3,6 +3,7 @@ package models
 import (
 	"checkers-server/config"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -185,7 +186,7 @@ func (g *Game) GetGamePlayer(playerID string) (*GamePlayer, error) {
 func (g *Game) NextPlayer() {
 	nextPlayerId, err := g.GetOpponentPlayerID(g.CurrentPlayerID)
 	if err != nil {
-		fmt.Printf("Error NextPlayer getting opponent ID: %v\n", err)
+		log.Printf("Error NextPlayer getting opponent ID: %v\n", err)
 
 	}
 	g.CurrentPlayerID = nextPlayerId

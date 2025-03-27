@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	_ "github.com/lib/pq"
 )
@@ -60,7 +61,7 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 		return fmt.Errorf("error inserting session: %w", err)
 	}
 
-	fmt.Printf("Session saved with ID: %s\n", session.ID)
+	log.Printf("Session saved with ID: %s\n", session.ID)
 	return nil
 }
 
@@ -93,7 +94,7 @@ func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 		return fmt.Errorf("error inserting transaction: %w", err)
 	}
 
-	fmt.Printf("Transaction saved with ID: %d\n", transactionID)
+	log.Printf("Transaction saved with ID: %d\n", transactionID)
 	return nil
 }
 
@@ -136,7 +137,7 @@ func (pc *PostgresCli) SaveGame(game models.Game) error {
 		return fmt.Errorf("error inserting game: %w", err)
 	}
 
-	fmt.Printf("Game saved with ID: %d\n", gameID)
+	log.Printf("Game saved with ID: %d\n", gameID)
 	return nil
 }
 

@@ -37,13 +37,13 @@ func init() {
 }
 
 func HandleConnection(w http.ResponseWriter, r *http.Request) {
-	//fmt.Printf("[wsapi] - HandleConnection: Raw query string: %s\n", r.URL.RawQuery)
+	//log.Printf("[wsapi] - HandleConnection: Raw query string: %s\n", r.URL.RawQuery)
 
 	token := r.URL.Query().Get("token")
 	sessionID := r.URL.Query().Get("sessionid")
 	currency := r.URL.Query().Get("currency")
 
-	fmt.Printf("[wsapi] - HandleConnection: token[%v], sessionid[%v], currency[%v]\n", token, sessionID, currency)
+	log.Printf("[wsapi] - HandleConnection: token[%v], sessionid[%v], currency[%v]\n", token, sessionID, currency)
 	session, err := FetchAndValidateSession(token, sessionID, currency)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unauthorized: token[%v], sessionid[%v], currency[%v]", token, sessionID, currency), http.StatusUnauthorized)
@@ -181,26 +181,26 @@ func FetchAndValidateSession(token, sessionID, currency string) (*models.Session
 	// Fetch the session from Redis
 	session, err := redisClient.GetSessionByID(sessionID)
 	if err != nil {
-		fmt.Printf("[FetchAndValidateSession] - Error fetching session from Redis: %v\n", err)
+		log.Printf("[FetchAndValidateSession] - Error fetching session from Redis: %v\n", err)
 		return nil, fmt.Errorf("[Session] - failed to fetch session: %v", err)
 	}
-	fmt.Printf("[FetchAndValidateSession] - Session fetched from Redis: %+v\n", session)
+	log.Printf("[FetchAndValidateSession] - Session fetched from Redis: %+v\n", session)
 
 	// Validate the currency
 	if session.Currency != currency {
-		fmt.Printf("[FetchAndValidateSession] - Currency mismatch: expected %s, got %s\n", currency, session.Currency)
+		log.Printf("[FetchAndValidateSession] - Currency mismatch: expected %s, got %s\n", currency, session.Currency)
 		return nil, fmt.Errorf("[Session] - currency mismatch: expected %s, got %s", currency, session.Currency)
 	}
-	fmt.Printf("[FetchAndValidateSession] - Currency validation successful\n")
+	log.Printf("[FetchAndValidateSession] - Currency validation successful\n")
 
 	// Validate the token
 	if session.Token != token {
-		fmt.Printf("[FetchAndValidateSession] - Token mismatch: expected %s, got %s\n", token, session.Token)
+		log.Printf("[FetchAndValidateSession] - Token mismatch: expected %s, got %s\n", token, session.Token)
 		return nil, fmt.Errorf("[Session] - token mismatch")
 	}
-	fmt.Printf("[FetchAndValidateSession] - Token validation successful\n")
+	log.Printf("[FetchAndValidateSession] - Token validation successful\n")
 
 	// If all validations pass, return the session
-	fmt.Printf("[FetchAndValidateSession] - Session validation successful: %+v\n", session)
+	log.Printf("[FetchAndValidateSession] - Session validation successful: %+v\n", session)
 	return session, nil
 }

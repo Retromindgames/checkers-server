@@ -70,6 +70,7 @@ type OperatorIdentifier struct {
 	OperatorName     string `json:"operator_name"`
 	OperatorGameName string `json:"operator_game_name"`
 	GameName         string `json:"game_name"`
+	WinFactor		 float64`json:`
 }
 
 type PlayerCountPerBetValue struct {

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 )
 
 type QueueHandler struct {
@@ -80,7 +81,7 @@ func (qh *QueueHandler) parseBetValue() (float64, error) {
 	var betValue float64
 	err := json.Unmarshal(qh.msg.Value, &betValue)
 	if err != nil {
-		fmt.Printf("Error determining player bet value: %v\n", err)
+		log.Printf("Error determining player bet value: %v\n", err)
 		qh.player.WriteChan <- []byte("Error determining player bet value")
 		return 0, err
 	}
@@ -112,7 +113,7 @@ func (qh *QueueHandler) addToRedisQueue() error {
 	queueName := fmt.Sprintf("queue:%f", qh.player.SelectedBet)
 	err := qh.redisClient.RPush(queueName, qh.player)
 	if err != nil {
-		fmt.Printf("Error pushing player to Redis queue: %v\n", err)
+		log.Printf("Error pushing player to Redis queue: %v\n", err)
 		qh.player.WriteChan <- []byte("Error adding player to queue")
 		return err
 	}

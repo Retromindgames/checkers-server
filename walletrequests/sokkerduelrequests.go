@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -35,8 +36,8 @@ func SokkerDuelGetWallet(op models.Operator, token string) (*models.WalletRespon
 
 	// Print request (updated to show all headers)
 	fmt.Println("===== API REQUEST =====")
-	fmt.Printf("URL: %s\n", baseUrl.String())
-	fmt.Printf("Headers: %v\n", req.Header)
+	log.Printf("URL: %s\n", baseUrl.String())
+	log.Printf("Headers: %v\n", req.Header)
 	
 	jar, _ := cookiejar.New(nil)
 	client := &http.Client{
@@ -57,8 +58,8 @@ func SokkerDuelGetWallet(op models.Operator, token string) (*models.WalletRespon
 
 	// Print response
 	fmt.Println("===== API RESPONSE =====")
-	fmt.Printf("Status: %s\n", resp.Status)
-	fmt.Printf("Body: %s\n", string(body))
+	log.Printf("Status: %s\n", resp.Status)
+	log.Printf("Body: %s\n", string(body))
 
 	// Try to unmarshal as an error first
 	var apiError models.SokkerDuelErrorResponse
@@ -89,9 +90,9 @@ func SokkerDuelPostBet(session models.Session, betData models.SokkerDuelBet) (*m
 
 	// Print request
 	fmt.Println("===== API REQUEST =====")
-	fmt.Printf("URL: %s\n", baseUrl.String())
-	fmt.Printf("Headers: x-access-token=%s\n", session.Token)
-	fmt.Printf("Body: %s\n", string(jsonData))
+	log.Printf("URL: %s\n", baseUrl.String())
+	log.Printf("Headers: x-access-token=%s\n", session.Token)
+	log.Printf("Body: %s\n", string(jsonData))
 
 	req, err := http.NewRequest("POST", baseUrl.String(), bytes.NewReader(jsonData))
 	if err != nil {
@@ -114,8 +115,8 @@ func SokkerDuelPostBet(session models.Session, betData models.SokkerDuelBet) (*m
 
 	// Print response
 	fmt.Println("===== API RESPONSE =====")
-	fmt.Printf("Status: %s\n", resp.Status)
-	fmt.Printf("Body: %s\n", string(body))
+	log.Printf("Status: %s\n", resp.Status)
+	log.Printf("Body: %s\n", string(body))
 
 	// Try to unmarshal as an error first
 	var apiError models.SokkerDuelErrorResponse
@@ -146,9 +147,9 @@ func SokkerDuelPostWin(session models.Session, winData models.SokkerDuelWin) (*m
 
 	// Print request
 	fmt.Println("===== API REQUEST =====")
-	fmt.Printf("URL: %s\n", baseUrl.String())
-	fmt.Printf("Headers: x-access-token=%s\n", session.Token)
-	fmt.Printf("Body: %s\n", string(jsonData))
+	log.Printf("URL: %s\n", baseUrl.String())
+	log.Printf("Headers: x-access-token=%s\n", session.Token)
+	log.Printf("Body: %s\n", string(jsonData))
 
 	req, err := http.NewRequest("POST", baseUrl.String(), bytes.NewReader(jsonData))
 	if err != nil {
@@ -171,8 +172,8 @@ func SokkerDuelPostWin(session models.Session, winData models.SokkerDuelWin) (*m
 
 	// Print response
 	fmt.Println("===== API RESPONSE =====")
-	fmt.Printf("Status: %s\n", resp.Status)
-	fmt.Printf("Body: %s\n", string(body))
+	log.Printf("Status: %s\n", resp.Status)
+	log.Printf("Body: %s\n", string(body))
 
 	// Try to unmarshal as an error first
 	var apiError models.SokkerDuelErrorResponse

@@ -25,15 +25,15 @@ func main() {
 		port := ports[0] // First port for HTTP
 		addr := fmt.Sprintf(":%d", port)
 		http.HandleFunc("/ws", wsapi.HandleConnection)
-		fmt.Println("[wsapi] - SSL certificate paths not set, defaulting to listen on HTTP.")
-		fmt.Printf("[wsapi] - WebSocket server started on %s\n", addr)
+		log.Println("[wsapi] - SSL certificate paths not set, defaulting to listen on HTTP.")
+		log.Printf("[wsapi] - WebSocket server started on %s\n", addr)
 		log.Fatal(http.ListenAndServe(addr, nil))
 	} else {
 		port := ports[1] // Second port for SSL
 		addr := fmt.Sprintf(":%d", port)
 		http.HandleFunc("/ws", wsapi.HandleConnection)
-		fmt.Println("[wsapi] - SSL certificate paths set, listening on HTTPS .")
-		fmt.Printf("[wsapi] - WebSocket server started on %s\n", addr)
+		log.Println("[wsapi] - SSL certificate paths set, listening on HTTPS .")
+		log.Printf("[wsapi] - WebSocket server started on %s\n", addr)
 		log.Fatal(http.ListenAndServeTLS(addr, certPath, keyPath, nil))
 	}
 }
