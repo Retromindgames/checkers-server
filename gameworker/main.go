@@ -438,16 +438,11 @@ func startCumulativeTimer(game *models.Game) {
 }
 
 func handleGameEnd(game models.Game, reason string, winnerID string) {
+	var winnings int64
+	winnings = 0
 	// if the game is over, lets stop the timers.
 	publishStopToTimerChannel(game.ID)
 	game.FinishGame(winnerID)
-	msg, err := messages.GenerateGameOverMessage(reason, game)
-	if err != nil {
-		log.Printf("[%s-%d] - (Handle Game Over) - Failed to get game!: %v\n", name, pid, err)
-		return
-	}
-	redisClient.PublishToGamePlayer(*&game.Players[0], string(msg))
-	redisClient.PublishToGamePlayer(*&game.Players[1], string(msg))
 
 	// Now we update the winner player 
 	winnerPlayer, err := redisClient.GetPlayer(game.Winner)
@@ -471,11 +466,20 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 		// Update status and game Id of players
 		winnerPlayer.GameID = ""
 		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
+		winnings = newBalance - winnerPlayer.CurrencyAmount
 		_ = winnerPlayer.SetBalance(newBalance)
 		msgP1, _ := messages.NewMessage("balance_update", float64(winnerPlayer.CurrencyAmount)/100)
 		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
 		redisClient.UpdatePlayer(winnerPlayer)
 	}
+
+	msg, err := messages.GenerateGameOverMessage(reason, game, winnings)
+	if err != nil {
+		log.Printf("[%s-%d] - (Handle Game Over) - Failed to get game!: %v\n", name, pid, err)
+		return
+	}
+	redisClient.PublishToGamePlayer(*&game.Players[0], string(msg))
+	redisClient.PublishToGamePlayer(*&game.Players[1], string(msg))
 
 	opponentID, _ := game.GetOpponentPlayerID(winnerPlayer.ID)
 	opponentPlayer, err := redisClient.GetPlayer(opponentID)
