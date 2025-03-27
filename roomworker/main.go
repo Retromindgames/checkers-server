@@ -353,8 +353,8 @@ func handleReadyQueue(player *models.Player) {
 	_ = player2.SetBalance(newBalance2)
 
 	// Now that everything is OK, we will start up the game
-	msgP1, err := messages.NewMessage("balance_update", player.CurrencyAmount)
-	msgP2, err := messages.NewMessage("balance_update", player2.CurrencyAmount)
+	msgP1, err := messages.NewMessage("balance_update", float64(player.CurrencyAmount)/100)
+	msgP2, err := messages.NewMessage("balance_update", float64(player2.CurrencyAmount)/100)
 	// then notify player and store it in redis.
 	redisClient.PublishPlayerEvent(player, string(msgP1))
 	redisClient.PublishPlayerEvent(player2, string(msgP2))
