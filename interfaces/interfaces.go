@@ -43,7 +43,9 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 	}
 	session, err := checkExistingSession(req.Token, rc)
 	if err != nil || session == nil {
-		session, err = generatePlayerSession(
+		session, err = checkPreviousPlayerSession(req.OperatorName, logInResponse.Data.Username, req.Currency, rc)
+		rc.RemoveSession(session.ID)	//If the session exists, from a previous token, we remove the sessom
+		session, err = generatePlayerSession(	// then we generate a new session.
 			op,
 			req.Token,
 			logInResponse.Data.Username,
@@ -293,6 +295,14 @@ func generatePlayerSession(op models.Operator, token, username, currency string,
 func checkExistingSession(token string, rc *redisdb.RedisClient) (*models.Session, error) {
 	// First, check Redis for an active session
 	session, err := rc.GetSessionByToken(token)
+	if err == nil && session != nil {
+		return session, nil // Session exists
+	}
+	return nil, fmt.Errorf("session not found")
+}
+
+func checkPreviousPlayerSession(operator string, playerName string, currency string, rc *redisdb.RedisClient) (*models.Session, error) {
+	session, err := rc.GetSessionByOperatorPlayerCurrency(operator, playerName, currency)
 	if err == nil && session != nil {
 		return session, nil // Session exists
 	}
