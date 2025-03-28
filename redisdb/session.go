@@ -73,3 +73,36 @@ func (r *RedisClient) GetSessionByID(sessionID string) (*models.Session, error) 
 	}
 	return &session, nil
 }
+
+func (r *RedisClient) GetSessionByToken(token string) (*models.Session, error) {
+	ctx := context.Background()
+	
+	// Scan through all session keys
+	iter := r.Client.Scan(ctx, 0, "session:*", 0).Iterator()
+	for iter.Next(ctx) {
+		sessionKey := iter.Val()
+		storedToken, err := r.Client.HGet(ctx, sessionKey, "token").Result()
+		if err != nil {
+			continue 
+		}
+		if storedToken == token {
+			data, err := r.Client.HGet(ctx, sessionKey, "data").Result()
+			if err != nil {
+				return nil, fmt.Errorf("[RedisClient] - failed to retrieve session data: %v", err)
+			}
+
+			var session models.Session
+			if err := json.Unmarshal([]byte(data), &session); err != nil {
+				return nil, fmt.Errorf("[RedisClient] - failed to unmarshal session data: %v", err)
+			}
+
+			return &session, nil
+		}
+	}
+
+	if err := iter.Err(); err != nil {
+		return nil, fmt.Errorf("[RedisClient] - failed to iterate session keys: %v", err)
+	}
+
+	return nil, fmt.Errorf("[RedisClient] - session not found for token: %s", token)
+}

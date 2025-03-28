@@ -41,19 +41,22 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 		respondWithError(w, "Wallet request != success", fmt.Errorf("api err: %v", logInResponse.Data))
 		return
 	}
-	session, err := generatePlayerSession(
-		op,
-		req.Token,
-		logInResponse.Data.Username,
-		logInResponse.Data.Currency,
-		logInResponse.Data.Balance,
-		rc,
-	)
-	if err != nil {
-		respondWithError(w, "Failed to generate session", err)
-		return
+	session, err := checkExistingSession(req.Token, rc)
+	if err != nil || session == nil {
+		session, err = generatePlayerSession(
+			op,
+			req.Token,
+			logInResponse.Data.Username,
+			logInResponse.Data.Currency,
+			logInResponse.Data.Balance,
+			rc,
+		)
+		if err != nil {
+			respondWithError(w, "Failed to generate session", err)
+			return
+		}
 	}
-	err = pgs.SaveSession(session)
+	err = pgs.SaveSession(*session)
 	if err != nil {
 		respondWithError(w, "Failed to save session", err)
 		return
@@ -210,10 +213,6 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 	return int64(fbalance * 100), nil
 }
 
-func tryFetchExistingSession(op models.Operator, token string, rc *redisdb.RedisClient) {
-
-}
-
 // Helper function to save failed transactions
 func saveFailedBetTransaction(pgs *postgrescli.PostgresCli, session models.Session, betData models.SokkerDuelBet, apiError error, gameID string) error {
 	trans := models.Transaction{
@@ -271,7 +270,7 @@ func generateGameURL(baseURL, token, sessionID, currency string) (string, error)
 	return parsedURL.String(), nil
 }
 
-func generatePlayerSession(op models.Operator, token, username, currency string, balance float64, rc *redisdb.RedisClient) (models.Session, error) {
+func generatePlayerSession(op models.Operator, token, username, currency string, balance float64, rc *redisdb.RedisClient) (*models.Session, error) {
 	session := models.Session{
 		ID:         models.GenerateUUID(),
 		Token:      token,
@@ -288,7 +287,16 @@ func generatePlayerSession(op models.Operator, token, username, currency string,
 		CreatedAt:       time.Now(),
 	}
 	err := rc.AddSession(&session)
-	return session, err
+	return &session, err
+}
+
+func checkExistingSession(token string, rc *redisdb.RedisClient) (*models.Session, error) {
+	// First, check Redis for an active session
+	session, err := rc.GetSessionByToken(token)
+	if err == nil && session != nil {
+		return session, nil // Session exists
+	}
+	return nil, fmt.Errorf("session not found")
 }
 
 // Helper function to send JSON errors

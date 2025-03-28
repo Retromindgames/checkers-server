@@ -212,6 +212,7 @@ func processLeaveGame() {
 func processDisconnectFromGame() {
 	for {
 		// Block until there is a game over message
+		// TODO: Update player date, its without a game.
 		playerData, err := redisClient.BLPop("disconnect_game", 0)
 		if err != nil {
 			log.Printf("[%s-%d] - (Process Disconnect Game) - Error retrieving player data from queue: %v\n", name, pid, err)

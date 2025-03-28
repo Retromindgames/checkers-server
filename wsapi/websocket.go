@@ -176,31 +176,25 @@ func IsUserValid(token string, sessionID string) (bool, models.Player) {
 }
 
 func FetchAndValidateSession(token, sessionID, currency string) (*models.Session, error) {
-	fmt.Print("[FetchAndValidateSession] - Validating token: %s, sessionID: %s, currency: %s\n", token, sessionID, currency)
-
-	// Fetch the session from Redis
 	session, err := redisClient.GetSessionByID(sessionID)
 	if err != nil {
 		log.Printf("[FetchAndValidateSession] - Error fetching session from Redis: %v\n", err)
 		return nil, fmt.Errorf("[Session] - failed to fetch session: %v", err)
 	}
-	log.Printf("[FetchAndValidateSession] - Session fetched from Redis: %+v\n", session)
+	//log.Printf("[FetchAndValidateSession] - Session fetched from Redis: %+v\n", session)
 
-	// Validate the currency
 	if session.Currency != currency {
 		log.Printf("[FetchAndValidateSession] - Currency mismatch: expected %s, got %s\n", currency, session.Currency)
 		return nil, fmt.Errorf("[Session] - currency mismatch: expected %s, got %s", currency, session.Currency)
 	}
-	log.Printf("[FetchAndValidateSession] - Currency validation successful\n")
+	//log.Printf("[FetchAndValidateSession] - Currency validation successful\n")
 
-	// Validate the token
 	if session.Token != token {
 		log.Printf("[FetchAndValidateSession] - Token mismatch: expected %s, got %s\n", token, session.Token)
 		return nil, fmt.Errorf("[Session] - token mismatch")
 	}
-	log.Printf("[FetchAndValidateSession] - Token validation successful\n")
+	//log.Printf("[FetchAndValidateSession] - Token validation successful\n")
 
-	// If all validations pass, return the session
-	log.Printf("[FetchAndValidateSession] - Session validation successful: %+v\n", session)
+	//log.Printf("[FetchAndValidateSession] - Session validation successful: %+v\n", session)
 	return session, nil
 }
