@@ -48,6 +48,7 @@ type GameOver struct {
 	Reason   string            `json:"reason"`
 	Winner   models.GamePlayer `json:"winner"`
 	Turns    int               `json:"turns"`
+	Winnings    float64               `json:"winnings"`
 	GameTime time.Duration     `json:"game_time"`
 }
 
@@ -114,7 +115,7 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 		if err := json.Unmarshal(msg.Value, &queueNumbersResponse); err != nil {
 			return nil, fmt.Errorf("invalid value format for game_info: %w", err)
 		}
-		fmt.Printf("[Message Parser] Parsed game_info: %+v\n", queueNumbersResponse)
+		log.Printf("[Message Parser] Parsed game_info: %+v\n", queueNumbersResponse)
 	}
 
 	return msg, nil
@@ -186,10 +187,10 @@ func GenerateGameTimerMessage(game models.Game, timer int) ([]byte, error) {
 	return NewMessage("game_timer", gamestart)
 }
 
-func GenerateGameOverMessage(reason string, game models.Game) ([]byte, error) {
+func GenerateGameOverMessage(reason string, game models.Game, winnings int64) ([]byte, error) {
 	winner, err := game.GetGamePlayer(game.Winner)
 	if err != nil {
-		fmt.Printf("Error retrieving game winner player: %v\n", err)
+		log.Printf("Error retrieving game winner player: %v\n", err)
 
 	}
 
@@ -198,6 +199,7 @@ func GenerateGameOverMessage(reason string, game models.Game) ([]byte, error) {
 		Winner:   *winner,
 		Turns:    game.Turn,
 		GameTime: game.EndTime.Sub(game.StartTime),
+		Winnings: float64(winnings)/100.0,
 	}
 	return NewMessage("game_over", gameover)
 }

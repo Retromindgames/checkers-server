@@ -49,6 +49,11 @@ docker-compose -f docker-compose.dev.yml up --build
 
 scp -i pvp.pem -r C:\Projetos\SSH-AWS\damas-server\SSL\* ec2-user@remote_host:/home/ec2-user/ssl/
 
+## Reds 
+
+Exex the redis cli container
+
+    docker exec -it redis redis-cli
 
 
 ## PostgreSQL

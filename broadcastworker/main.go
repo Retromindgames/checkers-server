@@ -4,7 +4,6 @@ import (
 	"checkers-server/config"
 	"checkers-server/messages"
 	"checkers-server/redisdb"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -26,7 +25,7 @@ func init() {
 }
 
 func main() {
-	fmt.Printf("[BroadcastWorker-%d] - Broadcasting room stats...\n", pid)
+	log.Printf("[BroadcastWorker-%d] - Broadcasting room stats...\n", pid)
 	ticker := time.NewTicker(time.Duration(config.Cfg.Services["broadcastworker"].Timer) * time.Second) // Adjust interval as needed
 	defer ticker.Stop()
 
@@ -37,7 +36,7 @@ func main() {
 		if err != nil {
 			log.Printf("[BroadcastWorker-%d] Error publishing message: %v\n", pid, err)
 		} else {
-			fmt.Printf("[BroadcastWorker-%d] Published room aggregates\n", pid)
+			log.Printf("[BroadcastWorker-%d] Published room aggregates\n", pid)
 		}
 	}
 }

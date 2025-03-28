@@ -25,7 +25,6 @@ type Session struct {
 	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
 }
 
-// TODO: Where can I use this?
 func (s *Session) IsTokenExpired() bool {
 	token, _, err := new(jwt.Parser).ParseUnverified(s.Token, jwt.MapClaims{})
 	if err != nil {
@@ -70,6 +69,7 @@ type OperatorIdentifier struct {
 	OperatorName     string `json:"operator_name"`
 	OperatorGameName string `json:"operator_game_name"`
 	GameName         string `json:"game_name"`
+	WinFactor		 float64`json:`
 }
 
 type PlayerCountPerBetValue struct {

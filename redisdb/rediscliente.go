@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -147,13 +148,13 @@ func (r *RedisClient) UnsubscribePlayerChannel(player models.Player) {
 		return
 	}
 	delete(r.Subscriptions, channel)
-	fmt.Printf("[RedisClii] (UnsubscribePlayerChannel) - Deleted subscription of [%d] and [%v]\n", player.Name, channel)
+	log.Printf("[RedisClii] (UnsubscribePlayerChannel) - Deleted subscription of [%d] and [%v]\n", player.Name, channel)
 	r.mu.Unlock()
 
 	if err := pubsub.Unsubscribe(context.Background(), channel); err != nil {
 		fmt.Println("Error unsubscribing from", channel, ":", err)
 	} else {
-		fmt.Printf("[RedisClii] (UnsubscribePlayerChannel) - Unsubscribe of [%d] and [%v]\n", player.Name, channel)
+		log.Printf("[RedisClii] (UnsubscribePlayerChannel) - Unsubscribe of [%d] and [%v]\n", player.Name, channel)
 	}
 }
 
@@ -220,26 +221,26 @@ func (r *RedisClient) cleanupExpiredSessions() {
 		sessionKey := iter.Val()
 		data, err := r.Client.HGet(ctx, sessionKey, "data").Result()
 		if err != nil {
-			fmt.Printf("[RedisClient] (Session) - Failed to fetch session data: %v\n", err)
+			log.Printf("[RedisClient] (Session) - Failed to fetch session data: %v\n", err)
 			continue
 		}
 
 		var session models.Session
 		if err := json.Unmarshal([]byte(data), &session); err != nil {
-			fmt.Printf("[RedisClient] (Session) - Failed to deserialize session: %v\n", err)
+			log.Printf("[RedisClient] (Session) - Failed to deserialize session: %v\n", err)
 			continue
 		}
 
 		if session.IsTokenExpired() {
 			if err := r.Client.Del(ctx, sessionKey).Err(); err != nil {
-				fmt.Printf("[RedisClient] (Session) - Failed to remove expired session: %v\n", err)
+				log.Printf("[RedisClient] (Session) - Failed to remove expired session: %v\n", err)
 			} else {
-				fmt.Printf("[RedisClient] (Session) - Expired session removed: %s\n", session.ID)
+				log.Printf("[RedisClient] (Session) - Expired session removed: %s\n", session.ID)
 			}
 		}
 	}
 
 	if err := iter.Err(); err != nil {
-		fmt.Printf("[RedisClient] (Session) - Error iterating Redis keys: %v\n", err)
+		log.Printf("[RedisClient] (Session) - Error iterating Redis keys: %v\n", err)
 	}
 }
