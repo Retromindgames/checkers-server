@@ -42,19 +42,15 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	sessionID := r.URL.Query().Get("sessionid")
 	currency := r.URL.Query().Get("currency")
-
 	log.Printf("[wsapi] - HandleConnection: token[%v], sessionid[%v], currency[%v]\n", token, sessionID, currency)
 	session, err := FetchAndValidateSession(token, sessionID, currency)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unauthorized: token[%v], sessionid[%v], currency[%v]", token, sessionID, currency), http.StatusUnauthorized)
+		if session != nil{
+			redisClient.RemoveSession(session.ID)
+		}
 		return
 	}
-	//valid, playerData := IsUserValid(token, sessionID)
-	//if !valid {
-	//	http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	//	return
-	//}
-
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println("Failed to upgrade:", err)
@@ -194,7 +190,10 @@ func FetchAndValidateSession(token, sessionID, currency string) (*models.Session
 		return nil, fmt.Errorf("[Session] - token mismatch")
 	}
 	//log.Printf("[FetchAndValidateSession] - Token validation successful\n")
-
+	if session.IsTokenExpired() {
+		log.Printf("[FetchAndValidateSession] - Token expired\n")
+		return nil, fmt.Errorf("[Session] - token expired")
+	}
 	//log.Printf("[FetchAndValidateSession] - Session validation successful: %+v\n", session)
 	return session, nil
 }
