@@ -48,7 +48,7 @@ type GameOver struct {
 	Reason   string            `json:"reason"`
 	Winner   models.GamePlayer `json:"winner"`
 	Turns    int               `json:"turns"`
-	Winnings    float64               `json:"winnings"`
+	Winnings float64           `json:"winnings"`
 	GameTime time.Duration     `json:"game_time"`
 }
 
@@ -78,9 +78,9 @@ func NewMessage[T any](command string, value T) ([]byte, error) {
 	if _, ok := validCommands[command]; !ok {
 		return nil, fmt.Errorf("[Message Parser - New Message] invalid command: %s", command)
 	}
-	message := Message[T]{
-		Command: command,
-		Value:   value,
+	message := map[string]interface{}{
+		"command": command,
+		"value":   value, // Will always be included
 	}
 	return json.Marshal(message)
 }
@@ -199,7 +199,7 @@ func GenerateGameOverMessage(reason string, game models.Game, winnings int64) ([
 		Winner:   *winner,
 		Turns:    game.Turn,
 		GameTime: game.EndTime.Sub(game.StartTime),
-		Winnings: float64(winnings)/100.0,
+		Winnings: float64(winnings) / 100.0,
 	}
 	return NewMessage("game_over", gameover)
 }

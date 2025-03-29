@@ -33,7 +33,7 @@ func handleMessages(player *models.Player) {
 			handleQueue(message, player)
 
 		case "leave_queue":
-			handleLeaveQueue(message, player)
+			handleLeaveQueue(player)
 
 		case "ready_queue":
 			handleReadyQueue(message, player)
@@ -65,13 +65,13 @@ func handleMessages(player *models.Player) {
 func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player) {
 	qh := &QueueHandler{
 		player:      player,
-		redisClient: *redisClient,
+		redisClient: redisClient,
 		msg:         msg,
 	}
 	qh.process()
 }
 
-func handleLeaveQueue(msg *messages.Message[json.RawMessage], player *models.Player) {
+func handleLeaveQueue(player *models.Player) {
 	if player.UpdatePlayerStatus(models.StatusOnline) != nil {
 		player.WriteChan <- []byte("Invalid status transition to 'Online'")
 		//player.Conn.WriteMessage(websocket.TextMessage, []byte("Invalid status transition to 'Online'"))
