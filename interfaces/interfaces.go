@@ -44,8 +44,10 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 	session, err := checkExistingSession(req.Token, rc)
 	if err != nil || session == nil {
 		session, err = checkPreviousPlayerSession(req.OperatorName, logInResponse.Data.Username, req.Currency, rc)
-		rc.RemoveSession(session.ID)	//If the session exists, from a previous token, we remove the sessom
-		session, err = generatePlayerSession(	// then we generate a new session.
+		if session != nil {
+			rc.RemoveSession(session.ID) //If the session exists, from a previous token, we remove the session
+		}
+		session, err = generatePlayerSession( // then we generate a new session.
 			op,
 			req.Token,
 			logInResponse.Data.Username,
@@ -57,11 +59,11 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 			respondWithError(w, "Failed to generate session", err)
 			return
 		}
-	}
-	err = pgs.SaveSession(*session)
-	if err != nil {
-		respondWithError(w, "Failed to save session", err)
-		return
+		err = pgs.SaveSession(*session)
+		if err != nil {
+			respondWithError(w, "Failed to save session", err)
+			return
+		}
 	}
 	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, session.ID, logInResponse.Data.Currency)
 	if err != nil {
@@ -108,18 +110,18 @@ func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redis
 
 	// Prepare and save transaction
 	trans := models.Transaction{
-		ID:        betData.TransactionID,
-		SessionID: session.ID,
-		Type:      "bet",
-		Amount:    betValue,
-		Currency:  session.Currency,
-		Platform:  "sokkerpro",
-		Operator:  "sokkerduel",
-		Client:    session.PlayerName,
-		Game:      session.OperatorIdentifier.GameName,
-		RoundID:   gameID,
-		Timestamp: time.Now(),
-		Status:    betResponse.Status,
+		ID:          betData.TransactionID,
+		SessionID:   session.ID,
+		Type:        "bet",
+		Amount:      betValue,
+		Currency:    session.Currency,
+		Platform:    "sokkerpro",
+		Operator:    "sokkerduel",
+		Client:      session.PlayerName,
+		Game:        session.OperatorIdentifier.GameName,
+		RoundID:     gameID,
+		Timestamp:   time.Now(),
+		Status:      betResponse.Status,
 		Description: string(mustMarshal(betData)), // Safe because we know Data exists
 
 	}
@@ -145,7 +147,6 @@ func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redis
 
 	return int64(fbalance * 100), nil
 }
-
 
 func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, winValue int, gameID string) (int64, error) {
 	// Validate input parameters
@@ -283,7 +284,7 @@ func generatePlayerSession(op models.Operator, token, username, currency string,
 			OperatorName:     op.OperatorName,
 			OperatorGameName: op.OperatorGameName,
 			GameName:         op.GameName,
-			WinFactor: 		  op.WinFactor,	
+			WinFactor:        op.WinFactor,
 		},
 		OperatorBaseUrl: op.OperatorWalletBaseUrl,
 		CreatedAt:       time.Now(),
@@ -302,10 +303,13 @@ func checkExistingSession(token string, rc *redisdb.RedisClient) (*models.Sessio
 }
 
 func checkPreviousPlayerSession(operator string, playerName string, currency string, rc *redisdb.RedisClient) (*models.Session, error) {
+	fmt.Printf("Checking previous Player session: %v, %v, %v.", operator, playerName, currency)
 	session, err := rc.GetSessionByOperatorPlayerCurrency(operator, playerName, currency)
 	if err == nil && session != nil {
+		fmt.Printf("Session found!: ID:", session.ID)
 		return session, nil // Session exists
 	}
+	fmt.Printf("Session not found.")
 	return nil, fmt.Errorf("session not found")
 }
 

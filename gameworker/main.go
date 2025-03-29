@@ -47,7 +47,7 @@ func main() {
 	log.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
 	go processGameCreation()
 	go processGameMoves()
-	go processLeaveGame() 	// DISABLED, ACTIVATE WHEN IMPLEMENTING THE LEAVE GAME COMMAND.
+	go processLeaveGame() // DISABLED, ACTIVATE WHEN IMPLEMENTING THE LEAVE GAME COMMAND.
 	go processDisconnectFromGame()
 	go processReconnectFromGame()
 	select {}
@@ -439,13 +439,14 @@ func startCumulativeTimer(game *models.Game) {
 }
 
 func handleGameEnd(game models.Game, reason string, winnerID string) {
+	fmt.Printf("Handling Game End for game [%v] - reason: [%v]", game.ID, reason)
 	var winnings int64
 	winnings = 0
 	// if the game is over, lets stop the timers.
 	publishStopToTimerChannel(game.ID)
 	game.FinishGame(winnerID)
 
-	// Now we update the winner player 
+	// Now we update the winner player
 	winnerPlayer, err := redisClient.GetPlayer(game.Winner)
 	if err != nil {
 		log.Printf("[%s-%d] - (Handle Game Over) - Failed to get winner player!: %v\n", name, pid, err)
@@ -525,7 +526,7 @@ func cleanUpGameDisconnectedPlayers(game models.Game) {
 }
 
 func isEven(n int) bool {
-    return n&1 == 0  // Last bit = 0 → even
+	return n&1 == 0 // Last bit = 0 → even
 }
 
 func BroadCastToGamePlayers(msg []byte, game models.Game) {
