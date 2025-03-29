@@ -65,6 +65,7 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 			return
 		}
 	}
+	
 	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, session.ID, logInResponse.Data.Currency)
 	if err != nil {
 		respondWithError(w, "Failed to generate game URL", err)
