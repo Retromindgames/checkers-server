@@ -232,7 +232,6 @@ func processDisconnectFromGame() {
 		}
 		redisClient.SaveDisconnectSessionPlayerData(*playerData, *game)
 		gamePlayer, _ := game.GetGamePlayer(playerData.ID)
-
 		// Now we notify the other player that this happened
 		msg, _ := messages.NewMessage("opponent_disconnected_game", "disconnected")
 		opponent, _ := game.GetOpponentGamePlayer(gamePlayer.ID)
@@ -249,13 +248,11 @@ func processReconnectFromGame() {
 			continue
 		}
 		log.Printf("[%s-%d]  (Process Reconnect Game) - Processing the reconnect game: %+v\n", name, pid, playerData)
-
 		game, err := redisClient.GetGame(playerData.GameID)
 		if err != nil {
 			log.Printf("[%s-%d] - (Process Reconnect Game) - Error retrieving game data from redis: %v\n", name, pid, err)
 			continue
 		}
-
 		// We send a message to the reconnected player with the board state.
 		msg, err := messages.GenerateGameReconnectMessage(*game)
 		if err != nil {
@@ -267,12 +264,10 @@ func processReconnectFromGame() {
 			log.Printf("[%s-%d] - (Process Reconnect Game) - Error publishing game reconnect message: %v\n", name, pid, err)
 			continue
 		}
-
 		// We notify the opponent that the player reconnected.
 		opponent, _ := game.GetOpponentGamePlayer(playerData.ID)
 		msg, _ = messages.NewMessage("opponent_disconnected_game", "reconnected")
 		redisClient.PublishToGamePlayer(*opponent, string(msg))
-
 		redisClient.DeleteDisconnectedPlayerSession(playerData.SessionID)
 	}
 }
