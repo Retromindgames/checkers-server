@@ -331,8 +331,12 @@ func handleReadyQueue(player *models.Player) {
 	newBalance1, err := module.HandlePostBet(postgresClient, redisClient, *session1, int64(proom.BetValue*100), proom.ID)
 	if err != nil {
 		log.Printf("[RoomWorker-%d] - Error HandlePostBet failed to bet:%s for sessionid:[%s]\n", pid, err, session1.ID)
+		player.Status = models.StatusInGame
+		redisClient.UpdatePlayer(player)
 		msg, _ := messages.GenerateGenericMessage("error", err.Error())
 		redisClient.PublishPlayerEvent(player, string(msg))
+		msg, _ = messages.NewMessage("opponent_left_room", true)
+		redisClient.PublishPlayerEvent(player2, string(msg))
 		// since the first player failed the api check, we will queue up the second plyer.
 		addPlayerToQueue(player2)
 		return
@@ -344,7 +348,7 @@ func handleReadyQueue(player *models.Player) {
 		redisClient.PublishPlayerEvent(player2, string(msg))
 		// since the second player failed the api check, we will queue up the first player.
 		addPlayerToQueue(player)
-		// TODO: CREDITAR VALOR A JOGADOR. 
+		// TODO: CREDITAR VALOR A JOGADOR.
 		return
 	}
 	// Now that everything is OK, we will start up the game
@@ -472,7 +476,6 @@ func handleCreateRoom(player *models.Player) {
 	log.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
 }
 
-
 func addPlayerToQueue(player *models.Player) {
 	// Reset both player data.
 	player.RoomID = ""
@@ -487,4 +490,7 @@ func addPlayerToQueue(player *models.Player) {
 		log.Printf("[RoomWorker-%d] - Placing player back on queue:%v\n", pid, err)
 		return
 	}
+	redisClient.IncrementQueueCount(player.SelectedBet)
+	queueMsg, _ := messages.GenerateQueueConfirmationMessage(true)
+	redisClient.PublishPlayerEvent(player, string(queueMsg))
 }
