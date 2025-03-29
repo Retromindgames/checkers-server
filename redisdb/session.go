@@ -30,7 +30,6 @@ func (r *RedisClient) AddSession(session *models.Session) error {
 		"id":                  session.ID,
 		"token":               session.Token,
 		"player_name":         session.PlayerName,
-		"balance":             session.Balance,
 		"currency":            session.Currency,
 		"operator_identifier": string(operatorIdentifierData),
 		"operator_base_url":   session.OperatorBaseUrl,

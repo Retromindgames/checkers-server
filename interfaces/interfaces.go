@@ -16,8 +16,9 @@ import (
 // OperatorModule defines the interface for operator-specific code
 type OperatorInterface interface {
 	HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli)
-	HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) (int64, error)
-	HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) (int64, error)
+	HandleFetchWalletBalance(s models.Session, rc *redisdb.RedisClient) (int64, error)
+	HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, error)
+	HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, int64, error)
 }
 
 // OperatorModules maps operator names to their respective modules
@@ -32,7 +33,7 @@ type SokkerDuelModule struct{}
 
 func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli) {
 	// Fetch wallet information
-	logInResponse, err := walletrequests.SokkerDuelGetWallet(op, req.Token)
+	logInResponse, err := walletrequests.SokkerDuelGetWallet(op.OperatorWalletBaseUrl, req.Token)
 	if err != nil {
 		respondWithError(w, "Failed to fetch wallet", err)
 		return
@@ -52,7 +53,6 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 			req.Token,
 			logInResponse.Data.Username,
 			logInResponse.Data.Currency,
-			logInResponse.Data.Balance,
 			rc,
 		)
 		if err != nil {
@@ -78,7 +78,15 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 	respondWithJSON(w, http.StatusOK, response)
 }
 
-func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int, gameID string) (int64, error) {
+func (m *SokkerDuelModule) HandleFetchWalletBalance(s models.Session, rc *redisdb.RedisClient) (int64, error) {
+	logInResponse, err := walletrequests.SokkerDuelGetWallet(s.OperatorBaseUrl, s.Token)
+	if err != nil {
+		return 0, fmt.Errorf("Failed to fetch wallet: %v, %v", err)
+	}
+	return int64(logInResponse.Data.Balance * 100.00), nil
+}
+
+func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, error) {
 	// Validate input parameters
 	if betValue <= 0 {
 		return -1, fmt.Errorf("invalid bet value: %d", betValue)
@@ -148,22 +156,22 @@ func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redis
 	return int64(fbalance * 100), nil
 }
 
-func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, winValue int, gameID string) (int64, error) {
+func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, winValue int64, gameID string) (int64, int64, error) {
 	// Validate input parameters
 	if winValue <= 0 {
-		return -1, fmt.Errorf("invalid win value: %d", winValue)
+		return -1, -1, fmt.Errorf("invalid win value: %d", winValue)
 	}
 	if gameID == "" {
-		return -1, fmt.Errorf("empty game ID")
+		return -1, -1, fmt.Errorf("empty game ID")
 	}
 	if session.ID == "" {
-		return -1, fmt.Errorf("invalid session")
+		return -1, -1, fmt.Errorf("invalid session")
 	}
-	var finalWinAmmount = calculateWinAmount(winValue, session.OperatorIdentifier.WinFactor)
+	var winnings = calculateWinAmount(winValue, session.OperatorIdentifier.WinFactor)
 	winData := models.SokkerDuelWin{
 		OperatorGameName: session.OperatorIdentifier.GameName,
 		Currency:         session.Currency,
-		Amount:           finalWinAmmount,
+		Amount:           winnings,
 		TransactionID:    models.GenerateUUID(),
 		RoundID:          gameID,
 		ExtractID:        session.ExtractID,
@@ -174,9 +182,9 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 	if err != nil {
 		// Save failed transaction before returning
 		if saveErr := saveFailedWinTransaction(pgs, session, winData, err, gameID); saveErr != nil {
-			return -1, fmt.Errorf("API error: %v | Transaction save error: %v", err, saveErr)
+			return -1, winnings, fmt.Errorf("API error: %v | Transaction save error: %v", err, saveErr)
 		}
-		return -1, err // Return original API error
+		return -1, -1, err // Return original API error
 	}
 
 	// At this point, we're guaranteed winResponse is valid and status="success"
@@ -185,7 +193,7 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 		ID:          winData.TransactionID,
 		SessionID:   session.ID,
 		Type:        "win",
-		Amount:      finalWinAmmount,
+		Amount:      winnings,
 		Currency:    session.Currency,
 		Platform:    "sokkerpro",
 		Operator:    "sokkerduel",
@@ -198,22 +206,22 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 	}
 
 	if err := pgs.SaveTransaction(trans); err != nil {
-		return -1, fmt.Errorf("failed to save transaction: %v", err)
+		return -1, -1, fmt.Errorf("failed to save transaction: %v", err)
 	}
 
 	// Reset ExtractID in session
 	session.ExtractID = 0
 	if err := rc.AddSession(&session); err != nil {
-		return -1, fmt.Errorf("failed to save session: %v", err)
+		return -1, -1, fmt.Errorf("failed to save session: %v", err)
 	}
 
 	// Parse balance (we know it exists from API contract)
 	fbalance, err := strconv.ParseFloat(winResponse.Data.Balance, 64)
 	if err != nil {
-		return -1, fmt.Errorf("failed to parse balance: %v", err)
+		return -1, -1, fmt.Errorf("failed to parse balance: %v", err)
 	}
 
-	return int64(fbalance * 100), nil
+	return int64(fbalance * 100), winnings, nil
 }
 
 // Helper function to save failed transactions
@@ -273,12 +281,11 @@ func generateGameURL(baseURL, token, sessionID, currency string) (string, error)
 	return parsedURL.String(), nil
 }
 
-func generatePlayerSession(op models.Operator, token, username, currency string, balance float64, rc *redisdb.RedisClient) (*models.Session, error) {
+func generatePlayerSession(op models.Operator, token, username, currency string, rc *redisdb.RedisClient) (*models.Session, error) {
 	session := models.Session{
 		ID:         models.GenerateUUID(),
 		Token:      token,
 		PlayerName: username,
-		Balance:    int64(balance),
 		Currency:   currency,
 		OperatorIdentifier: models.OperatorIdentifier{
 			OperatorName:     op.OperatorName,
@@ -338,9 +345,9 @@ func mustMarshal(v interface{}) []byte {
 	return b
 }
 
-func calculateWinAmount(winValue int, winFactor float64) int {
+func calculateWinAmount(winValue int64, winFactor float64) int64 {
 	// Multiply by 2 then by 0.9 (equivalent to multiplying by 1.8)
 	// Using float64 for precise multiplication then converting back to int
 	winAmount := float64(winValue*2) * winFactor
-	return int(winAmount) // Truncates decimal places
+	return int64(winAmount) // Truncates decimal places
 }

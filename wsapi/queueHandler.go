@@ -33,10 +33,6 @@ func (qh *QueueHandler) process() {
 		return
 	}
 
-	if !qh.validatePlayerBalance(betValue) {
-		return
-	}
-
 	qh.updatePlayerState(betValue)
 	qh.addToRedisQueue()
 	qh.updateQueueCount()
@@ -86,20 +82,6 @@ func (qh *QueueHandler) parseBetValue() (float64, error) {
 		return 0, err
 	}
 	return betValue, nil
-}
-
-func (qh *QueueHandler) validatePlayerBalance(betValue float64) bool {
-	convertedBet := int64(betValue * 100)
-	if qh.player.CurrencyAmount < convertedBet {
-		printMsg := fmt.Sprintf(
-			"Error: Player doesn't have enough currency to place bet, player currency: [%v] betValue in int: [%v]\n",
-			qh.player.CurrencyAmount, convertedBet,
-		)
-		fmt.Println(printMsg)
-		qh.player.WriteChan <- []byte(printMsg)
-		return false
-	}
-	return true
 }
 
 func (qh *QueueHandler) updatePlayerState(betValue float64) {

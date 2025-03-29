@@ -445,8 +445,7 @@ func startCumulativeTimer(game *models.Game) {
 
 func handleGameEnd(game models.Game, reason string, winnerID string) {
 	fmt.Printf("Handling Game End for game [%v] - reason: [%v]", game.ID, reason)
-	var winnings int64
-	winnings = 0
+	var winAmount int64 = 0
 	// if the game is over, lets stop the timers.
 	publishStopToTimerChannel(game.ID)
 	game.FinishGame(winnerID)
@@ -469,18 +468,20 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 			return
 		}
 		log.Printf("[RoomWorker-%d] - Session extract ID, before posting bet :%s\n", pid, err)
-		newBalance, err := module.HandlePostWin(postgresClient, redisClient, *session, int(game.BetValue*100), game.ID)
+		var newBalance int64
+		newBalance, winAmount, err = module.HandlePostWin(postgresClient, redisClient, *session, int64(game.BetValue*100), game.ID)
+		if err != nil {
+			log.Printf("[RoomWorker-%d] - Error posting the win :%s\n", pid, err)
+		} else {
+			msgP1, _ := messages.NewMessage("balance_update", float64(newBalance)/100)
+			redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
+		}
 		// Update status and game Id of players
 		winnerPlayer.GameID = ""
 		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
-		winnings = newBalance - winnerPlayer.CurrencyAmount
-		_ = winnerPlayer.SetBalance(newBalance)
-		msgP1, _ := messages.NewMessage("balance_update", float64(winnerPlayer.CurrencyAmount)/100)
-		redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
 		redisClient.UpdatePlayer(winnerPlayer)
 	}
-
-	msg, err := messages.GenerateGameOverMessage(reason, game, winnings)
+	msg, err := messages.GenerateGameOverMessage(reason, game, winAmount)
 	if err != nil {
 		log.Printf("[%s-%d] - (Handle Game Over) - Failed to get game!: %v\n", name, pid, err)
 		return
@@ -510,7 +511,6 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 	// We then save the game to POSTGRES.
 	postgresClient.SaveGame(game)
 	cleanUpGameDisconnectedPlayers(game)
-
 }
 
 func cleanUpGameDisconnectedPlayers(game models.Game) {

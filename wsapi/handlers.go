@@ -234,7 +234,6 @@ func UpdatePlayerDataFromRedis(player *models.Player) {
 		return
 	}
 	player.Currency = playerData.Currency
-	player.CurrencyAmount = playerData.CurrencyAmount
 	player.Status = playerData.Status
 	player.SelectedBet = playerData.SelectedBet
 	player.RoomID = playerData.RoomID

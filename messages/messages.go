@@ -121,11 +121,11 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 	return msg, nil
 }
 
-func GenerateConnectedMessage(player models.Player) ([]byte, error) {
+func GenerateConnectedMessage(player models.Player, balance int64) ([]byte, error) {
 	connectInfo := GameConnectedMessage{
 		PlayerID:   player.ID,
 		PlayerName: player.Name,
-		Money:      float64(player.CurrencyAmount) / 100.0,
+		Money:      float64(balance) / 100.0,
 		Status:     string(player.Status),
 	}
 	return NewMessage("connected", connectInfo)

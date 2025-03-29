@@ -347,22 +347,19 @@ func handleReadyQueue(player *models.Player) {
 	// TODO: This needs to handle a possible API failure.
 	// TODO: Maybe remove players from queue?
 	// TODO: Send error message to one or both players?
-	newBalance1, err := module.HandlePostBet(postgresClient, redisClient, *session1, int(proom.BetValue*100), proom.ID)
-	newBalance2, err := module.HandlePostBet(postgresClient, redisClient, *session2, int(proom.BetValue*100), proom.ID)
-	_ = player.SetBalance(newBalance1)
-	_ = player2.SetBalance(newBalance2)
-
+	newBalance1, err := module.HandlePostBet(postgresClient, redisClient, *session1, int64(proom.BetValue*100), proom.ID)
+	newBalance2, err := module.HandlePostBet(postgresClient, redisClient, *session2, int64(proom.BetValue*100), proom.ID)
 	// Now that everything is OK, we will start up the game
-	msgP1, err := messages.NewMessage("balance_update", float64(player.CurrencyAmount)/100)
-	msgP2, err := messages.NewMessage("balance_update", float64(player2.CurrencyAmount)/100)
+	msgP1, err := messages.NewMessage("balance_update", float64(newBalance1)/100)
+	msgP2, err := messages.NewMessage("balance_update", float64(newBalance2)/100)
+
 	// then notify player and store it in redis.
-	
 	redisClient.UpdatePlayer(player)
 	redisClient.UpdatePlayer(player2)
-	
+
 	redisClient.PublishPlayerEvent(player, string(msgP1))
 	redisClient.PublishPlayerEvent(player2, string(msgP2))
-	
+
 	// Then we start a match
 	roomdata, err := json.Marshal(proom)
 	err = redisClient.RPushGeneric("create_game", roomdata)

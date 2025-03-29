@@ -38,7 +38,7 @@ func (pc *PostgresCli) Close() {
 func (pc *PostgresCli) SaveSession(session models.Session) error {
 	query := `
 		INSERT INTO sessions (
-			SessionId, Token, PlayerName, Balance, Currency, OperatorBaseUrl, CreatedAt, OperatorName, OperatorGameName, GameName
+			SessionId, Token, PlayerName, Currency, OperatorBaseUrl, CreatedAt, OperatorName, OperatorGameName, GameName
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
 
@@ -48,7 +48,6 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 		session.ID,
 		session.Token,
 		session.PlayerName,
-		session.Balance,
 		session.Currency,
 		session.OperatorBaseUrl,
 		session.CreatedAt,
@@ -121,15 +120,15 @@ func (pc *PostgresCli) SaveGame(game models.Game) error {
 	`
 	var gameID int
 	err = pc.DB.QueryRow(
-		query, 
-		game.OperatorIdentifier.OperatorName, 
-		game.OperatorIdentifier.OperatorGameName, 
-		game.OperatorIdentifier.GameName, 
-		game.StartTime, 
-		game.EndTime, 
-		movesJSON, 
-		game.BetValue, 
-		game.Winner, 
+		query,
+		game.OperatorIdentifier.OperatorName,
+		game.OperatorIdentifier.OperatorGameName,
+		game.OperatorIdentifier.GameName,
+		game.StartTime,
+		game.EndTime,
+		movesJSON,
+		game.BetValue,
+		game.Winner,
 		playersJSON,
 	).Scan(&gameID)
 
