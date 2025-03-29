@@ -83,7 +83,7 @@ func (m *SokkerDuelModule) HandleFetchWalletBalance(s models.Session, rc *redisd
 	if err != nil {
 		return 0, fmt.Errorf("Failed to fetch wallet: %v, %v", err)
 	}
-	return int64(logInResponse.Data.Balance * 100.00), nil
+	return int64(logInResponse.Data.Balance), nil
 }
 
 func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, error) {
