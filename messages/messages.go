@@ -52,6 +52,11 @@ type GameOver struct {
 	GameTime time.Duration     `json:"game_time"`
 }
 
+type GenericMessage struct{
+	MessageType string `json:message_type`
+	Message string `json:message`
+}
+
 func EncodeMessage[T any](command string, value T) ([]byte, error) {
 	msg := Message[T]{Command: command, Value: value}
 	return json.Marshal(msg)
@@ -83,6 +88,14 @@ func NewMessage[T any](command string, value T) ([]byte, error) {
 		"value":   value, // Will always be included
 	}
 	return json.Marshal(message)
+}
+
+func GenerateGenericMessage(msgtype string, msg string)([]byte, error){
+	genericMsg := GenericMessage {
+		MessageType: msgtype,
+		Message: msg,
+	}
+	return NewMessage("message", genericMsg)
 }
 
 func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
