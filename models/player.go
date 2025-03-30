@@ -90,6 +90,11 @@ func (p *Player) UpdatePlayerStatus(newStatus PlayerStatus) error {
 	return nil
 }
 
+func (p *Player) SetStatusOnline() {
+	p.RoomID = ""
+	p.GameID = ""
+	p.Status = StatusOnline
+}
 func (p *Player) IsEligibleForQueue() bool {
 	if p == nil || p.Status != StatusInQueue {
 		return false

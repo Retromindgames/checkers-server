@@ -195,8 +195,7 @@ func processRoomEnding() {
 		redisClient.PublishToPlayer(*player2, string(msg))
 		addPlayerToQueue(player2)
 		// Reset both player data.
-		playerData.RoomID = ""
-		playerData.Status = models.StatusOnline
+		playerData.SetStatusOnline()
 		redisClient.UpdatePlayer(playerData)
 		err = redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		if err != nil {
@@ -326,34 +325,41 @@ func handleReadyQueue(player *models.Player) {
 		log.Printf("[RoomWorker-%d] - Error handleReadyQueue fetching player2 sessionID:%s\n", pid, err)
 		return
 	}
-	// TODO: Maybe remove players from queue?
-	// TODO: Send error message to one or both players?
+
 	newBalance1, err := module.HandlePostBet(postgresClient, redisClient, *session1, int64(proom.BetValue*100), proom.ID)
 	if err != nil {
 		log.Printf("[RoomWorker-%d] - Error HandlePostBet failed to bet:%s for sessionid:[%s]\n", pid, err, session1.ID)
-		player.Status = models.StatusInGame
+		player.SetStatusOnline()
 		redisClient.UpdatePlayer(player)
 		msg, _ := messages.GenerateGenericMessage("error", err.Error())
 		redisClient.PublishPlayerEvent(player, string(msg))
+		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(proom.ID))
+
 		msg, _ = messages.NewMessage("opponent_left_room", true)
 		redisClient.PublishPlayerEvent(player2, string(msg))
+
 		// since the first player failed the api check, we will queue up the second plyer.
 		addPlayerToQueue(player2)
+		// TODO: CREDITAR VALOR A JOGADOR.
 		return
 	}
 	newBalance2, err := module.HandlePostBet(postgresClient, redisClient, *session2, int64(proom.BetValue*100), proom.ID)
 	if err != nil {
 		log.Printf("[RoomWorker-%d] - Error HandlePostBet failed to bet:%s for sessionid:[%s]\n", pid, err, session1.ID)
+		player2.SetStatusOnline()
+		redisClient.UpdatePlayer(player2)
 		msg, _ := messages.GenerateGenericMessage("error", err.Error())
 		redisClient.PublishPlayerEvent(player2, string(msg))
+		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(proom.ID))
+
 		// since the second player failed the api check, we will queue up the first player.
 		addPlayerToQueue(player)
 		// TODO: CREDITAR VALOR A JOGADOR.
 		return
 	}
 	// Now that everything is OK, we will start up the game
-	msgP1, err := messages.NewMessage("balance_update", float64(newBalance1)/100)
-	msgP2, err := messages.NewMessage("balance_update", float64(newBalance2)/100)
+	msgP1, _ := messages.NewMessage("balance_update", float64(newBalance1)/100)
+	msgP2, _ := messages.NewMessage("balance_update", float64(newBalance2)/100)
 
 	// then notify player and store it in redis.
 	redisClient.UpdatePlayer(player)
