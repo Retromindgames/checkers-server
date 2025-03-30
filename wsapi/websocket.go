@@ -39,11 +39,10 @@ func init() {
 
 func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	//log.Printf("[wsapi] - HandleConnection: Raw query string: %s\n", r.URL.RawQuery)
-
 	token := r.URL.Query().Get("token")
 	sessionID := r.URL.Query().Get("sessionid")
 	currency := r.URL.Query().Get("currency")
-	log.Printf("[wsapi] - HandleConnection: token[%v], sessionid[%v], currency[%v]\n", token, sessionID, currency)
+	//log.Printf("[wsapi] - HandleConnection: token[%v], sessionid[%v], currency[%v]\n", token, sessionID, currency)
 	session, err := FetchAndValidateSession(token, sessionID, currency)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unauthorized: token[%v], sessionid[%v], currency[%v]", token, sessionID, currency), http.StatusUnauthorized)
@@ -54,7 +53,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Println("Failed to upgrade:", err)
+		log.Println("Failed to upgrade:", err)
 		conn.Close()
 		return
 	}
@@ -101,7 +100,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	subscriptionReady := make(chan bool)
 	go subscribeToPlayerChannel(player, subscriptionReady)
 	<-subscriptionReady // Wait for the subscription to be ready
-	module, _ := interfaces.OperatorModules[player.OperatorIdentifier.OperatorName]
+	module := interfaces.OperatorModules[player.OperatorIdentifier.OperatorName]
 	walletBalance, err := module.HandleFetchWalletBalance(*session, redisClient)
 	if err != nil {
 		log.Printf("Failed to fetch wallet : %v", err)
@@ -109,7 +108,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	}
 	msg, err := messages.GenerateConnectedMessage(*player, walletBalance)
 	if err != nil {
-		log.Printf("Failed to fetchgenerate connected message : %v", err)
+		log.Printf("Failed to generate connected message : %v", err)
 		return
 	}
 	player.WriteChan <- msg
@@ -124,8 +123,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 // Function to handle player channel subscription
 func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	redisClient.SubscribePlayerChannel(*player, func(message string) {
-		fmt.Println("[wsapi] - Received server to PLAYER message:", message)
-		// Send the received message to the player's WebSocket connection
+		//log.Println("[wsapi] - Received server to PLAYER message:", message)
 		player.WriteChan <- []byte(message)
 	})
 	ready <- true // Notify that the subscription is ready
@@ -133,24 +131,21 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 
 func subscribeToBroadcastChannel() {
 	redisClient.Subscribe("game_info", func(message string) {
-		fmt.Println("[wsapi] - Received BROADCAST message:", message)
-		// Step 1: Parse the message using messages.ParseMessage
+		//fmt.Println("[wsapi] - Received BROADCAST message:", message)
 		msg, err := messages.ParseMessage([]byte(message))
 		if err != nil {
-			fmt.Println("[wsapi] - Failed to parse message:", err)
+			log.Println("[wsapi] - Failed to parse broadcast message:", err)
 			return
 		}
-		// Step 2: Marshal the message back to JSON
 		finalBytes, err := json.Marshal(msg)
 		if err != nil {
-			fmt.Println("[wsapi] - Failed to marshal final message:", err)
+			log.Println("[wsapi] - Failed to marshal final broadcast message:", err)
 			return
 		}
-		// Step 3: Send the message to all connected players
 		playersMutex.Lock()
-		defer playersMutex.Unlock() // Ensures mutex is unlocked even if an error occurs
+		defer playersMutex.Unlock() 		// Ensures mutex is unlocked even if an error occurs
 		for _, player := range players {
-			player.WriteChan <- finalBytes // Send message to the write channel
+			player.WriteChan <- finalBytes 	// Send message to the write channel
 		}
 	})
 }
@@ -159,9 +154,6 @@ func unsubscribeFromPlayerChannel(player *models.Player) {
 	redisClient.UnsubscribePlayerChannel(*player)
 }
 
-func unsubscribeFromBroadcastChannel(player *models.Player) {
-	redisClient.Unsubscribe("game_info")
-}
 
 // Mock user validation
 func IsUserValid(token string, sessionID string) (bool, models.Player) {
