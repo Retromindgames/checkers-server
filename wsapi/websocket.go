@@ -2,6 +2,7 @@ package wsapi
 
 import (
 	"checkers-server/config"
+	"checkers-server/interfaces"
 	"checkers-server/messages"
 	"checkers-server/models"
 	"checkers-server/redisdb"
@@ -38,22 +39,21 @@ func init() {
 
 func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	//log.Printf("[wsapi] - HandleConnection: Raw query string: %s\n", r.URL.RawQuery)
-
 	token := r.URL.Query().Get("token")
 	sessionID := r.URL.Query().Get("sessionid")
 	currency := r.URL.Query().Get("currency")
-	log.Printf("[wsapi] - HandleConnection: token[%v], sessionid[%v], currency[%v]\n", token, sessionID, currency)
+	//log.Printf("[wsapi] - HandleConnection: token[%v], sessionid[%v], currency[%v]\n", token, sessionID, currency)
 	session, err := FetchAndValidateSession(token, sessionID, currency)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unauthorized: token[%v], sessionid[%v], currency[%v]", token, sessionID, currency), http.StatusUnauthorized)
-		if session != nil{
+		if session != nil {
 			redisClient.RemoveSession(session.ID)
 		}
 		return
 	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		fmt.Println("Failed to upgrade:", err)
+		log.Println("Failed to upgrade:", err)
 		conn.Close()
 		return
 	}
@@ -69,7 +69,6 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			Name:               discPlayer.Name,
 			SessionID:          discPlayer.SessionID,
 			Currency:           currency,
-			CurrencyAmount:     discPlayer.CurrencyAmount,
 			Status:             models.StatusInGame,
 			GameID:             discPlayer.GameID,
 			WriteChan:          make(chan []byte),
@@ -84,12 +83,12 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			Name:               session.PlayerName,
 			SessionID:          session.ID,
 			Currency:           currency,
-			CurrencyAmount:     session.Balance,
 			Status:             models.StatusOnline,
 			WriteChan:          make(chan []byte),
 			OperatorIdentifier: session.OperatorIdentifier,
 		}
 		player = newPlayer
+		redisClient.AddPlayer(player) // Since its a new player, we add it to redis.
 	}
 	player.StartWriteGoroutine() // Start the write goroutine
 
@@ -101,18 +100,19 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	subscriptionReady := make(chan bool)
 	go subscribeToPlayerChannel(player, subscriptionReady)
 	<-subscriptionReady // Wait for the subscription to be ready
-
-	err = redisClient.RPush("player_online", player)
+	module := interfaces.OperatorModules[player.OperatorIdentifier.OperatorName]
+	walletBalance, err := module.HandleFetchWalletBalance(*session, redisClient)
 	if err != nil {
-		fmt.Println("[wsapi] - Failed to push player online", err)
-		playersMutex.Lock()
-		delete(players, player.ID)
-		playersMutex.Unlock()
-		unsubscribeFromPlayerChannel(player)
-		conn.Close()
+		log.Printf("Failed to fetch wallet : %v", err)
 		return
 	}
-	fmt.Println("[wsapi] - Player added online:", player.ID)
+	msg, err := messages.GenerateConnectedMessage(*player, walletBalance)
+	if err != nil {
+		log.Printf("Failed to generate connected message : %v", err)
+		return
+	}
+	player.WriteChan <- msg
+
 	// Now that our player has subscribbed to our stuff, we will notify the gameworker of the reconnect.
 	if discPlayer != nil {
 		redisClient.RPush("reconnect_game", player)
@@ -123,8 +123,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 // Function to handle player channel subscription
 func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	redisClient.SubscribePlayerChannel(*player, func(message string) {
-		fmt.Println("[wsapi] - Received server to PLAYER message:", message)
-		// Send the received message to the player's WebSocket connection
+		//log.Println("[wsapi] - Received server to PLAYER message:", message)
 		player.WriteChan <- []byte(message)
 	})
 	ready <- true // Notify that the subscription is ready
@@ -132,24 +131,21 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 
 func subscribeToBroadcastChannel() {
 	redisClient.Subscribe("game_info", func(message string) {
-		fmt.Println("[wsapi] - Received BROADCAST message:", message)
-		// Step 1: Parse the message using messages.ParseMessage
+		//fmt.Println("[wsapi] - Received BROADCAST message:", message)
 		msg, err := messages.ParseMessage([]byte(message))
 		if err != nil {
-			fmt.Println("[wsapi] - Failed to parse message:", err)
+			log.Println("[wsapi] - Failed to parse broadcast message:", err)
 			return
 		}
-		// Step 2: Marshal the message back to JSON
 		finalBytes, err := json.Marshal(msg)
 		if err != nil {
-			fmt.Println("[wsapi] - Failed to marshal final message:", err)
+			log.Println("[wsapi] - Failed to marshal final broadcast message:", err)
 			return
 		}
-		// Step 3: Send the message to all connected players
 		playersMutex.Lock()
-		defer playersMutex.Unlock() // Ensures mutex is unlocked even if an error occurs
+		defer playersMutex.Unlock() 		// Ensures mutex is unlocked even if an error occurs
 		for _, player := range players {
-			player.WriteChan <- finalBytes // Send message to the write channel
+			player.WriteChan <- finalBytes 	// Send message to the write channel
 		}
 	})
 }
@@ -158,9 +154,6 @@ func unsubscribeFromPlayerChannel(player *models.Player) {
 	redisClient.UnsubscribePlayerChannel(*player)
 }
 
-func unsubscribeFromBroadcastChannel(player *models.Player) {
-	redisClient.Unsubscribe("game_info")
-}
 
 // Mock user validation
 func IsUserValid(token string, sessionID string) (bool, models.Player) {

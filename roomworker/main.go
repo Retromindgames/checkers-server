@@ -111,7 +111,7 @@ func processQueueForBet(bet float64) {
 		}
 
 		// Try fetching the second player with a timeout
-		player2, err := redisClient.BLPop(queueName, 5)
+		player2, err := redisClient.BLPop(queueName, config.Cfg.Services["roomworker"].Timer)
 		if err != nil || player2 == nil {
 			log.Printf("[RoomWorker-%d] - No second player found in %s, re-queueing player 1.\n", pid, queueName)
 			// Since we failed to get the player2, we will requeue the player1.
@@ -193,22 +193,10 @@ func processRoomEnding() {
 			continue
 		}
 		redisClient.PublishToPlayer(*player2, string(msg))
+		addPlayerToQueue(player2)
 		// Reset both player data.
-		playerData.RoomID = ""
-		playerData.Status = models.StatusOnline
-		player2.RoomID = ""
-		player2.Status = models.StatusInQueue
+		playerData.SetStatusOnline()
 		redisClient.UpdatePlayer(playerData)
-		redisClient.UpdatePlayer(player2)
-
-		// Pushing the player to the "queue" Redis list
-		queueName := fmt.Sprintf("queue:%f", player2.SelectedBet)
-		err = redisClient.RPush(queueName, player2)
-		if err != nil {
-			log.Printf("[RoomWorker-%d] - Placing player back on queue:%v\n", pid, err)
-			return
-		}
-
 		err = redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		if err != nil {
 			log.Printf("[RoomWorker-%d] - Error removing room: %v\n", pid, err)
@@ -293,19 +281,16 @@ func handleReadyQueue(player *models.Player) {
 		log.Printf("[RoomWorker-%d] - Error handleReadyQueue getting player room:%s\n", pid, err)
 		return
 	}
-
 	player2ID, err := proom.GetOpponentPlayerID(player.ID)
 	if err != nil {
 		log.Printf("[RoomWorker-%d] - Error handleReadyQueue getting player opponent ID:%s\n", pid, err)
 		return
 	}
-
 	player2, err := redisClient.GetPlayer(player2ID)
 	if err != nil {
 		log.Printf("[RoomWorker-%d] - Error handleReadyQueue getting opponent player:%s\n", pid, err)
 		return
 	}
-
 	// We will always notify the opponent the we are ready.
 	msg, err := messages.GenerateOpponentReadyMessage(true)
 	if err != nil {
@@ -313,7 +298,6 @@ func handleReadyQueue(player *models.Player) {
 		return
 	}
 	redisClient.PublishPlayerEvent(player2, string(msg))
-
 	// now we tell our player that is ready if the opponent is ready or not.
 	if player2.Status != models.StatusInRoomReady {
 		log.Printf("[RoomWorker-%d] - handleReadyQueue Opponent aint ready yet!:%s\n", pid, err)
@@ -324,10 +308,7 @@ func handleReadyQueue(player *models.Player) {
 		redisClient.PublishPlayerEvent(player, string(msg))
 		return
 	}
-
 	// Now! If both players are ready...!!
-	// We are ready to start a match!!
-	// Fist we update player balance.
 	// Before we start the game, we will need to post to the wallet api of the bet, we will use our api interface for that.
 	module, exists := interfaces.OperatorModules[proom.OperatorIdentifier.OperatorName]
 	if !exists {
@@ -344,25 +325,49 @@ func handleReadyQueue(player *models.Player) {
 		log.Printf("[RoomWorker-%d] - Error handleReadyQueue fetching player2 sessionID:%s\n", pid, err)
 		return
 	}
-	// TODO: This needs to handle a possible API failure.
-	// TODO: Maybe remove players from queue?
-	// TODO: Send error message to one or both players?
-	newBalance1, err := module.HandlePostBet(postgresClient, redisClient, *session1, int(proom.BetValue*100), proom.ID)
-	newBalance2, err := module.HandlePostBet(postgresClient, redisClient, *session2, int(proom.BetValue*100), proom.ID)
-	_ = player.SetBalance(newBalance1)
-	_ = player2.SetBalance(newBalance2)
 
+	newBalance1, err := module.HandlePostBet(postgresClient, redisClient, *session1, int64(proom.BetValue*100), proom.ID)
+	if err != nil {
+		log.Printf("[RoomWorker-%d] - Error HandlePostBet failed to bet:%s for sessionid:[%s]\n", pid, err, session1.ID)
+		player.SetStatusOnline()
+		redisClient.UpdatePlayer(player)
+		msg, _ := messages.GenerateGenericMessage("error", err.Error())
+		redisClient.PublishPlayerEvent(player, string(msg))
+		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(proom.ID))
+
+		msg, _ = messages.NewMessage("opponent_left_room", true)
+		redisClient.PublishPlayerEvent(player2, string(msg))
+
+		// since the first player failed the api check, we will queue up the second plyer.
+		addPlayerToQueue(player2)
+		// TODO: CREDITAR VALOR A JOGADOR.
+		return
+	}
+	newBalance2, err := module.HandlePostBet(postgresClient, redisClient, *session2, int64(proom.BetValue*100), proom.ID)
+	if err != nil {
+		log.Printf("[RoomWorker-%d] - Error HandlePostBet failed to bet:%s for sessionid:[%s]\n", pid, err, session1.ID)
+		player2.SetStatusOnline()
+		redisClient.UpdatePlayer(player2)
+		msg, _ := messages.GenerateGenericMessage("error", err.Error())
+		redisClient.PublishPlayerEvent(player2, string(msg))
+		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(proom.ID))
+
+		// since the second player failed the api check, we will queue up the first player.
+		addPlayerToQueue(player)
+		// TODO: CREDITAR VALOR A JOGADOR.
+		return
+	}
 	// Now that everything is OK, we will start up the game
-	msgP1, err := messages.NewMessage("balance_update", float64(player.CurrencyAmount)/100)
-	msgP2, err := messages.NewMessage("balance_update", float64(player2.CurrencyAmount)/100)
+	msgP1, _ := messages.NewMessage("balance_update", float64(newBalance1)/100)
+	msgP2, _ := messages.NewMessage("balance_update", float64(newBalance2)/100)
+
 	// then notify player and store it in redis.
-	
 	redisClient.UpdatePlayer(player)
 	redisClient.UpdatePlayer(player2)
-	
+
 	redisClient.PublishPlayerEvent(player, string(msgP1))
 	redisClient.PublishPlayerEvent(player2, string(msgP2))
-	
+
 	// Then we start a match
 	roomdata, err := json.Marshal(proom)
 	err = redisClient.RPushGeneric("create_game", roomdata)
@@ -475,4 +480,23 @@ func handleCreateRoom(player *models.Player) {
 		return
 	}
 	log.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
+}
+
+func addPlayerToQueue(player *models.Player) {
+	// Reset both player data.
+	player.RoomID = ""
+	player.GameID = ""
+	player.Status = models.StatusInQueue
+	redisClient.UpdatePlayer(player)
+
+	// Pushing the player to the "queue" Redis list
+	queueName := fmt.Sprintf("queue:%f", player.SelectedBet)
+	err := redisClient.RPush(queueName, player)
+	if err != nil {
+		log.Printf("[RoomWorker-%d] - Placing player back on queue:%v\n", pid, err)
+		return
+	}
+	redisClient.IncrementQueueCount(player.SelectedBet)
+	queueMsg, _ := messages.GenerateQueueConfirmationMessage(true)
+	redisClient.PublishPlayerEvent(player, string(queueMsg))
 }

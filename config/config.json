@@ -13,7 +13,7 @@
   "services": {
     "wsapi": { "ports": [80, 443] },
     "pstatusworker": {},
-    "roomworker": {},
+    "roomworker": { "timer" : 2},
     "gameworker": {
       "timer": 15,  
       "pieces_in_match": 12,

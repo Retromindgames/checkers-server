@@ -1,13 +1,12 @@
 ## Docker
 
-docker attach <container_id>
+    docker attach <container_id>
 
 Or use an interactive shell:
 
-docker exec -it <container_id> /bin/sh  # Use /bin/bash if available
+    docker exec -it <container_id> /bin/sh  
+    docker logs --since 5m <container_id>
 
-
-docker logs --since 5m <container_id>
 
 ```bash
 // stop containers
@@ -19,29 +18,45 @@ docker rmi $(docker images -aq)
 ```
 
 Or for windows:
-FOR /F "tokens=*" %i IN ('docker ps -aq') DO docker stop %i
-FOR /F "tokens=*" %i IN ('docker ps -qa') DO docker rm -v -f %i
-FOR /F "tokens=*" %i IN ('docker images -aq') DO docker rmi -f %i 
+
+    FOR /F "tokens=*" %i IN ('docker ps -aq') DO docker stop %i
+    FOR /F "tokens=*" %i IN ('docker ps -qa') DO docker rm -v -f %i
+    FOR /F "tokens=*" %i IN ('docker images -aq') DO docker rmi -f %i 
 
 
 To restart docker containers in the server 
 
-docker restart $(docker ps -q)
+    docker restart $(docker ps -q)
 
 
 ### Clean Up space
+#### Docker (This is the big one!)
 
-git fetch --prune
+Stop and remove all containers, networks, volumes
 
+    docker-compose down --rmi all --volumes --remove-orphans
+
+Remove all unused containers, networks, images (both dangling and unreferenced)
+    
+    docker system prune -a --volumes --force
+
+Remove all Docker data (nuclear option - be careful!)
+
+    docker system prune --all --force --volumes
+
+
+#### Git
+
+    git fetch --prune
 
 You can clean up your local Git repository by deleting all branches except the current one and main with these commands:
 
     git branch | grep -vE "(main|\*)" | xargs git branch -D
 
 
-#### GOAT:
+#### GOAT - For building the server:
 
-docker-compose -f docker-compose.dev.yml up --build
+docker-compose -f docker-compose.dev.yml up --build -d
 
 
 

@@ -24,7 +24,6 @@ type Player struct {
 	GameID             string             `json:"game_id"`
 	SessionID          string             `json:"session_id"`
 	Currency           string             `json:"currency"`
-	CurrencyAmount     int64              `json:"currency_amount"`
 	Status             PlayerStatus       `json:"status"`
 	SelectedBet        float64            `json:"selected_bet"`
 	Name               string             `json:"name"`
@@ -91,21 +90,11 @@ func (p *Player) UpdatePlayerStatus(newStatus PlayerStatus) error {
 	return nil
 }
 
-func (p *Player) UpdateBalance(value int64) error {
-
-	newAmount := p.CurrencyAmount + value
-	if newAmount < 0 {
-		return fmt.Errorf("UpdateBalance failed, final balance less than zero. Currente balance [%f], final balanc [%f]", p.CurrencyAmount, newAmount)
-	}
-	p.CurrencyAmount = newAmount
-	return nil
+func (p *Player) SetStatusOnline() {
+	p.RoomID = ""
+	p.GameID = ""
+	p.Status = StatusOnline
 }
-
-func (p *Player) SetBalance(value int64) error {
-	p.CurrencyAmount = value
-	return nil
-}
-
 func (p *Player) IsEligibleForQueue() bool {
 	if p == nil || p.Status != StatusInQueue {
 		return false

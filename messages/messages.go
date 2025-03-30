@@ -30,7 +30,7 @@ type GameStartMessage struct {
 	Board           map[string]*models.Piece
 	MaxTimer        int `json:"max_timer"`
 	CurrentPlayerID string
-	GamePlayers     []models.GamePlayer
+	GamePlayers     []GamePlayerResponse
 }
 
 type GameUpdatetMessage struct {
@@ -46,10 +46,15 @@ type GameTimer struct {
 
 type GameOver struct {
 	Reason   string            `json:"reason"`
-	Winner   models.GamePlayer `json:"winner"`
+	Winner   GamePlayerResponse `json:"winner"`
 	Turns    int               `json:"turns"`
-	Winnings    float64               `json:"winnings"`
+	Winnings float64           `json:"winnings"`
 	GameTime time.Duration     `json:"game_time"`
+}
+
+type GenericMessage struct{
+	MessageType string `json:message_type`
+	Message string `json:message`
 }
 
 func EncodeMessage[T any](command string, value T) ([]byte, error) {
@@ -78,11 +83,19 @@ func NewMessage[T any](command string, value T) ([]byte, error) {
 	if _, ok := validCommands[command]; !ok {
 		return nil, fmt.Errorf("[Message Parser - New Message] invalid command: %s", command)
 	}
-	message := Message[T]{
-		Command: command,
-		Value:   value,
+	message := map[string]interface{}{
+		"command": command,
+		"value":   value, // Will always be included
 	}
 	return json.Marshal(message)
+}
+
+func GenerateGenericMessage(msgtype string, msg string)([]byte, error){
+	genericMsg := GenericMessage {
+		MessageType: msgtype,
+		Message: msg,
+	}
+	return NewMessage("message", genericMsg)
 }
 
 func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
@@ -121,11 +134,11 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 	return msg, nil
 }
 
-func GenerateConnectedMessage(player models.Player) ([]byte, error) {
+func GenerateConnectedMessage(player models.Player, balance int64) ([]byte, error) {
 	connectInfo := GameConnectedMessage{
 		PlayerID:   player.ID,
 		PlayerName: player.Name,
-		Money:      float64(player.CurrencyAmount) / 100.0,
+		Money:      (float64(balance) / 100.0),
 		Status:     string(player.Status),
 	}
 	return NewMessage("connected", connectInfo)
@@ -159,12 +172,49 @@ func GenerateQueueConfirmationMessage(value bool) ([]byte, error) {
 	return NewMessage("queue_confirmation", value)
 }
 
+//func GenerateGameStartMessage(game models.Game) ([]byte, error) {
+//	gamestart := GameStartMessage{
+//		Board:           game.Board.Grid,
+//		MaxTimer:        game.Players[0].Timer,
+//		CurrentPlayerID: game.CurrentPlayerID,
+//		GamePlayers:     game.Players,
+//	}
+//	return NewMessage("game_start", gamestart)
+//}
+
+type GamePlayerResponse struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Timer     int    `json:"timer"` 		
+	Color     string `json:"color"`
+	NumPieces int    `json:"num_pieces"`
+}
+
+func ConvertGamePlayerToResponse(player models.GamePlayer) GamePlayerResponse {
+	return GamePlayerResponse{
+		ID:        player.ID,
+		Name:      player.Name,
+		Timer:     player.Timer,
+		Color:     player.Color,
+		NumPieces: player.NumPieces,
+	}
+}
+
+// For a slice of players (now can reuse the single version)
+func ConvertGamePlayersToResponse(players []models.GamePlayer) []GamePlayerResponse {
+	result := make([]GamePlayerResponse, len(players))
+	for i, p := range players {
+		result[i] = ConvertGamePlayerToResponse(p)  // Reusing the single version
+	}
+	return result
+}
+
 func GenerateGameStartMessage(game models.Game) ([]byte, error) {
 	gamestart := GameStartMessage{
 		Board:           game.Board.Grid,
 		MaxTimer:        game.Players[0].Timer,
 		CurrentPlayerID: game.CurrentPlayerID,
-		GamePlayers:     game.Players,
+		GamePlayers:      ConvertGamePlayersToResponse(game.Players),
 	}
 	return NewMessage("game_start", gamestart)
 }
@@ -174,7 +224,7 @@ func GenerateGameReconnectMessage(game models.Game) ([]byte, error) {
 		Board:           game.Board.Grid,
 		MaxTimer:        game.Players[0].Timer,
 		CurrentPlayerID: game.CurrentPlayerID,
-		GamePlayers:     game.Players,
+		GamePlayers:     ConvertGamePlayersToResponse(game.Players),
 	}
 	return NewMessage("game_reconnect", gamestart)
 }
@@ -196,10 +246,10 @@ func GenerateGameOverMessage(reason string, game models.Game, winnings int64) ([
 
 	gameover := GameOver{
 		Reason:   reason,
-		Winner:   *winner,
+		Winner:   ConvertGamePlayerToResponse(*winner),
 		Turns:    game.Turn,
 		GameTime: game.EndTime.Sub(game.StartTime),
-		Winnings: float64(winnings)/100.0,
+		Winnings: float64(winnings) / 100.0,
 	}
 	return NewMessage("game_over", gameover)
 }
