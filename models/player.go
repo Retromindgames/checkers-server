@@ -95,8 +95,9 @@ func (p *Player) SetStatusOnline() {
 	p.GameID = ""
 	p.Status = StatusOnline
 }
-func (p *Player) IsEligibleForQueue() bool {
-	if p == nil || p.Status != StatusInQueue {
+
+func (p *Player) IsEligibleForQueue(queueBet float64) bool {
+	if p == nil || p.Status != StatusInQueue || p.SelectedBet != queueBet {
 		return false
 	}
 	return true
