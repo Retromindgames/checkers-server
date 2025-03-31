@@ -202,7 +202,7 @@ func processRoomEnding() {
 			log.Printf("[RoomWorker-%d] - Error removing room: %v\n", pid, err)
 			continue
 		}
-		redisClient.DecrementQueueCount(playerData.SelectedBet)
+		// redisClient.DecrementQueueCount(playerData.SelectedBet) 		// we dont need to decrement it here, since the queue decrements
 		log.Printf("[RoomWorker-%d] - End of room ending: %v\n", pid, err)
 	}
 }
