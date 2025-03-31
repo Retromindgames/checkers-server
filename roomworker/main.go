@@ -104,7 +104,7 @@ func processQueueForBet(bet float64) {
 			continue
 		}
 		// we check to see if the player is eligible to be processed.
-		if !player1Details.IsEligibleForQueue() {
+		if !player1Details.IsEligibleForQueue(bet) {
 			log.Printf("[RoomWorker-%d] - player1 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
 			redisClient.DecrementQueueCount(bet)
 			continue
@@ -131,7 +131,7 @@ func processQueueForBet(bet float64) {
 		}
 
 		// before we handle the paired, we will do a final check to make sure the players2 is still online / valid.
-		if err != nil || !player2Details.IsEligibleForQueue() {
+		if err != nil || !player2Details.IsEligibleForQueue(bet) {
 			// If it is not valid, we will add player 1 back to the queue.
 			log.Printf("[RoomWorker-%d] - player2 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
 			time.Sleep(time.Second * 3)
