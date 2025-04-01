@@ -125,7 +125,7 @@ func (m *SokkerDuelModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redis
 		Amount:      betValue,
 		Currency:    session.Currency,
 		Platform:    "sokkerpro",
-		Operator:    "sokkerduel",
+		Operator:    "SokkerDuel",
 		Client:      session.PlayerName,
 		Game:        session.OperatorIdentifier.GameName,
 		RoundID:     gameID,
