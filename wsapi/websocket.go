@@ -51,12 +51,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	existingPlayer, _ := redisClient.GetPlayer(sessionID)
-	if existingPlayer != nil {
-		log.Println("Session with active player")
-		http.Error(w, fmt.Sprintf("player with active connection."), http.StatusUnauthorized)
-		return
-	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Failed to upgrade:", err)
@@ -81,6 +76,12 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			OperatorIdentifier: session.OperatorIdentifier,
 		}
 	} else {
+		existingPlayer, _ := redisClient.GetPlayer(sessionID)
+		if existingPlayer != nil {
+			log.Println("Session with active player")
+			http.Error(w, fmt.Sprintf("player with active connection."), http.StatusUnauthorized)
+			return
+		}
 		//playerID := models.GenerateUUID() Commented to make the player id = the session id.
 		newPlayer := &models.Player{
 			ID:                 sessionID,
