@@ -187,7 +187,6 @@ func (g *Game) NextPlayer() {
 	nextPlayerId, err := g.GetOpponentPlayerID(g.CurrentPlayerID)
 	if err != nil {
 		log.Printf("Error NextPlayer getting opponent ID: %v\n", err)
-
 	}
 	g.CurrentPlayerID = nextPlayerId
 	g.Turn += 1

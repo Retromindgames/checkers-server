@@ -53,8 +53,8 @@ type GameOver struct {
 }
 
 type GenericMessage struct{
-	MessageType string `json:message_type`
-	Message string `json:message`
+	MessageType string `json:"message_type"`
+	Message string `json:"message"`
 }
 
 func EncodeMessage[T any](command string, value T) ([]byte, error) {
@@ -128,7 +128,7 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 		if err := json.Unmarshal(msg.Value, &queueNumbersResponse); err != nil {
 			return nil, fmt.Errorf("invalid value format for game_info: %w", err)
 		}
-		log.Printf("[Message Parser] Parsed game_info: %+v\n", queueNumbersResponse)
+		//log.Printf("[Message Parser] Parsed game_info: %+v\n", queueNumbersResponse)
 	}
 
 	return msg, nil
@@ -241,7 +241,6 @@ func GenerateGameOverMessage(reason string, game models.Game, winnings int64) ([
 	winner, err := game.GetGamePlayer(game.Winner)
 	if err != nil {
 		log.Printf("Error retrieving game winner player: %v\n", err)
-
 	}
 
 	gameover := GameOver{

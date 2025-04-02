@@ -134,8 +134,7 @@ func (pc *PostgresCli) SaveGame(game models.Game) error {
 	if err != nil {
 		return fmt.Errorf("error inserting game: %w", err)
 	}
-
-	log.Printf("Game saved with ID: %d\n", gameID)
+	//log.Printf("Game saved with ID: %d\n", gameID)
 	return nil
 }
 

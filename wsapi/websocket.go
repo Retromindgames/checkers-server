@@ -75,9 +75,9 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			OperatorIdentifier: session.OperatorIdentifier,
 		}
 	} else {
-		playerID := models.GenerateUUID()
+		//playerID := models.GenerateUUID() Commented to make the player id = the session id.
 		newPlayer := &models.Player{
-			ID:                 playerID,
+			ID:                 sessionID,
 			Conn:               conn,
 			Token:              session.Token,
 			Name:               session.PlayerName,
