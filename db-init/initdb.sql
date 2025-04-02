@@ -27,6 +27,14 @@ BEGIN
             'https://s3.eu-central-1.amazonaws.com/play.retromindgames.pt/games/damasSokkerDuel/index.html',
             'https://tt2.sokkerduel.com',
             0.9
+        ),
+        (
+            'TestOp',
+            'damasSokkerDuel',
+            'BatalhaDasDamas',
+            'https://s3.eu-central-1.amazonaws.com/play.retromindgames.pt/games/damasSokkerDuel/index.html',
+            '',
+            0.9
         );
     END IF;
 END $$;
@@ -58,7 +66,8 @@ CREATE TABLE IF NOT EXISTS games (
     Moves JSONB DEFAULT '[]',       
     BetAmount DECIMAL(10,2) CHECK (BetAmount >= 0),  
     Winner UUID ,                     
-    WinFactor DECIMAL(5,4)  
+    WinFactor DECIMAL(5,4), 
+    GameOverReason VARCHAR(50),
     GamePlayers JSONB DEFAULT '[]'  
 );
 

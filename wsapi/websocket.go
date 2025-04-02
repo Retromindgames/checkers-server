@@ -51,6 +51,12 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	existingPlayer, _ := redisClient.GetPlayer(sessionID)
+	if existingPlayer != nil {
+		log.Println("Session with active player")
+		http.Error(w, fmt.Sprintf("player with active connection."), http.StatusUnauthorized)
+		return
+	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Failed to upgrade:", err)
@@ -94,7 +100,10 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 
 	// We add the player to our player map.
 	playersMutex.Lock()
-	players[player.ID] = player
+	_, exists := players[player.ID] // Check if player exists
+	if !exists {
+		players[player.ID] = player
+	}
 	playersMutex.Unlock()
 
 	subscriptionReady := make(chan bool)
@@ -143,9 +152,9 @@ func subscribeToBroadcastChannel() {
 			return
 		}
 		playersMutex.Lock()
-		defer playersMutex.Unlock() 		// Ensures mutex is unlocked even if an error occurs
+		defer playersMutex.Unlock() // Ensures mutex is unlocked even if an error occurs
 		for _, player := range players {
-			player.WriteChan <- finalBytes 	// Send message to the write channel
+			player.WriteChan <- finalBytes // Send message to the write channel
 		}
 	})
 }
@@ -153,7 +162,6 @@ func subscribeToBroadcastChannel() {
 func unsubscribeFromPlayerChannel(player *models.Player) {
 	redisClient.UnsubscribePlayerChannel(*player)
 }
-
 
 // Mock user validation
 func IsUserValid(token string, sessionID string) (bool, models.Player) {
@@ -181,6 +189,9 @@ func FetchAndValidateSession(token, sessionID, currency string) (*models.Session
 	if session.Token != token {
 		log.Printf("[FetchAndValidateSession] - Token mismatch: expected %s, got %s\n", token, session.Token)
 		return nil, fmt.Errorf("[Session] - token mismatch")
+	}
+	if session.OperatorIdentifier.OperatorName == "TestOp" {
+		return session, nil
 	}
 	//log.Printf("[FetchAndValidateSession] - Token validation successful\n")
 	if session.IsTokenExpired() {

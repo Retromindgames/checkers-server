@@ -25,6 +25,7 @@ type OperatorInterface interface {
 // OperatorModules maps operator names to their respective modules
 var OperatorModules = map[string]OperatorInterface{
 	"SokkerDuel": &SokkerDuelModule{},
+	"TestOp":     &TestModule{},
 	//"AnotherOperator": &AnotherOperatorModule{},
 	// Add more operators as needed
 }
@@ -47,7 +48,7 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 	if err != nil || session == nil {
 		session, _ = checkPreviousPlayerSession(req.OperatorName, logInResponse.Data.Username, req.Currency, rc)
 		if session != nil {
-			rc.RemoveSession(session.ID) 	// If the session exists, from a previous token, we remove the session
+			rc.RemoveSession(session.ID) // If the session exists, from a previous token, we remove the session
 		}
 		session, err = generatePlayerSession( // then we generate a new session.
 			op,
@@ -336,4 +337,55 @@ func calculateWinAmount(winValue int64, winFactor float64) int64 {
 	// Using float64 for precise multiplication then converting back to int
 	winAmount := float64(winValue*2) * winFactor
 	return int64(winAmount) // Truncates decimal places
+}
+
+type TestModule struct{}
+
+func (m *TestModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli) {
+
+	session, err := checkExistingSession(req.Token, rc)
+	if err != nil || session == nil {
+		session, _ = checkPreviousPlayerSession(req.OperatorName, "TESTUSER", req.Currency, rc)
+		if session != nil {
+			rc.RemoveSession(session.ID) // If the session exists, from a previous token, we remove the session
+		}
+		session, err = generatePlayerSession( // then we generate a new session.
+			op,
+			req.Token,
+			models.GenerateUUID(),
+			req.Currency,
+			rc,
+		)
+		if err != nil {
+			respondWithError(w, "Failed to generate session", err)
+			return
+		}
+		err = pgs.SaveSession(*session)
+		if err != nil {
+			respondWithError(w, "Failed to save session", err)
+			return
+		}
+	}
+	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, session.ID, req.Currency)
+	if err != nil {
+		respondWithError(w, "Failed to generate game URL", err)
+		return
+	}
+	// Final response
+	response := models.SokkerDuelGamelaunchResponse{
+		Token: req.Token,
+		Url:   gameURL,
+	}
+	respondWithJSON(w, http.StatusOK, response)
+}
+
+func (m *TestModule) HandleFetchWalletBalance(s models.Session, rc *redisdb.RedisClient) (int64, error) {
+	return 0, nil
+}
+
+func (m *TestModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, error) {
+	return 100, nil
+}
+func (m *TestModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, winValue int64, gameID string) (int64, int64, error) {
+	return 199, 99, nil
 }

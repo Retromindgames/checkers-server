@@ -360,9 +360,9 @@ func startResetEveryTurnTimer(game *models.Game) {
 
 			case switchChannel:
 				// Switch the active player when a move is made
-				activePlayerIndex = 1 - activePlayerIndex 			// Toggle between 0 and 1
+				activePlayerIndex = 1 - activePlayerIndex // Toggle between 0 and 1
 				//activePlayer = game.Players[activePlayerIndex] 	// This was used in the log prints.
-				timer = baseTimer 									// Reset the timer for the new active player
+				timer = baseTimer // Reset the timer for the new active player
 				//log.Printf("Switched active player to %s in game %s. Timer reset to %d seconds.\n", activePlayer.ID, game.ID, timer)
 			}
 		}
@@ -499,9 +499,8 @@ func handleGameEnd(game models.Game, reason string, winnerID string) {
 	} else {
 		log.Printf("[%s-%d] - (Handle Game Over) - Removed game!: %v\n", name, pid, err)
 	}
-
 	// We then save the game to POSTGRES.
-	postgresClient.SaveGame(game)
+	postgresClient.SaveGame(game, reason)
 	cleanUpGameDisconnectedPlayers(game)
 }
 
