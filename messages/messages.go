@@ -25,12 +25,14 @@ type GameConnectedMessage struct {
 	Status     string  `json:"status"`
 }
 
-// This one missed the json code, the FE is already working wth this... dont CHANGE
+// This one missed the json code, the FE is already working wth this... dont CHANGE the ones that dont have it.
 type GameStartMessage struct {
+	GameID 			string `json:"game_id"` 
 	Board           map[string]*models.Piece
-	MaxTimer        int `json:"max_timer"`
+	MaxTimer        int 	`json:"max_timer"`
 	CurrentPlayerID string
 	GamePlayers     []GamePlayerResponse
+	WinFactor		float64 `json:"win_factor"`
 }
 
 type GameUpdatetMessage struct {
@@ -211,10 +213,12 @@ func ConvertGamePlayersToResponse(players []models.GamePlayer) []GamePlayerRespo
 
 func GenerateGameStartMessage(game models.Game) ([]byte, error) {
 	gamestart := GameStartMessage{
+		GameID: game.ID,
 		Board:           game.Board.Grid,
 		MaxTimer:        game.Players[0].Timer,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers:      ConvertGamePlayersToResponse(game.Players),
+		WinFactor: game.OperatorIdentifier.WinFactor,
 	}
 	return NewMessage("game_start", gamestart)
 }
