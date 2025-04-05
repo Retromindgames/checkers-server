@@ -164,15 +164,6 @@ func unsubscribeFromPlayerChannel(player *models.Player) {
 	redisClient.UnsubscribePlayerChannel(*player)
 }
 
-// Mock user validation
-func IsUserValid(token string, sessionID string) (bool, models.Player) {
-	player, exists := redisdb.MockPlayers[token]
-	if exists && player.SessionID == sessionID {
-		return true, player
-	}
-	return false, models.Player{} // Invalid user
-}
-
 func FetchAndValidateSession(token, sessionID, currency string) (*models.Session, error) {
 	session, err := redisClient.GetSessionByID(sessionID)
 	if err != nil {
