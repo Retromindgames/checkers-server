@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -217,22 +218,19 @@ func (r *RedisClient) cleanupExpiredSessions() {
 			log.Printf("[RedisClient] (Session) - Failed to fetch session data: %v\n", err)
 			continue
 		}
-
 		var session models.Session
 		if err := json.Unmarshal([]byte(data), &session); err != nil {
 			log.Printf("[RedisClient] (Session) - Failed to deserialize session: %v\n", err)
 			continue
 		}
-
 		if session.IsTokenExpired() {
-			if err := r.Client.Del(ctx, sessionKey).Err(); err != nil {
-				log.Printf("[RedisClient] (Session) - Failed to remove expired session: %v\n", err)
-			} else {
-				log.Printf("[RedisClient] (Session) - Expired session removed: %s\n", session.ID)
+			parts := strings.Split(sessionKey, ":")
+			if len(parts) > 1 {
+				sessionID := parts[1]
+				r.RemoveSession(sessionID)
 			}
 		}
 	}
-
 	if err := iter.Err(); err != nil {
 		log.Printf("[RedisClient] (Session) - Error iterating Redis keys: %v\n", err)
 	}
