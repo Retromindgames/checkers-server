@@ -150,7 +150,7 @@ func (r *RedisClient) UnsubscribePlayerChannel(player models.Player) {
 	if err := pubsub.Unsubscribe(context.Background(), channel); err != nil {
 		log.Println("Error unsubscribing from", channel, ":", err)
 	} else {
-		log.Printf("[RedisClii] (UnsubscribePlayerChannel) - Unsubscribe of [%v] and [%v]\n", player.Name, channel)
+		//log.Printf("[RedisClii] (UnsubscribePlayerChannel) - Unsubscribe of [%v] and [%v]\n", player.Name, channel)
 	}
 }
 
