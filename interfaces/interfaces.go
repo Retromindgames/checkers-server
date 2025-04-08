@@ -48,23 +48,27 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 	if err != nil || session == nil {
 		session, _ = checkPreviousPlayerSession(req.OperatorName, logInResponse.Data.Username, req.Currency, rc)
 		if session != nil {
-			rc.RemoveSession(session.ID) // If the session exists, from a previous token, we remove the session
-		}
-		session, err = generatePlayerSession( // then we generate a new session.
-			op,
-			req.Token,
-			logInResponse.Data.Username,
-			logInResponse.Data.Currency,
-			rc,
-		)
-		if err != nil {
-			respondWithError(w, "Failed to generate session", err)
-			return
-		}
-		err = pgs.SaveSession(*session)
-		if err != nil {
-			respondWithError(w, "Failed to save session", err)
-			return
+			rc.DisconnectPlayer(session.ID)	// We send a message to disconnect the previous websocket connection.
+			//rc.RemoveSession(session.ID) // If the session exists, from a previous token, we remove the session
+			session.Token = req.Token	// We just update the token.
+			rc.AddSession(session) // we update the session in redis.
+		} else {
+			session, err = generatePlayerSession( // then we generate a new session.
+				op,
+				req.Token,
+				logInResponse.Data.Username,
+				logInResponse.Data.Currency,
+				rc,
+			)
+			if err != nil {
+				respondWithError(w, "Failed to generate session", err)
+				return
+			}
+			err = pgs.SaveSession(*session)
+			if err != nil {
+				respondWithError(w, "Failed to save session", err)
+				return
+			}
 		}
 	}
 	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, session.ID, logInResponse.Data.Currency)

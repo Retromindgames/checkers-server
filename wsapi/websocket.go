@@ -139,6 +139,27 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	ready <- true // Notify that the subscription is ready
 }
 
+func subscribeToPlayerChannelNEW(player *models.Player, ready chan bool) {
+	// Subscribe to the player's specific channel
+	redisClient.SubscribePlayerChannel(*player, func(message string) {
+		// Check if the message indicates a disconnect for this player
+		if message == fmt.Sprintf("disconnect:%s", player.ID) {
+			log.Printf("[wsapi] - Disconnecting player: %s", player.ID)
+			player.Conn.Close()  // Close the WebSocket connection for the player
+			unsubscribeFromPlayerChannel(player) // Unsubscribe from the player channel
+			// Optionally, you can remove the player from the active players map
+			playersMutex.Lock()
+			delete(players, player.ID)
+			playersMutex.Unlock()
+		} else {
+			// Send normal messages to the player's write channel
+			player.WriteChan <- []byte(message)
+		}
+	})
+	ready <- true // Notify that the subscription is ready
+}
+
+
 func subscribeToBroadcastChannel() {
 	redisClient.Subscribe("game_info", func(message string) {
 		//fmt.Println("[wsapi] - Received BROADCAST message:", message)

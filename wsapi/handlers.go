@@ -11,6 +11,10 @@ import (
 func handleMessages(player *models.Player) {
 	defer player.Conn.Close()
 	for {
+		// Check if player is still connected, break if not
+		if player.Conn == nil {
+			break
+		}
 		_, msg, err := player.Conn.ReadMessage()
 		if err != nil {
 			UpdatePlayerDataFromRedis(player)
