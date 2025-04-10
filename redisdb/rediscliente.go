@@ -140,7 +140,7 @@ func (r *RedisClient) UnsubscribePlayerChannel(player models.Player) {
 	pubsub, exists := r.Subscriptions[channel]
 	if !exists {
 		r.mu.Unlock()
-		fmt.Println("Not subscribed to", channel)
+		log.Println("Not subscribed to", channel)
 		return
 	}
 	delete(r.Subscriptions, channel)

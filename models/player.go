@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/gorilla/websocket"
 )
@@ -38,7 +39,7 @@ func (p *Player) StartWriteGoroutine() {
 		for message := range p.WriteChan {
 			err := p.Conn.WriteMessage(websocket.TextMessage, message)
 			if err != nil {
-				fmt.Println("[wsapi] - Failed to send message to player:", err)
+				log.Println("[wsapi] - Failed to send message to player:", err)
 				p.Conn.Close()
 				return
 			}
