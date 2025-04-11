@@ -29,8 +29,8 @@ var upgrader = websocket.Upgrader{
 
 const (
     writeWait      = 10 * time.Second
-    pongWait       = 1 * time.Second
-    pingInterval   = 10 * time.Second // must be < pongWait
+    pongWait       = 2 * time.Second
+    pingInterval   = 1 * time.Second // must be < pongWait
 )
 
 func init() {
