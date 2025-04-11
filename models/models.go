@@ -96,6 +96,7 @@ type PairedValue struct {
 	Color    int    `json:"color"`
 	Opponent string `json:"opponent"`
 	RoomID   string `json:"room_id"`
+	Winnings float64 `json:"winnings"`
 }
 
 type QueueConfirmation struct {

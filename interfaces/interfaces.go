@@ -164,7 +164,7 @@ func (m *SokkerDuelModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redis
 	if session.ID == "" {
 		return -1, -1, fmt.Errorf("invalid session")
 	}
-	var winnings = calculateWinAmount(winValue, session.OperatorIdentifier.WinFactor)
+	var winnings = CalculateWinAmount(winValue, session.OperatorIdentifier.WinFactor)
 	winData := models.SokkerDuelWin{
 		OperatorGameName: session.OperatorIdentifier.GameName,
 		Currency:         session.Currency,
@@ -336,10 +336,10 @@ func mustMarshal(v interface{}) []byte {
 	return b
 }
 
-func calculateWinAmount(winValue int64, winFactor float64) int64 {
+func CalculateWinAmount(betValue int64, winFactor float64) int64 {
 	// Multiply by 2 then by 0.9 (equivalent to multiplying by 1.8)
 	// Using float64 for precise multiplication then converting back to int
-	winAmount := float64(winValue*2) * winFactor
+	winAmount := float64(betValue*2) * winFactor
 	return int64(winAmount) // Truncates decimal places
 }
 
