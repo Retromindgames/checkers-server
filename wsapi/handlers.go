@@ -6,13 +6,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 )
 
 func handleMessages(player *models.Player) {
 	defer player.Conn.Close()
+
+	player.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	player.Conn.SetPongHandler(func(string) error {
+		player.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
 	for {
-		// Check if player is still connected, break if not
 		if player.Conn == nil {
+			UpdatePlayerDataFromRedis(player)
+			handlePlayerDisconnect(player)
 			break
 		}
 		_, msg, err := player.Conn.ReadMessage()
@@ -21,10 +30,8 @@ func handleMessages(player *models.Player) {
 			handlePlayerDisconnect(player)
 			break
 		}
-		//log.Printf("Message from %s: %s\n", player.ID, string(msg))
 		UpdatePlayerDataFromRedis(player)
 
-		// Process the received message (expecting JSON), this will read the command but leave the value.
 		message, err := messages.ParseMessage(msg)
 		if err != nil {
 			msg, _ = messages.GenerateGenericMessage("error", "Invalid message format."+err.Error())
@@ -32,41 +39,45 @@ func handleMessages(player *models.Player) {
 			continue
 		}
 
-		// Directly route to the right handler based on the command
-		switch message.Command {
-		case "queue":
-			handleQueue(message, player)
+		routeMessages(message, player)
+	}
+}
 
-		case "leave_queue":
-			handleLeaveQueue(player)
+func routeMessages(message *messages.Message[json.RawMessage], player *models.Player) {
+	// Directly route to the right handler based on the command
+	switch message.Command {
+	case "queue":
+		handleQueue(message, player)
 
-		case "ready_queue":
-			handleReadyQueue(message, player)
+	case "leave_queue":
+		handleLeaveQueue(player)
 
-		case "leave_room":
-			if player.Status != models.StatusInRoom {
-				msg, _ = messages.GenerateGenericMessage("invalid", "Can't issue a leave room when not in a Room.")
-				player.WriteChan <- msg
-				continue
-			}
-			handleLeaveRoom(player)
+	case "ready_queue":
+		handleReadyQueue(message, player)
 
-		case "leave_game":
-			if player.Status != models.StatusInGame {
-				msg, _ = messages.GenerateGenericMessage("invalid", "Can't issue a leave game when not in a game.")
-				player.WriteChan <- msg
-				continue
-			}
-			handleLeaveGame(player)
-
-		case "move_piece":
-			if player.Status != models.StatusInGame {
-				msg, _ = messages.GenerateGenericMessage("invalid", "Can't issue a move when not in a Game.")
-				player.WriteChan <- msg
-				continue
-			}
-			handleMovePiece(message, player)
+	case "leave_room":
+		if player.Status != models.StatusInRoom {
+			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a leave room when not in a Room.")
+			player.WriteChan <- msg
+			return
 		}
+		handleLeaveRoom(player)
+
+	case "leave_game":
+		if player.Status != models.StatusInGame {
+			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a leave game when not in a game.")
+			player.WriteChan <- msg
+			return
+		}
+		handleLeaveGame(player)
+
+	case "move_piece":
+		if player.Status != models.StatusInGame {
+			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a move when not in a Game.")
+			player.WriteChan <- msg
+			return
+		}
+		handleMovePiece(message, player)
 	}
 }
 
