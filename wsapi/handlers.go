@@ -14,6 +14,7 @@ func handleMessages(player *models.Player) {
 
 	player.Conn.SetReadDeadline(time.Now().Add(pongWait))
 	player.Conn.SetPongHandler(func(string) error {
+		log.Println("[wsapi] - Pong received from client")
 		player.Conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
