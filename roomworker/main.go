@@ -119,6 +119,18 @@ func processQueueForBet(bet float64) {
 		}
 		//log.Printf("[RoomWorker-%d] - Retrieved player 2 from %s: %v\n", pid, queueName, player2)
 		player2Details, err := redisClient.GetPlayer(player2.ID)
+		if err != nil {
+			log.Printf("[RoomWorker-%d] - Error retrieving player 2 details: %v\n", pid, err)
+			redisClient.RPush(queueName, player1)
+			redisClient.DecrementQueueCount(bet)
+			continue
+		}
+		if player2 == nil {
+			log.Printf("[RoomWorker-%d] - player2 is nil from queue %s", pid, queueName)
+			redisClient.RPush(queueName, player1)
+			redisClient.DecrementQueueCount(bet)
+			continue
+		}
 		if player1Details.ID == player2Details.ID {
 			log.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
 			redisClient.RPush(queueName, player1)
