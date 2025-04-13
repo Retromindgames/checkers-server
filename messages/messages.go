@@ -146,11 +146,12 @@ func GenerateConnectedMessage(player models.Player, balance int64) ([]byte, erro
 	return NewMessage("connected", connectInfo)
 }
 
-func GeneratePairedMessage(player1, player2 *models.Player, roomID string, color int) ([]byte, error) {
+func GeneratePairedMessage(player1, player2 *models.Player, roomID string, color int, winnings int64) ([]byte, error) {
 	pairedValue := models.PairedValue{
 		Color:    color,
 		Opponent: player2.Name,
 		RoomID:   roomID,
+		Winnings: float64(winnings) / 100.0,
 	}
 	return NewMessage("paired", pairedValue)
 }

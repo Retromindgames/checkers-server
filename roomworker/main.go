@@ -119,6 +119,18 @@ func processQueueForBet(bet float64) {
 		}
 		//log.Printf("[RoomWorker-%d] - Retrieved player 2 from %s: %v\n", pid, queueName, player2)
 		player2Details, err := redisClient.GetPlayer(player2.ID)
+		if err != nil {
+			log.Printf("[RoomWorker-%d] - Error retrieving player 2 details: %v\n", pid, err)
+			redisClient.RPush(queueName, player1)
+			redisClient.DecrementQueueCount(bet)
+			continue
+		}
+		if player2 == nil {
+			log.Printf("[RoomWorker-%d] - player2 is nil from queue %s", pid, queueName)
+			redisClient.RPush(queueName, player1)
+			redisClient.DecrementQueueCount(bet)
+			continue
+		}
 		if player1Details.ID == player2Details.ID {
 			log.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
 			redisClient.RPush(queueName, player1)
@@ -216,7 +228,7 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		BetValue:           player1.SelectedBet,
 		OperatorIdentifier: player1.OperatorIdentifier,
 	}
-
+	var winnings = interfaces.CalculateWinAmount(int64(room.BetValue), room.OperatorIdentifier.WinFactor)
 	player1.RoomID = room.ID
 	player2.RoomID = room.ID
 	player1.Status = models.StatusInRoom
@@ -237,12 +249,12 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		log.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
 		return
 	}
-	message1, err := messages.GeneratePairedMessage(room.Player1, room.Player2, room.ID, colorp1)
+	message1, err := messages.GeneratePairedMessage(room.Player1, room.Player2, room.ID, colorp1, winnings)
 	if err != nil {
 		log.Printf("[RoomWorker-%d] - Error handling paired message1 for p1: %s\n", pid, err)
 		return
 	}
-	message2, err2 := messages.GeneratePairedMessage(room.Player2, room.Player1, room.ID, colorp2)
+	message2, err2 := messages.GeneratePairedMessage(room.Player2, room.Player1, room.ID, colorp2, winnings)
 	if err2 != nil {
 		log.Printf("[RoomWorker-%d] - Error handling paired message1 for p2:%s\n", pid, err2)
 		return
@@ -424,12 +436,14 @@ func handleJoinRoom(player *models.Player) {
 	if colorp1 == 1 {
 		colorp2 = 0
 	}
-	message, err := messages.GeneratePairedMessage(rooms[0].Player1, player, rooms[0].ID, colorp1)
+	var winnings = interfaces.CalculateWinAmount(int64(player.SelectedBet), player.OperatorIdentifier.WinFactor)
+
+	message, err := messages.GeneratePairedMessage(rooms[0].Player1, player, rooms[0].ID, colorp1, winnings)
 	if err != nil {
 		log.Printf("[RoomWorker-%d] - Error handling paired message of join room for p1: %s\n", pid, err)
 		return
 	}
-	message2, err2 := messages.GeneratePairedMessage(player, rooms[0].Player1, rooms[0].ID, colorp2)
+	message2, err2 := messages.GeneratePairedMessage(player, rooms[0].Player1, rooms[0].ID, colorp2, winnings)
 	if err2 != nil {
 		log.Printf("[RoomWorker-%d] - Error handling paired of join room message for p2:%s\n", pid, err2)
 		return

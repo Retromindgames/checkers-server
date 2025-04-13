@@ -140,7 +140,7 @@ func (r *RedisClient) UnsubscribePlayerChannel(player models.Player) {
 	pubsub, exists := r.Subscriptions[channel]
 	if !exists {
 		r.mu.Unlock()
-		fmt.Println("Not subscribed to", channel)
+		log.Println("Not subscribed to", channel)
 		return
 	}
 	delete(r.Subscriptions, channel)
@@ -173,8 +173,16 @@ func (r *RedisClient) Unsubscribe(channel string) {
 func (r *RedisClient) PublishToPlayer(player models.Player, message string) error {
 	return r.Client.Publish(context.Background(), GetPlayerPubSubChannel(player), message).Err()
 }
+func (r *RedisClient) PublishToPlayerID(playerID string, message string) error {
+	return r.Client.Publish(context.Background(), "player:"+string(playerID), message).Err()
+}
 func (r *RedisClient) PublishToGamePlayer(player models.GamePlayer, message string) error {
 	return r.Client.Publish(context.Background(), GetGamePlayerPubSubChannel(player), message).Err()
+}
+func (r *RedisClient) DisconnectPlayer(playerID string) {
+	// Publish a disconnect message to Redis for that player
+	message := fmt.Sprintf("disconnect:%s", playerID)
+	r.PublishToPlayerID(playerID, message)
 }
 
 func (r *RedisClient) RemovePlayerFromQueue(queueName string, player *models.Player) error {
