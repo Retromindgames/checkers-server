@@ -16,8 +16,8 @@ services:
   wsapi:
     container_name: wsapi
     build:
-      context: .
-      dockerfile: wsapi.dockerfile
+      context: ..
+      dockerfile: cmd/wsapi/Dockerfile
     expose:
       - "80"  # Expose port 80 internally
     environment:
@@ -30,8 +30,8 @@ services:
   restapi:
     container_name: restapiworker
     build:
-      context: .
-      dockerfile: restapiworker.dockerfile
+      context: ..
+      dockerfile: cmd/restapiworker/Dockerfile
     expose:
       - "8080"  # Expose port 8080 internally
     networks:
@@ -43,8 +43,8 @@ services:
   pstatusworker:
     container_name: pstatusworker
     build:
-      context: .
-      dockerfile: pstatusworker.dockerfile
+      context: ..
+      dockerfile: cmd/pstatusworker/Dockerfile
     depends_on:
       - redis
     networks:
@@ -53,8 +53,8 @@ services:
   roomworker:
     container_name: roomworker
     build:
-      context: .
-      dockerfile: roomworker.dockerfile
+      context: ..
+      dockerfile: cmd/roomworker/Dockerfile
     depends_on:
       - redis
     networks:
@@ -63,8 +63,8 @@ services:
   broadcastworker:
     container_name: broadcastworker
     build:
-      context: .
-      dockerfile: broadcastworker.dockerfile
+      context: ..
+      dockerfile: cmd/broadcastworker/Dockerfile
     depends_on:
       - redis
     networks:
@@ -73,8 +73,8 @@ services:
   gameworker:
     container_name: gameworker
     build:
-      context: .
-      dockerfile: gameworker.dockerfile
+      context: ..
+      dockerfile: cmd/gameworker/Dockerfile
     depends_on:
       - redis
     networks:

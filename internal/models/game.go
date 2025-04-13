@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/internal/config"
 
 	"github.com/google/uuid"
 )

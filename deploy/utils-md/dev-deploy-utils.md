@@ -29,6 +29,10 @@ To restart docker containers in the server
     docker restart $(docker ps -q)
 
 
+docker exec -it redis redis-cli
+
+
+
 ### Clean Up space
 #### Docker (This is the big one!)
 
