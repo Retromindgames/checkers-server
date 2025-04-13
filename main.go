@@ -20,6 +20,10 @@ func main() {
 	// Get SSL cert paths from env
 	certPath := os.Getenv("SSL_CERT_PATH")
 	keyPath := os.Getenv("SSL_KEY_PATH")
+	
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
 	if certPath == "" || keyPath == "" {
 		port := ports[0] // First port for HTTP

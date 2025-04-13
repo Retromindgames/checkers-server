@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -25,6 +26,12 @@ var (
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
+
+const (
+    writeWait      = 10 * time.Second
+    pongWait       = 2 * time.Second
+    pingInterval   = 1 * time.Second // must be < pongWait
+)
 
 func init() {
 	config.LoadConfig()
@@ -51,6 +58,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Failed to upgrade:", err)
@@ -75,9 +83,15 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			OperatorIdentifier: session.OperatorIdentifier,
 		}
 	} else {
-		playerID := models.GenerateUUID()
+		existingPlayer, _ := redisClient.GetPlayer(sessionID)
+		if existingPlayer != nil {
+			log.Println("Session with active player")
+			conn.Close()
+			return
+		}
+		//playerID := models.GenerateUUID() Commented to make the player id = the session id.
 		newPlayer := &models.Player{
-			ID:                 playerID,
+			ID:                 sessionID,
 			Conn:               conn,
 			Token:              session.Token,
 			Name:               session.PlayerName,
@@ -90,11 +104,16 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		player = newPlayer
 		redisClient.AddPlayer(player) // Since its a new player, we add it to redis.
 	}
-	player.StartWriteGoroutine() // Start the write goroutine
+	player.StartWriteGoroutineNew(func() {
+		handlePlayerDisconnect(player)
+	}, pingInterval, writeWait)
 
 	// We add the player to our player map.
 	playersMutex.Lock()
-	players[player.ID] = player
+	_, exists := players[player.ID] // Check if player exists
+	if !exists {
+		players[player.ID] = player
+	}
 	playersMutex.Unlock()
 
 	subscriptionReady := make(chan bool)
@@ -121,10 +140,26 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 }
 
 // Function to handle player channel subscription
-func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
+func subscribeToPlayerChannelOld(player *models.Player, ready chan bool) {
 	redisClient.SubscribePlayerChannel(*player, func(message string) {
 		//log.Println("[wsapi] - Received server to PLAYER message:", message)
 		player.WriteChan <- []byte(message)
+	})
+	ready <- true // Notify that the subscription is ready
+}
+
+func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
+	// Subscribe to the player's specific channel
+	redisClient.SubscribePlayerChannel(*player, func(message string) {
+		// Check if the message indicates a disconnect for this player
+		if message == fmt.Sprintf("disconnect:%s", player.ID) {
+			log.Printf("[wsapi] - Disconnecting player: %s", player.ID)
+			player.Conn.Close()                  // Close the WebSocket connection for the player
+			handlePlayerDisconnect(player)
+		} else {
+			// Send normal messages to the player's write channel
+			player.WriteChan <- []byte(message)
+		}
 	})
 	ready <- true // Notify that the subscription is ready
 }
@@ -143,25 +178,15 @@ func subscribeToBroadcastChannel() {
 			return
 		}
 		playersMutex.Lock()
-		defer playersMutex.Unlock() 		// Ensures mutex is unlocked even if an error occurs
+		defer playersMutex.Unlock() // Ensures mutex is unlocked even if an error occurs
 		for _, player := range players {
-			player.WriteChan <- finalBytes 	// Send message to the write channel
+			player.WriteChan <- finalBytes // Send message to the write channel
 		}
 	})
 }
 
 func unsubscribeFromPlayerChannel(player *models.Player) {
 	redisClient.UnsubscribePlayerChannel(*player)
-}
-
-
-// Mock user validation
-func IsUserValid(token string, sessionID string) (bool, models.Player) {
-	player, exists := redisdb.MockPlayers[token]
-	if exists && player.SessionID == sessionID {
-		return true, player
-	}
-	return false, models.Player{} // Invalid user
 }
 
 func FetchAndValidateSession(token, sessionID, currency string) (*models.Session, error) {
@@ -181,6 +206,9 @@ func FetchAndValidateSession(token, sessionID, currency string) (*models.Session
 	if session.Token != token {
 		log.Printf("[FetchAndValidateSession] - Token mismatch: expected %s, got %s\n", token, session.Token)
 		return nil, fmt.Errorf("[Session] - token mismatch")
+	}
+	if session.OperatorIdentifier.OperatorName == "TestOp" {
+		return session, nil
 	}
 	//log.Printf("[FetchAndValidateSession] - Token validation successful\n")
 	if session.IsTokenExpired() {

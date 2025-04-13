@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -80,11 +81,6 @@ func (r *RedisClient) BLPopGeneric(queue string, timeoutSecond int) ([]string, e
 
 func (rc *RedisClient) PublishPlayerEvent(player *models.Player, message string) error {
 
-	//data, err := json.Marshal(message)
-	//if err != nil {
-	//	return fmt.Errorf("[pkg/redisdb/cliente] - failed to marshal event data: %w", err)
-	//}
-
 	err := rc.Client.Publish(context.Background(), GetPlayerPubSubChannel(*player), message).Err()
 	if err != nil {
 		return fmt.Errorf("[pkg/redisdb/cliente] - failed to publish player event: %w", err)
@@ -123,7 +119,7 @@ func (r *RedisClient) Subscribe(channel string, messageHandler func(string)) {
 	r.mu.Lock()
 	if _, exists := r.Subscriptions[channel]; exists {
 		r.mu.Unlock()
-		fmt.Println("Already subscribed to", channel)
+		log.Println("Already subscribed to", channel)
 		return
 	}
 	pubsub := r.Client.Subscribe(context.Background(), channel)
@@ -144,17 +140,17 @@ func (r *RedisClient) UnsubscribePlayerChannel(player models.Player) {
 	pubsub, exists := r.Subscriptions[channel]
 	if !exists {
 		r.mu.Unlock()
-		fmt.Println("Not subscribed to", channel)
+		log.Println("Not subscribed to", channel)
 		return
 	}
 	delete(r.Subscriptions, channel)
-	log.Printf("[RedisClii] (UnsubscribePlayerChannel) - Deleted subscription of [%d] and [%v]\n", player.Name, channel)
+	//log.Printf("[RedisClii] (UnsubscribePlayerChannel) - Deleted subscription of [%d] and [%v]\n", player.Name, channel)
 	r.mu.Unlock()
 
 	if err := pubsub.Unsubscribe(context.Background(), channel); err != nil {
-		fmt.Println("Error unsubscribing from", channel, ":", err)
+		log.Println("Error unsubscribing from", channel, ":", err)
 	} else {
-		log.Printf("[RedisClii] (UnsubscribePlayerChannel) - Unsubscribe of [%d] and [%v]\n", player.Name, channel)
+		//log.Printf("[RedisClii] (UnsubscribePlayerChannel) - Unsubscribe of [%v] and [%v]\n", player.Name, channel)
 	}
 }
 
@@ -163,33 +159,39 @@ func (r *RedisClient) Unsubscribe(channel string) {
 	pubsub, exists := r.Subscriptions[channel]
 	if !exists {
 		r.mu.Unlock()
-		fmt.Println("Not subscribed to", channel)
+		log.Println("Not subscribed to", channel)
 		return
 	}
 	delete(r.Subscriptions, channel)
 	r.mu.Unlock()
 
 	if err := pubsub.Unsubscribe(context.Background(), channel); err != nil {
-		fmt.Println("Error unsubscribing from", channel, ":", err)
+		log.Println("Error unsubscribing from", channel, ":", err)
 	}
 }
 
 func (r *RedisClient) PublishToPlayer(player models.Player, message string) error {
 	return r.Client.Publish(context.Background(), GetPlayerPubSubChannel(player), message).Err()
 }
+func (r *RedisClient) PublishToPlayerID(playerID string, message string) error {
+	return r.Client.Publish(context.Background(), "player:"+string(playerID), message).Err()
+}
 func (r *RedisClient) PublishToGamePlayer(player models.GamePlayer, message string) error {
 	return r.Client.Publish(context.Background(), GetGamePlayerPubSubChannel(player), message).Err()
+}
+func (r *RedisClient) DisconnectPlayer(playerID string) {
+	// Publish a disconnect message to Redis for that player
+	message := fmt.Sprintf("disconnect:%s", playerID)
+	r.PublishToPlayerID(playerID, message)
 }
 
 func (r *RedisClient) RemovePlayerFromQueue(queueName string, player *models.Player) error {
 	ctx := context.Background()
-
 	// Serialize the player to match stored format
 	data, err := json.Marshal(player)
 	if err != nil {
 		return fmt.Errorf("[RedisClient] - failed to serialize player: %v", err)
 	}
-
 	// Remove the exact serialized JSON string from the queue
 	removed, err := r.Client.LRem(ctx, queueName, 1, string(data)).Result()
 	if err != nil {
@@ -224,22 +226,19 @@ func (r *RedisClient) cleanupExpiredSessions() {
 			log.Printf("[RedisClient] (Session) - Failed to fetch session data: %v\n", err)
 			continue
 		}
-
 		var session models.Session
 		if err := json.Unmarshal([]byte(data), &session); err != nil {
 			log.Printf("[RedisClient] (Session) - Failed to deserialize session: %v\n", err)
 			continue
 		}
-
 		if session.IsTokenExpired() {
-			if err := r.Client.Del(ctx, sessionKey).Err(); err != nil {
-				log.Printf("[RedisClient] (Session) - Failed to remove expired session: %v\n", err)
-			} else {
-				log.Printf("[RedisClient] (Session) - Expired session removed: %s\n", session.ID)
+			parts := strings.Split(sessionKey, ":")
+			if len(parts) > 1 {
+				sessionID := parts[1]
+				r.RemoveSession(sessionID)
 			}
 		}
 	}
-
 	if err := iter.Err(); err != nil {
 		log.Printf("[RedisClient] (Session) - Error iterating Redis keys: %v\n", err)
 	}

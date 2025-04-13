@@ -6,63 +6,79 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 )
 
 func handleMessages(player *models.Player) {
 	defer player.Conn.Close()
+
+	player.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	player.Conn.SetPongHandler(func(string) error {
+		log.Println("[wsapi] - Pong received from client")
+		player.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+
 	for {
+		if player.Conn == nil {
+			UpdatePlayerDataFromRedis(player)
+			handlePlayerDisconnect(player)
+			break
+		}
 		_, msg, err := player.Conn.ReadMessage()
 		if err != nil {
 			UpdatePlayerDataFromRedis(player)
 			handlePlayerDisconnect(player)
 			break
 		}
-		//log.Printf("Message from %s: %s\n", player.ID, string(msg))
 		UpdatePlayerDataFromRedis(player)
 
-		// Process the received message (expecting JSON), this will read the command but leave the value.
 		message, err := messages.ParseMessage(msg)
 		if err != nil {
-			msg, _ = messages.GenerateGenericMessage("error", "Invalid message format." + err.Error())
+			msg, _ = messages.GenerateGenericMessage("error", "Invalid message format."+err.Error())
 			player.WriteChan <- msg
 			continue
 		}
 
-		// Directly route to the right handler based on the command
-		switch message.Command {
-		case "queue":
-			handleQueue(message, player)
+		routeMessages(message, player)
+	}
+}
 
-		case "leave_queue":
-			handleLeaveQueue(player)
+func routeMessages(message *messages.Message[json.RawMessage], player *models.Player) {
+	// Directly route to the right handler based on the command
+	switch message.Command {
+	case "queue":
+		handleQueue(message, player)
 
-		case "ready_queue":
-			handleReadyQueue(message, player)
+	case "leave_queue":
+		handleLeaveQueue(player)
 
-		case "leave_room":
-			if player.Status != models.StatusInRoom {
-				msg, _ = messages.GenerateGenericMessage("invalid", "Can't issue a leave room when not in a Room.")
-				player.WriteChan <- msg
-				continue
-			}
-			handleLeaveRoom(player)
+	case "ready_queue":
+		handleReadyQueue(message, player)
 
-		case "leave_game":
-			if player.Status != models.StatusInGame {
-				msg, _ = messages.GenerateGenericMessage("invalid", "Can't issue a leave game when not in a game.")
-				player.WriteChan <- msg
-				continue
-			}
-			handleLeaveGame(player)
-
-		case "move_piece":
-			if player.Status != models.StatusInGame {
-				msg, _ = messages.GenerateGenericMessage("invalid", "Can't issue a move when not in a Game.")
-				player.WriteChan <- msg
-				continue
-			}
-			handleMovePiece(message, player)
+	case "leave_room":
+		if player.Status != models.StatusInRoom {
+			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a leave room when not in a Room.")
+			player.WriteChan <- msg
+			return
 		}
+		handleLeaveRoom(player)
+
+	case "leave_game":
+		if player.Status != models.StatusInGame {
+			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a leave game when not in a game.")
+			player.WriteChan <- msg
+			return
+		}
+		handleLeaveGame(player)
+
+	case "move_piece":
+		if player.Status != models.StatusInGame {
+			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a move when not in a Game.")
+			player.WriteChan <- msg
+			return
+		}
+		handleMovePiece(message, player)
 	}
 }
 
@@ -93,7 +109,7 @@ func handleLeaveQueue(player *models.Player) {
 	// we update out player status., send a confirmation message back to the player
 	m, err := messages.GenerateQueueConfirmationMessage(false)
 	if err != nil {
-		msg, _ := messages.GenerateGenericMessage("error", "Error generating queue confirmation false:" + err.Error())
+		msg, _ := messages.GenerateGenericMessage("error", "Error generating queue confirmation false:"+err.Error())
 		log.Println("Error generating queue confirmation false:", err)
 		player.WriteChan <- msg
 		return
@@ -127,14 +143,14 @@ func handleReadyQueue(msg *messages.Message[json.RawMessage], player *models.Pla
 	err := redisClient.UpdatePlayer(player)
 	if err != nil {
 		log.Printf("Error updating player to Redis: %v\n", err)
-		msgBytes, _ := messages.GenerateGenericMessage("error", "Error Updating player: " + err.Error())
+		msgBytes, _ := messages.GenerateGenericMessage("error", "Error Updating player: "+err.Error())
 		player.WriteChan <- msgBytes
 		return
 	}
-	err = redisClient.RPush("ready_queue", player) 	// now we tell roomworker to process this player ready.
+	err = redisClient.RPush("ready_queue", player) // now we tell roomworker to process this player ready.
 	if err != nil {
 		log.Printf("Error pushing player to Redis ready queue: %v\n", err)
-		msgBytes, _ := messages.GenerateGenericMessage("error", "Pushing player to queue: " + err.Error())
+		msgBytes, _ := messages.GenerateGenericMessage("error", "Pushing player to queue: "+err.Error())
 		player.WriteChan <- msgBytes
 		return
 	}
@@ -196,7 +212,7 @@ func handleMovePiece(message *messages.Message[json.RawMessage], player *models.
 }
 
 func handlePlayerDisconnect(player *models.Player) {
-	log.Println("Player disconnected:", player.ID)
+	//log.Println("Player disconnected:", player.ID)
 	playersMutex.Lock()
 	delete(players, player.ID)
 	playersMutex.Unlock()
