@@ -340,6 +340,7 @@ func CalculateWinAmount(betValue int64, winFactor float64) int64 {
 	// Multiply by 2 then by 0.9 (equivalent to multiplying by 1.8)
 	// Using float64 for precise multiplication then converting back to int
 	winAmount := float64(betValue*2) * winFactor
+	//log.Printf("Calculating win amount:[betValue: %v], [winFactor: %v], final value: [%v]", betValue, winFactor, winAmount)
 	return int64(winAmount) // Truncates decimal places
 }
 

@@ -151,7 +151,7 @@ func GeneratePairedMessage(player1, player2 *models.Player, roomID string, color
 		Color:    color,
 		Opponent: player2.Name,
 		RoomID:   roomID,
-		Winnings: float64(winnings) / 100.0,
+		Winnings: float64(winnings),
 	}
 	return NewMessage("paired", pairedValue)
 }
