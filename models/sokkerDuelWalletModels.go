@@ -61,7 +61,7 @@ type SokkerDuelWinResponse struct {
 		Amount        int64  `json:"amount"`
 		Balance       string `json:"balance"`
 		TransactionID string `json:"transaction_id"`
-		ExtractID     int64  `json:"extract_id"`
+		ExtractID     int64  `json:"extractSokkerDuelId"`
 	} `json:"data"`
 }
 
