@@ -79,7 +79,7 @@ func (p *Player) StartWriteGoroutineNew(onClose func(), pingInterval time.Durati
 					p.Conn.Close()
 					return
 				}
-				log.Println("[wsapi] - Ping sent to client")
+				//log.Println("[wsapi] - Ping sent to client")
 			}
 		}
 	}()
