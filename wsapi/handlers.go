@@ -40,8 +40,12 @@ func handleMessages(player *models.Player) {
 			continue
 		}
 		if message.Command == "ping" {
-			msg, _ := messages.NewMessage("command", "pong")
-			player.WriteChan <- msg
+			msg := messages.MessageSimple{
+				Command: "pong",
+			}
+			msgBytes, _ := json.Marshal(msg)
+			log.Print(msgBytes)
+			player.WriteChan <- msgBytes
 		}
 
 		routeMessages(message, player)

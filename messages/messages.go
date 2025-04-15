@@ -13,6 +13,9 @@ type Message[T any] struct {
 	Command string `json:"command"`
 	Value   T      `json:"value,omitempty"`
 }
+type MessageSimple struct {
+	Command string `json:"command"`
+}
 
 type OpponentReady struct {
 	IsReady bool `json:"is_ready"`
