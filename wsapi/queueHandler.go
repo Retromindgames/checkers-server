@@ -66,7 +66,8 @@ func (qh *QueueHandler) cleanup() {
 
 func (qh *QueueHandler) validateStatusTransition() bool {
 	if qh.player.UpdatePlayerStatus(models.StatusInQueue) != nil {
-		qh.player.WriteChan <- []byte("Invalid status transition to 'queue'")
+		msgBytes, _ := messages.GenerateGenericMessage("invalid", "Invalid status transition to 'queue'")
+		qh.player.WriteChan <- msgBytes
 		return false
 	}
 	qh.statusUpdated = true

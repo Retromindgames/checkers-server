@@ -110,7 +110,7 @@ func processQueueForBet(bet float64) {
 		}
 		// Try fetching the second player with a timeout
 		player2, err := redisClient.BLPop(queueName, config.Cfg.Services["roomworker"].Timer)
-		if err != nil || player2 == nil {
+		if err != nil {
 			log.Printf("[RoomWorker-%d] - No second player found in %s, re-queueing player 1.\n", pid, queueName)
 			// Since we failed to get the player2, we will requeue the player1.
 			time.Sleep(time.Second * 3)
@@ -125,12 +125,6 @@ func processQueueForBet(bet float64) {
 			redisClient.DecrementQueueCount(bet)
 			continue
 		}
-		if player2 == nil {
-			log.Printf("[RoomWorker-%d] - player2 is nil from queue %s", pid, queueName)
-			redisClient.RPush(queueName, player1)
-			redisClient.DecrementQueueCount(bet)
-			continue
-		}
 		if player1Details.ID == player2Details.ID {
 			log.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
 			redisClient.RPush(queueName, player1)
@@ -138,10 +132,9 @@ func processQueueForBet(bet float64) {
 			continue
 		}
 		// before we handle the paired, we will do a final check to make sure the players2 is still online / valid.
-		if err != nil || !player2Details.IsEligibleForQueue(bet) {
+		if !player2Details.IsEligibleForQueue(bet) {
 			// If it is not valid, we will add player 1 back to the queue.
 			log.Printf("[RoomWorker-%d] - player2 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
-			time.Sleep(time.Second * 3)
 			redisClient.RPush(queueName, player1)
 			redisClient.DecrementQueueCount(bet)
 			continue
@@ -212,13 +205,7 @@ func processRoomEnding() {
 		//log.Printf("[RoomWorker-%d] - End of room ending: %v\n", pid, err)
 	}
 }
-
 func handleQueuePaired(player1, player2 *models.Player) {
-	//log.Printf("[RoomWorker-%d] - Handling player1 (CREATE ROOM): %s (Session: %s, Currency: %s)\n",
-	//	pid, player1.ID, player1.SessionID, player1.Currency)
-	//log.Printf("[RoomWorker-%d] - Handling player2 (CREATE ROOM): %s (Session: %s, Currency: %s)\n",
-	//	pid, player2.ID, player2.SessionID, player2.Currency)
-
 	room := &models.Room{
 		ID:                 models.GenerateUUID(),
 		Player1:            player1,
@@ -228,14 +215,32 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		BetValue:           player1.SelectedBet,
 		OperatorIdentifier: player1.OperatorIdentifier,
 	}
-	var winnings = interfaces.CalculateWinAmount(int64(room.BetValue), room.OperatorIdentifier.WinFactor)
+
 	player1.RoomID = room.ID
 	player2.RoomID = room.ID
 	player1.Status = models.StatusInRoom
 	player2.Status = models.StatusInRoom
 	redisClient.UpdatePlayer(player1)
 	redisClient.UpdatePlayer(player2)
-	// Now we set the player colors.
+
+	cleanup := true
+	defer func() {
+		if cleanup {
+			player1.RoomID = ""
+			player2.RoomID = ""
+			player1.Status = models.StatusOnline
+			player2.Status = models.StatusOnline
+			redisClient.UpdatePlayer(player1)
+			redisClient.UpdatePlayer(player2)
+			redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
+			redisClient.DecrementQueueCount(player1.SelectedBet)
+			redisClient.DecrementQueueCount(player2.SelectedBet)
+			msg, _ := messages.GenerateGenericMessage("Error", "failed to handle queue paired.")
+			redisClient.PublishToPlayer(*player1, string(msg))
+			redisClient.PublishToPlayer(*player2, string(msg))
+		}
+	}()
+
 	colorp1 := rand.Intn(2)
 	colorp2 := 1
 	if colorp1 == 1 {
@@ -244,38 +249,40 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	} else {
 		room.CurrentPlayerID = player2.ID
 	}
+
 	err := redisClient.AddRoom(room)
 	if err != nil {
-		log.Printf("[RoomWorker-%d] - Failed to add room to Redis: %v\n", pid, err)
+		log.Printf("Failed to add room to Redis: %v\n", err)
 		return
 	}
-	message1, err := messages.GeneratePairedMessage(room.Player1, room.Player2, room.ID, colorp1, winnings)
+
+	message1, err := messages.GeneratePairedMessage(player1, player2, room.ID, colorp1, interfaces.CalculateWinAmount(int64(room.BetValue), room.OperatorIdentifier.WinFactor))
 	if err != nil {
-		log.Printf("[RoomWorker-%d] - Error handling paired message1 for p1: %s\n", pid, err)
+		log.Printf("Error generating message for player1: %v\n", err)
 		return
 	}
-	message2, err2 := messages.GeneratePairedMessage(room.Player2, room.Player1, room.ID, colorp2, winnings)
-	if err2 != nil {
-		log.Printf("[RoomWorker-%d] - Error handling paired message1 for p2:%s\n", pid, err2)
+
+	message2, err := messages.GeneratePairedMessage(player2, player1, room.ID, colorp2, interfaces.CalculateWinAmount(int64(room.BetValue), room.OperatorIdentifier.WinFactor))
+	if err != nil {
+		log.Printf("Error generating message for player2: %v\n", err)
 		return
 	}
-	//log.Printf("[RoomWorker-%d] - Handling player (JOIN ROOM) - Message1 for player1: %s\n", pid, message1)
-	//log.Printf("[RoomWorker-%d] - Handling player (JOIN ROOM) - Message2 for player2: %s\n", pid, message2)
-	// Publish the validated message to Redis
+
 	err = redisClient.PublishToPlayer(*player1, string(message1))
 	if err != nil {
-		log.Printf("[RoomWorker-%d] - Failed to publish message1 to player1: %v\n", pid, err)
+		log.Printf("Failed to publish message to player1: %v\n", err)
 		return
 	}
+
 	err = redisClient.PublishToPlayer(*player2, string(message2))
 	if err != nil {
-		log.Printf("[RoomWorker-%d] - Failed to publish message2 to player2: %v\n", pid, err)
+		log.Printf("Failed to publish message to player2: %v\n", err)
 		return
 	}
-	//log.Printf("[RoomWorker-%d] - Player successfully handled and notified, of room pairing.\n", pid)
-	// We decrement it twice to account for both players starting a match.
+
+	cleanup = false
 	redisClient.DecrementQueueCount(player1.SelectedBet)
-	redisClient.DecrementQueueCount(player1.SelectedBet)
+	redisClient.DecrementQueueCount(player2.SelectedBet)
 }
 
 func handleReadyQueue(player *models.Player) {

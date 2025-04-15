@@ -163,7 +163,8 @@ func handleLeaveRoom(player *models.Player) {
 		player.WriteChan <- msgBytes
 		return
 	}
-	player.WriteChan <- []byte("processing 'leave_room'")
+	msgBytes, _ := messages.GenerateGenericMessage("invalid", "Processing 'leave_room'")
+	player.WriteChan <- msgBytes
 	// we update our player to redis.
 	err := redisClient.UpdatePlayer(player)
 	if err != nil {
@@ -180,11 +181,13 @@ func handleLeaveRoom(player *models.Player) {
 }
 
 func handleLeaveGame(player *models.Player) {
-	player.WriteChan <- []byte("processing 'leave_game'")
+	msgBytes, _ := messages.GenerateGenericMessage("invalid", "Processing 'leave_game'")
+	player.WriteChan <- msgBytes
 	err := redisClient.RPush("leave_game", player)
 	if err != nil {
 		log.Printf("Error pushing player to Redis leave_game queue: %v\n", err)
-		player.WriteChan <- []byte("Error adding player to leave_game")
+		msgBytes, _ := messages.GenerateGenericMessage("error", "Error adding player to leave_game")
+		player.WriteChan <- msgBytes
 		return
 	}
 }
