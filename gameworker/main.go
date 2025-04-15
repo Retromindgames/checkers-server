@@ -130,18 +130,24 @@ func processGameMoves() {
 			continue
 		}
 
-		// TODO: I think there is a trello card with this.
+		// TODO: See if this doesnt break the game.
 		valid, err := game.Board.IsValidMove(move)
 		if err != nil {
 			log.Printf("Error: %v", err)
-		} else {
-			log.Printf("Move is valid: %v", valid)
+			msginv, _ := messages.NewMessage("invalid_move", err)
+			redisClient.PublishToPlayer(*player, string(msginv))
+			continue
+		}
+		if !valid {
+			msginv, _ := messages.NewMessage("invalid_move", err)
+			redisClient.PublishToPlayer(*player, string(msginv))
+			continue
 		}
 
 		// We move our piece.
 		if !game.MovePiece(move) {
 			log.Printf("[%s-%d] - (Process Game Moves) - Invalid Move!: %v\n", name, pid, moveData)
-			msginv, _ := messages.NewMessage("invalid_move", "")
+			msginv, _ := messages.NewMessage("invalid_move", fmt.Sprintf("(Process Game Moves) - Invalid Move!: %v", moveData))
 			redisClient.PublishToPlayer(*player, string(msginv))
 			continue
 		}

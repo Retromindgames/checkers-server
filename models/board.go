@@ -71,13 +71,13 @@ func (b *Board) GenerateEndGameTestBoard(blackID, whiteID string) {
 func (b *Board) GenerateMultipleCaptureTestBoard(blackID, whiteID string) {
 	// Set positions for testing
 	testPositions := map[string]*Piece{
-		"A1": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
-		"A3": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
-		"A7": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
-		"B2": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
-		"B4": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
-		"C5": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID}, 
-		"D6": {Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID}, 
+		"A1": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID},
+		"A3": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID},
+		"A7": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID},
+		"B2": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID},
+		"B4": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID},
+		"C5": {Type: "b", PieceID: uuid.New().String(), PlayerID: blackID},
+		"D6": {Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID},
 		"E7": {Type: "w", PieceID: uuid.New().String(), PlayerID: whiteID},
 	}
 
@@ -95,15 +95,15 @@ func (b *Board) GenerateMultipleCaptureTestBoard(blackID, whiteID string) {
 }
 
 func (b *Board) GetPieceByID(pieceID string) *Piece {
-    for _, piece := range b.Grid {
+	for _, piece := range b.Grid {
 		if piece == nil {
 			continue
 		}
-        if piece.PieceID == pieceID {
-            return piece
-        }
-    }
-    return nil
+		if piece.PieceID == pieceID {
+			return piece
+		}
+	}
+	return nil
 }
 
 //func (b *Board) CanPieceCapture(pos string) bool {
@@ -129,9 +129,9 @@ func (b *Board) GetPieceByID(pieceID string) *Piece {
 //		// Compute middle position (opponent's piece)
 //		midRow := fromRow + rune(dir.rowDelta)
 //		midCol := fromCol + dir.colDelta
-//		
+//
 //		midPos := fmt.Sprintf("%c%d", midRow, midCol)
-//		
+//
 //		// Compute landing position
 //		landRow := fromRow + rune(2*dir.rowDelta)
 //		landCol := fromCol + 2*dir.colDelta
@@ -264,27 +264,26 @@ func (b *Board) CanPieceCaptureNEW(pos string) bool {
 		// Ensure landing square is empty
 		if destPiece, destExists := b.Grid[landPos]; destExists && destPiece == nil {
 			log.Printf("(CanPieceCapture) - Valid capture move found\n")
-			return true 	// Valid capture move found!
+			return true // Valid capture move found!
 		}
 	}
 	log.Printf("(CanPieceCapture) - No captures available\n")
-	return false 			// No captures available
+	return false // No captures available
 }
 
-
 func (b *Board) WasPieceKinged(pos string, piece Piece) bool {
-	if piece.IsKinged {		// If its alerady a king we just return false.
+	if piece.IsKinged { // If its alerady a king we just return false.
 		return false
-	}	
+	}
 
 	if len(pos) == 0 {
-        return false 
-    }
+		return false
+	}
 	firstChar := pos[0]
-	if piece.Type == "b" && firstChar == 'H'{
+	if piece.Type == "b" && firstChar == 'H' {
 		log.Printf("(WasPieceKinged) - Black piece was kinged!")
 		return true
-	} 
+	}
 	if piece.Type == "w" && firstChar == 'A' {
 		log.Printf("(WasPieceKinged) - White piece was kinged!")
 		return true
@@ -296,7 +295,7 @@ func GetPieceDirection(piece Piece) int {
 	if piece.Type == "w" {
 		return -1 // White pieces move "up" (decreasing row)
 	} else {
-		return 1  // Black pieces move "down" (increasing row)
+		return 1 // Black pieces move "down" (increasing row)
 	}
 }
 
@@ -306,7 +305,7 @@ func parsePosition(pos string) (rune, int, error) {
 	if len(pos) != 2 {
 		return 0, 0, fmt.Errorf("(Parse Position) - invalid position format: must be 2 characters (e.g., 'A3')")
 	}
-	row := rune(pos[0]) // Convert the first character to a rune (e.g., 'A')
+	row := rune(pos[0])      // Convert the first character to a rune (e.g., 'A')
 	col := int(pos[1] - '0') // Convert the second character to an integer (e.g., '3' → 3)
 
 	// Validate the row and column
@@ -325,10 +324,10 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	if piece.PlayerID != move.PlayerID {
 		return false, fmt.Errorf("(isValidMove) - piece does not belong to the player")
 	}
-	// Check if the piece is a regular piece (not kinged)
-	if piece.IsKinged {
-		return false, fmt.Errorf("(isValidMove) - piece is kinged, this function only checks regular pieces")
-	}
+	//// Check if the piece is a regular piece (not kinged)
+	//if piece.IsKinged {
+	//	return false, fmt.Errorf("(isValidMove) - piece is kinged, this function only checks regular pieces")
+	//}
 	// Parse the source and destination positions
 	fromRow, fromCol, err := parsePosition(move.From)
 	if err != nil {
@@ -340,7 +339,7 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	}
 	// Check if the destination square is empty
 	if _, exists := b.Grid[move.To]; exists {
-		return false, fmt.Errorf("(isValidMove) - destination square is not empty")
+		return false, fmt.Errorf("(isValidMove) - destination square is not empty / doesnt exist")
 	}
 	// Calculate the difference in rows and columns
 	deltaRow := int(toRow - fromRow)
@@ -348,7 +347,7 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	// Skip direction validation if the piece is kinged
 	if !piece.IsKinged {
 		direction := GetPieceDirection(*piece)
-		if deltaRow*direction <= 0 {	// Check if the move is in the correct direction
+		if deltaRow*direction <= 0 { // Check if the move is in the correct direction
 			return false, fmt.Errorf("(isValidMove) - move is not in the correct direction for the piece type")
 		}
 	}
