@@ -136,12 +136,12 @@ func processGameMoves() {
 			log.Printf("Error: %v", err)
 			msginv, _ := messages.NewMessage("invalid_move", err)
 			redisClient.PublishToPlayer(*player, string(msginv))
-			continue
+			//continue
 		}
 		if !valid {
 			msginv, _ := messages.NewMessage("invalid_move", err)
 			redisClient.PublishToPlayer(*player, string(msginv))
-			continue
+			//continue
 		}
 
 		// We move our piece.
