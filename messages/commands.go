@@ -18,6 +18,8 @@ var validCommands = map[string]CommandInfo{
 	"leave_queue": {Type: ClientCommand}, // This allows the player to leave the queue.
 	"leave_room":  {Type: ClientCommand}, // This allows the player to leave the room. The opponent gets placed in the Queue, and received a ready_queue message
 	"leave_game":  {Type: ClientCommand}, // This allows the player to leave the game. The opponent wins the game
+	"ping":        {Type: ClientCommand},
+	"pong":        {Type: ServerCommand},
 	"join_room":   {Type: ClientCommand}, // DEPRECATED
 	"create_room": {Type: ClientCommand}, // DEPRECATED
 
