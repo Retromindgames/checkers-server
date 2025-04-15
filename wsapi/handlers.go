@@ -168,14 +168,16 @@ func handleLeaveRoom(player *models.Player) {
 	// we update our player to redis.
 	err := redisClient.UpdatePlayer(player)
 	if err != nil {
-		log.Printf("Error adding player to Redis: %v\n", err)
-		player.WriteChan <- []byte("Error adding player")
+		log.Printf("Error updagint player to Redis on HandleLeaveRoom: %v\n", err)
+		msg, _ := messages.GenerateGenericMessage("error", "error updating player.")
+		player.WriteChan <- msg
 		return
 	}
 	err = redisClient.RPush("leave_room", player)
 	if err != nil {
 		log.Printf("Error pushing player to Redis leave_room queue: %v\n", err)
-		player.WriteChan <- []byte("Error adding player to queue")
+		msg, _ := messages.GenerateGenericMessage("error", "error leaving room.")
+		player.WriteChan <- msg
 		return
 	}
 }
@@ -197,19 +199,22 @@ func handleMovePiece(message *messages.Message[json.RawMessage], player *models.
 	err := json.Unmarshal([]byte(message.Value), &move)
 	if err != nil {
 		log.Printf("[Handlers] - Handle Move Piece - JSON Unmarshal Error: %v\n", err)
-		player.WriteChan <- []byte("[Handlers] - Handle Move Piece - JSON Unmarshal Error")
+		msg, _ := messages.GenerateGenericMessage("invalid", "Handle Move Piece - JSON Unmarshal Error.")
+		player.WriteChan <- msg
 		return
 	}
 	if move.PlayerID != player.ID {
 		log.Printf("[Handlers] - Handle Move Piece - move.PlayerID != player.ID\n")
-		player.WriteChan <- []byte("[Handlers] - Handle Move Piece - move.PlayerID != player.ID")
+		msg, _ := messages.GenerateGenericMessage("invalid", "Handle Move Piece - move.PlayerID != player.ID.")
+		player.WriteChan <- msg
 		return
 	}
 	// movement message is sent to the game worker
 	err = redisClient.RPushGeneric("move_piece", message.Value)
 	if err != nil {
 		log.Printf("Error pushing move to Redis handleMovePiece queue: %v\n", err)
-		player.WriteChan <- []byte("Error adding player to queue")
+		msg, _ := messages.GenerateGenericMessage("error", "error pushing move to gameworker.")
+		player.WriteChan <- msg
 		return
 	}
 }

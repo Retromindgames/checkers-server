@@ -235,7 +235,7 @@ func handleQueuePaired(player1, player2 *models.Player) {
 			redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 			redisClient.DecrementQueueCount(player1.SelectedBet)
 			redisClient.DecrementQueueCount(player2.SelectedBet)
-			msg, _ := messages.GenerateGenericMessage("Error", "failed to handle queue paired.")
+			msg, _ := messages.GenerateGenericMessage("error", "failed to handle queue paired.")
 			redisClient.PublishToPlayer(*player1, string(msg))
 			redisClient.PublishToPlayer(*player2, string(msg))
 		}

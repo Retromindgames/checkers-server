@@ -79,7 +79,8 @@ func (qh *QueueHandler) parseBetValue() (float64, error) {
 	err := json.Unmarshal(qh.msg.Value, &betValue)
 	if err != nil {
 		log.Printf("Error determining player bet value: %v\n", err)
-		qh.player.WriteChan <- []byte("Error determining player bet value")
+		msgBytes, _ := messages.GenerateGenericMessage("error", "Error determining player bet value")
+		qh.player.WriteChan <- msgBytes
 		return 0, err
 	}
 	return betValue, nil
@@ -97,7 +98,8 @@ func (qh *QueueHandler) addToRedisQueue() error {
 	err := qh.redisClient.RPush(queueName, qh.player)
 	if err != nil {
 		log.Printf("Error pushing player to Redis queue: %v\n", err)
-		qh.player.WriteChan <- []byte("Error adding player to queue")
+		msgBytes, _ := messages.GenerateGenericMessage("error", "error adding player to queue")
+		qh.player.WriteChan <- msgBytes
 		return err
 	}
 	qh.addedToQueue = true
@@ -120,7 +122,8 @@ func (qh *QueueHandler) sendConfirmation() {
 	m, err := messages.GenerateQueueConfirmationMessage(true)
 	if err != nil {
 		fmt.Println("Error generating queue confirmation:", err)
-		qh.player.WriteChan <- []byte("Error generating confirmation")
+		msgBytes, _ := messages.GenerateGenericMessage("error", "error generating confirmation")
+		qh.player.WriteChan <- msgBytes
 		return
 	}
 	qh.player.WriteChan <- m
