@@ -338,8 +338,12 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 		return false, fmt.Errorf("(isValidMove) - invalid destination position: %v", err)
 	}
 	// Check if the destination square is empty
-	if _, exists := b.Grid[move.To]; exists {
-		return false, fmt.Errorf("(isValidMove) - destination square is not empty / doesnt exist")
+	_, exists = b.Grid[move.To]
+	if !exists {
+		return false, fmt.Errorf("(isValidMove) - destination square doesn't exist")
+	}
+	if b.Grid[move.To] != nil {
+		return false, fmt.Errorf("(isValidMove) - destination square is not empty")
 	}
 	// Calculate the difference in rows and columns
 	deltaRow := int(toRow - fromRow)
