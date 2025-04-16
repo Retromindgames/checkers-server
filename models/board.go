@@ -375,6 +375,79 @@ func (b *Board) IsValidMove(move Move) (bool, error) {
 	return true, nil
 }
 
+func (b *Board) IsValidMoveKing(move Move) (bool, error) {
+	piece, exists := b.Grid[move.From]
+	if !exists || piece == nil {
+		return false, fmt.Errorf("(IsValidMoveKing) - piece does not exist at source")
+	}
+	if piece.PlayerID != move.PlayerID {
+		return false, fmt.Errorf("(IsValidMoveKing) - piece does not belong to player")
+	}
+	if !piece.IsKinged {
+		return false, fmt.Errorf("(IsValidMoveKing) - piece is not kinged")
+	}
+
+	fromRow, fromCol, err := parsePosition(move.From)
+	if err != nil {
+		return false, fmt.Errorf("(IsValidMoveKing) - invalid source: %v", err)
+	}
+	toRow, toCol, err := parsePosition(move.To)
+	if err != nil {
+		return false, fmt.Errorf("(IsValidMoveKing) - invalid destination: %v", err)
+	}
+
+	if _, ok := b.Grid[move.To]; !ok {
+		return false, fmt.Errorf("(IsValidMoveKing) - destination does not exist")
+	}
+	if b.Grid[move.To] != nil {
+		return false, fmt.Errorf("(IsValidMoveKing) - destination not empty")
+	}
+
+	deltaRow := int(toRow - fromRow)
+	deltaCol := int(toCol - fromCol)
+
+	if abs(deltaRow) != abs(deltaCol) {
+		return false, fmt.Errorf("(IsValidMoveKing) - move not diagonal")
+	}
+
+	stepRow := 1
+	if deltaRow < 0 {
+		stepRow = -1
+	}
+	stepCol := 1
+	if deltaCol < 0 {
+		stepCol = -1
+	}
+
+	enemySeen := false
+	for r, c := fromRow+rune(stepRow), fromCol+stepCol; r != toRow && c != toCol; r, c = r+rune(stepRow), c+stepCol {
+		square := string(r) + string('0'+c)
+		p, exists := b.Grid[square]
+		if !exists {
+			return false, fmt.Errorf("(IsValidMoveKing) - square %v does not exist", square)
+		}
+		if p == nil {
+			continue
+		}
+		if p.PlayerID == move.PlayerID {
+			return false, fmt.Errorf("(IsValidMoveKing) - path blocked by own piece at %v", square)
+		}
+		if enemySeen {
+			return false, fmt.Errorf("(IsValidMoveKing) - multiple captures not supported in one move")
+		}
+		enemySeen = true
+	}
+
+	if enemySeen && !move.IsCapture {
+		return false, fmt.Errorf("(IsValidMoveKing) - move is a capture but not flagged as capture")
+	}
+	if !enemySeen && move.IsCapture {
+		return false, fmt.Errorf("(IsValidMoveKing) - flagged as capture but no enemy on path")
+	}
+
+	return true, nil
+}
+
 func abs(n int) int {
 	if n < 0 {
 		return -n

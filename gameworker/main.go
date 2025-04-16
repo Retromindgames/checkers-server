@@ -130,20 +130,14 @@ func processGameMoves() {
 			continue
 		}
 
-		// TODO: See if this doesnt break the game.
-		valid, err := game.Board.IsValidMove(move)
-		if err != nil {
+		// TODO: Move this into another method
+		piece := game.Board.GetPieceByID(move.PieceID)
+		if !validMove(game, move, piece) {
 			log.Printf("Error: %v", err)
 			msginv, _ := messages.NewMessage("invalid_move", err)
 			redisClient.PublishToPlayer(*player, string(msginv))
-			//continue
+			continue
 		}
-		if !valid {
-			msginv, _ := messages.NewMessage("invalid_move", err)
-			redisClient.PublishToPlayer(*player, string(msginv))
-			//continue
-		}
-
 		// We move our piece.
 		if !game.MovePiece(move) {
 			log.Printf("[%s-%d] - (Process Game Moves) - Invalid Move!: %v\n", name, pid, moveData)
@@ -151,15 +145,11 @@ func processGameMoves() {
 			redisClient.PublishToPlayer(*player, string(msginv))
 			continue
 		}
-
 		game.UpdatePlayerPieces()
-		piece := game.Board.GetPieceByID(move.PieceID)
 		move.IsKinged = game.Board.WasPieceKinged(move.To, *piece)
 		if move.IsKinged {
 			piece.IsKinged = move.IsKinged
 		}
-
-		// TODO: Check for isCapture.
 
 		// We send the message to the opponent player.
 		msg, err := messages.GenerateMoveMessage(move)
@@ -525,6 +515,24 @@ func cleanUpGameDisconnectedPlayers(game models.Game) {
 		redisClient.RemovePlayer(discPlayer2.ID)
 	}
 
+}
+
+func validMove(game *models.Game, move models.Move, piece *models.Piece) bool {
+	var valid bool
+	var err error
+	if piece.IsKinged {
+		valid, err = game.Board.IsValidMoveKing(move)
+	} else {
+		valid, err = game.Board.IsValidMove(move)
+	}
+	if err != nil {
+		log.Printf("Error: %v", err)
+		return false
+	}
+	if !valid {
+		return false
+	}
+	return true
 }
 
 func isEven(n int) bool {
