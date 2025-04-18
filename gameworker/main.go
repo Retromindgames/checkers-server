@@ -130,7 +130,6 @@ func processGameMoves() {
 			continue
 		}
 
-		// TODO: Move this into another method
 		piece := game.Board.GetPieceByID(move.PieceID)
 		if !validMove(game, move, piece) {
 			log.Printf("Error: %v", err)
@@ -174,7 +173,6 @@ func processGameMoves() {
 			handleTurnChange(game)
 			continue
 		}
-
 		if move.IsCapture && !game.Board.CanPieceCaptureNEW(move.To) {
 			handleTurnChange(game)
 			continue
@@ -518,8 +516,25 @@ func cleanUpGameDisconnectedPlayers(game models.Game) {
 }
 
 func validMove(game *models.Game, move models.Move, piece *models.Piece) bool {
+	capturers := game.Board.PiecesThatCanCapture(game.CurrentPlayerID)
+	// If captures are available, and this piece can't capture, reject the move
+	if len(capturers) > 0 {
+		canCapture := false
+		for _, p := range capturers {
+			if p.PieceID == piece.PieceID {
+				canCapture = true
+				break
+			}
+		}
+		if !canCapture {
+			log.Println("Error: there are player pieces that can capture, must move one of those.")
+			return false
+		}
+	}
+
 	var valid bool
 	var err error
+	game.Board.PiecesThatCanCapture(game.CurrentPlayerID)
 	if piece.IsKinged {
 		valid, err = game.Board.IsValidMoveKing(move)
 	} else {
