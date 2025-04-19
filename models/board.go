@@ -162,11 +162,11 @@ func (b *Board) CanPieceCaptureNEW(pos string) bool {
 		//log.Printf("(CanPieceCapture) - Middle piece exists and is an opponent!\n")
 		// Ensure landing square is empty
 		if destPiece, destExists := b.Grid[landPos]; destExists && destPiece == nil {
-			log.Printf("(CanPieceCapture) - Valid capture move found\n")
+			//log.Printf("(CanPieceCapture) - Valid capture move found\n")
 			return true // Valid capture move found!
 		}
 	}
-	log.Printf("(CanPieceCapture) - No captures available\n")
+	//log.Printf("(CanPieceCapture) - No captures available\n")
 	return false // No captures available
 }
 

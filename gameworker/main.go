@@ -132,8 +132,8 @@ func processGameMoves() {
 
 		piece := game.Board.GetPieceByID(move.PieceID)
 		if !validMove(game, move, piece) {
-			log.Printf("Error: %v", err)
-			msginv, _ := messages.NewMessage("invalid_move", err)
+			log.Printf("Invalid move detected")
+			msginv, _ := messages.NewMessage("invalid_move", "")
 			redisClient.PublishToPlayer(*player, string(msginv))
 			continue
 		}
