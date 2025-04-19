@@ -385,7 +385,7 @@ func (m *TestModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, re
 }
 
 func (m *TestModule) HandleFetchWalletBalance(s models.Session, rc *redisdb.RedisClient) (int64, error) {
-	return 0, nil
+	return int64(10000), nil
 }
 
 func (m *TestModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, error) {

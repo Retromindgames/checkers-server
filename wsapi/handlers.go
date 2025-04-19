@@ -14,7 +14,7 @@ func handleMessages(player *models.Player) {
 
 	player.Conn.SetReadDeadline(time.Now().Add(pongWait))
 	player.Conn.SetPongHandler(func(string) error {
-		log.Println("[wsapi] - Pong received from client")
+		//log.Println("[wsapi] - Pong received from client")
 		player.Conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
@@ -38,6 +38,14 @@ func handleMessages(player *models.Player) {
 			msg, _ = messages.GenerateGenericMessage("error", "Invalid message format."+err.Error())
 			player.WriteChan <- msg
 			continue
+		}
+		if message.Command == "ping" {
+			msg := messages.MessageSimple{
+				Command: "pong",
+			}
+			msgBytes, _ := json.Marshal(msg)
+			log.Print(msgBytes)
+			player.WriteChan <- msgBytes
 		}
 
 		routeMessages(message, player)
@@ -163,28 +171,33 @@ func handleLeaveRoom(player *models.Player) {
 		player.WriteChan <- msgBytes
 		return
 	}
-	player.WriteChan <- []byte("processing 'leave_room'")
+	msgBytes, _ := messages.GenerateGenericMessage("invalid", "Processing 'leave_room'")
+	player.WriteChan <- msgBytes
 	// we update our player to redis.
 	err := redisClient.UpdatePlayer(player)
 	if err != nil {
-		log.Printf("Error adding player to Redis: %v\n", err)
-		player.WriteChan <- []byte("Error adding player")
+		log.Printf("Error updagint player to Redis on HandleLeaveRoom: %v\n", err)
+		msg, _ := messages.GenerateGenericMessage("error", "error updating player.")
+		player.WriteChan <- msg
 		return
 	}
 	err = redisClient.RPush("leave_room", player)
 	if err != nil {
 		log.Printf("Error pushing player to Redis leave_room queue: %v\n", err)
-		player.WriteChan <- []byte("Error adding player to queue")
+		msg, _ := messages.GenerateGenericMessage("error", "error leaving room.")
+		player.WriteChan <- msg
 		return
 	}
 }
 
 func handleLeaveGame(player *models.Player) {
-	player.WriteChan <- []byte("processing 'leave_game'")
+	msgBytes, _ := messages.GenerateGenericMessage("invalid", "Processing 'leave_game'")
+	player.WriteChan <- msgBytes
 	err := redisClient.RPush("leave_game", player)
 	if err != nil {
 		log.Printf("Error pushing player to Redis leave_game queue: %v\n", err)
-		player.WriteChan <- []byte("Error adding player to leave_game")
+		msgBytes, _ := messages.GenerateGenericMessage("error", "Error adding player to leave_game")
+		player.WriteChan <- msgBytes
 		return
 	}
 }
@@ -194,19 +207,22 @@ func handleMovePiece(message *messages.Message[json.RawMessage], player *models.
 	err := json.Unmarshal([]byte(message.Value), &move)
 	if err != nil {
 		log.Printf("[Handlers] - Handle Move Piece - JSON Unmarshal Error: %v\n", err)
-		player.WriteChan <- []byte("[Handlers] - Handle Move Piece - JSON Unmarshal Error")
+		msg, _ := messages.GenerateGenericMessage("invalid", "Handle Move Piece - JSON Unmarshal Error.")
+		player.WriteChan <- msg
 		return
 	}
 	if move.PlayerID != player.ID {
 		log.Printf("[Handlers] - Handle Move Piece - move.PlayerID != player.ID\n")
-		player.WriteChan <- []byte("[Handlers] - Handle Move Piece - move.PlayerID != player.ID")
+		msg, _ := messages.GenerateGenericMessage("invalid", "Handle Move Piece - move.PlayerID != player.ID.")
+		player.WriteChan <- msg
 		return
 	}
 	// movement message is sent to the game worker
 	err = redisClient.RPushGeneric("move_piece", message.Value)
 	if err != nil {
 		log.Printf("Error pushing move to Redis handleMovePiece queue: %v\n", err)
-		player.WriteChan <- []byte("Error adding player to queue")
+		msg, _ := messages.GenerateGenericMessage("error", "error pushing move to gameworker.")
+		player.WriteChan <- msg
 		return
 	}
 }

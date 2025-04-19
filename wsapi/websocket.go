@@ -28,9 +28,9 @@ var upgrader = websocket.Upgrader{
 }
 
 const (
-    writeWait      = 10 * time.Second
-    pongWait       = 2 * time.Second
-    pingInterval   = 1 * time.Second // must be < pongWait
+	writeWait    = 10 * time.Second
+	pongWait     = 3 * time.Second
+	pingInterval = 2 * time.Second // must be < pongWait
 )
 
 func init() {
@@ -123,11 +123,13 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	walletBalance, err := module.HandleFetchWalletBalance(*session, redisClient)
 	if err != nil {
 		log.Printf("Failed to fetch wallet : %v", err)
+		handlePlayerDisconnect(player)
 		return
 	}
 	msg, err := messages.GenerateConnectedMessage(*player, walletBalance)
 	if err != nil {
 		log.Printf("Failed to generate connected message : %v", err)
+		handlePlayerDisconnect(player)
 		return
 	}
 	player.WriteChan <- msg
@@ -154,7 +156,7 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 		// Check if the message indicates a disconnect for this player
 		if message == fmt.Sprintf("disconnect:%s", player.ID) {
 			log.Printf("[wsapi] - Disconnecting player: %s", player.ID)
-			player.Conn.Close()                  // Close the WebSocket connection for the player
+			player.Conn.Close() // Close the WebSocket connection for the player
 			handlePlayerDisconnect(player)
 		} else {
 			// Send normal messages to the player's write channel

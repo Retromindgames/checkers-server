@@ -130,30 +130,25 @@ func processGameMoves() {
 			continue
 		}
 
-		// TODO: I think there is a trello card with this.
-		valid, err := game.Board.IsValidMove(move)
-		if err != nil {
-			log.Printf("Error: %v", err)
-		} else {
-			log.Printf("Move is valid: %v", valid)
-		}
-
-		// We move our piece.
-		if !game.MovePiece(move) {
-			log.Printf("[%s-%d] - (Process Game Moves) - Invalid Move!: %v\n", name, pid, moveData)
+		piece := game.Board.GetPieceByID(move.PieceID)
+		if !validMove(game, move, piece) {
+			log.Printf("Invalid move detected")
 			msginv, _ := messages.NewMessage("invalid_move", "")
 			redisClient.PublishToPlayer(*player, string(msginv))
 			continue
 		}
-
+		// We move our piece.
+		if !game.MovePiece(move) {
+			log.Printf("[%s-%d] - (Process Game Moves) - Invalid Move!: %v\n", name, pid, moveData)
+			msginv, _ := messages.NewMessage("invalid_move", fmt.Sprintf("(Process Game Moves) - Invalid Move!: %v", moveData))
+			redisClient.PublishToPlayer(*player, string(msginv))
+			continue
+		}
 		game.UpdatePlayerPieces()
-		piece := game.Board.GetPieceByID(move.PieceID)
 		move.IsKinged = game.Board.WasPieceKinged(move.To, *piece)
 		if move.IsKinged {
 			piece.IsKinged = move.IsKinged
 		}
-
-		// TODO: Check for isCapture.
 
 		// We send the message to the opponent player.
 		msg, err := messages.GenerateMoveMessage(move)
@@ -178,7 +173,6 @@ func processGameMoves() {
 			handleTurnChange(game)
 			continue
 		}
-
 		if move.IsCapture && !game.Board.CanPieceCaptureNEW(move.To) {
 			handleTurnChange(game)
 			continue
@@ -519,6 +513,41 @@ func cleanUpGameDisconnectedPlayers(game models.Game) {
 		redisClient.RemovePlayer(discPlayer2.ID)
 	}
 
+}
+
+func validMove(game *models.Game, move models.Move, piece *models.Piece) bool {
+	capturers := game.Board.PiecesThatCanCapture(game.CurrentPlayerID)
+	// If captures are available, and this piece can't capture, reject the move
+	if len(capturers) > 0 {
+		canCapture := false
+		for _, p := range capturers {
+			if p.PieceID == piece.PieceID {
+				canCapture = true
+				break
+			}
+		}
+		if !canCapture {
+			log.Println("Error: there are player pieces that can capture, must move one of those.")
+			return false
+		}
+	}
+
+	var valid bool
+	var err error
+	game.Board.PiecesThatCanCapture(game.CurrentPlayerID)
+	if piece.IsKinged {
+		valid, err = game.Board.IsValidMoveKing(move)
+	} else {
+		valid, err = game.Board.IsValidMove(move)
+	}
+	if err != nil {
+		log.Printf("Error: %v", err)
+		return false
+	}
+	if !valid {
+		return false
+	}
+	return true
 }
 
 func isEven(n int) bool {
