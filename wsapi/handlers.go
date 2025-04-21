@@ -44,7 +44,6 @@ func handleMessages(player *models.Player) {
 				Command: "pong",
 			}
 			msgBytes, _ := json.Marshal(msg)
-			log.Print(msgBytes)
 			player.WriteChan <- msgBytes
 		}
 
