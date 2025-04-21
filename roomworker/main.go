@@ -114,20 +114,20 @@ func processQueueForBet(bet float64) {
 			log.Printf("[RoomWorker-%d] - No second player found in %s, re-queueing player 1.\n", pid, queueName)
 			// Since we failed to get the player2, we will requeue the player1.
 			time.Sleep(time.Second * 1)
-			addPlayerToQueue(player1, false, false)
+			redisClient.RPush(queueName, player1)
 			continue
 		}
 		//log.Printf("[RoomWorker-%d] - Retrieved player 2 from %s: %v\n", pid, queueName, player2)
 		player2Details, err := redisClient.GetPlayer(player2.ID)
 		if err != nil {
 			log.Printf("[RoomWorker-%d] - Error retrieving player 2 details: %v\n", pid, err)
-			addPlayerToQueue(player1, false, false)
+			redisClient.RPush(queueName, player1)
 			redisClient.DecrementQueueCount(bet)
 			continue
 		}
 		if player1Details.ID == player2Details.ID {
 			log.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
-			addPlayerToQueue(player1, false, false)
+			redisClient.RPush(queueName, player1)
 			redisClient.DecrementQueueCount(bet)
 			continue
 		}
@@ -135,7 +135,7 @@ func processQueueForBet(bet float64) {
 		if !player2Details.IsEligibleForQueue(bet) {
 			// If it is not valid, we will add player 1 back to the queue.
 			log.Printf("[RoomWorker-%d] - player2 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
-			addPlayerToQueue(player1, false, false)
+			redisClient.RPush(queueName, player1)
 			redisClient.DecrementQueueCount(bet)
 			continue
 		}
