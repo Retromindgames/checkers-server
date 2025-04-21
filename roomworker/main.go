@@ -259,13 +259,13 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		return
 	}
 
-	message1, err := messages.GeneratePairedMessage(player1, player2, room.ID, colorp1, interfaces.CalculateWinAmount(int64(room.BetValue), room.OperatorIdentifier.WinFactor))
+	message1, err := messages.GeneratePairedMessage(player1, player2, room.ID, colorp1, interfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor))
 	if err != nil {
 		log.Printf("Error generating message for player1: %v\n", err)
 		return
 	}
 
-	message2, err := messages.GeneratePairedMessage(player2, player1, room.ID, colorp2, interfaces.CalculateWinAmount(int64(room.BetValue), room.OperatorIdentifier.WinFactor))
+	message2, err := messages.GeneratePairedMessage(player2, player1, room.ID, colorp2, interfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor))
 	if err != nil {
 		log.Printf("Error generating message for player2: %v\n", err)
 		return
@@ -467,7 +467,7 @@ func handleJoinRoom(player *models.Player) {
 	if colorp1 == 1 {
 		colorp2 = 0
 	}
-	var winnings = interfaces.CalculateWinAmount(int64(player.SelectedBet), player.OperatorIdentifier.WinFactor)
+	var winnings = interfaces.CalculateWinAmount(int64(player.SelectedBet*100), player.OperatorIdentifier.WinFactor)
 
 	message, err := messages.GeneratePairedMessage(rooms[0].Player1, player, rooms[0].ID, colorp1, winnings)
 	if err != nil {
