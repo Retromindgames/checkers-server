@@ -170,28 +170,28 @@ func processRoomEnding() {
 	for {
 		playerWhoLeft, err := redisClient.BLPop("leave_room", 0)
 		if err != nil {
-			log.Printf("[RoomWorker-%d] - Error retrieving player:%v\n", pid, err)
+			log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving player:%v\n", pid, err)
 			continue
 		}
 		//log.Printf("[RoomWorker-%d] - Processing the end of room: %+v\n", pid, playerWhoLeft)
 		room, err := redisClient.GetRoomByID(playerWhoLeft.RoomID)
 		if err != nil {
-			log.Printf("[RoomWorker-%d] - Error retrieving room:%v\n", pid, err)
+			log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving room:%v\n", pid, err)
 			continue
 		}
 		player2ID, err := room.GetOpponentPlayerID(playerWhoLeft.ID)
 		if err != nil {
-			log.Printf("[RoomWorker-%d] - Error retrieving opponent id:%v\n", pid, err)
+			log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving opponent id:%v\n", pid, err)
 			continue
 		}
 		player2, err := redisClient.GetPlayer(player2ID)
 		if err != nil {
-			log.Printf("[RoomWorker-%d] - Error retrieving opponent player:%v\n", pid, err)
+			log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving opponent player:%v\n", pid, err)
 			continue
 		}
 		msg, err := messages.NewMessage("opponent_left_room", true)
 		if err != nil {
-			log.Printf("[RoomWorker-%d] - Error generating message:%v\n", pid, err)
+			log.Printf("[RoomWorker-%d] - processRoomEnding - Error generating message:%v\n", pid, err)
 			continue
 		}
 		redisClient.PublishToPlayer(*player2, string(msg))
@@ -200,7 +200,7 @@ func processRoomEnding() {
 		redisClient.UpdatePlayer(playerWhoLeft)
 		err = redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		if err != nil {
-			log.Printf("[RoomWorker-%d] - Error removing room: %v\n", pid, err)
+			log.Printf("[RoomWorker-%d] - processRoomEnding - Error removing room: %v\n", pid, err)
 			continue
 		}
 		// redisClient.DecrementQueueCount(playerWhoLeft.SelectedBet) 		// we dont need to decrement it here, since the queue decrements
