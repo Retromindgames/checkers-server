@@ -27,12 +27,14 @@ func (qh *QueueHandler) process() {
 
 	if !qh.validateStatusTransition() {
 		qh.initialValidationsFailed = true
+		log.Print("QueueHandler process invalid status transition.")
 		return
 	}
 
 	betValue, err := qh.parseBetValue()
 	if err != nil {
 		qh.initialValidationsFailed = true
+		log.Print("QueueHandler failed to parse bet.")
 		return
 	}
 
@@ -45,6 +47,7 @@ func (qh *QueueHandler) process() {
 	}
 	if !found {
 		qh.initialValidationsFailed = true
+		log.Print("Bet is not valid for the configured ValidBetAmounts")
 		return
 	}
 
