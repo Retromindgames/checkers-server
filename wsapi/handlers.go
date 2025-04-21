@@ -104,8 +104,9 @@ func handleLeaveQueue(player *models.Player) {
 		player.WriteChan <- msg
 		return
 	}
-	redisClient.UpdatePlayersInQueueSet(player.ID, models.StatusOnline)
+	player.SetStatusOnline()
 	redisClient.UpdatePlayer(player) // This is important, we will only re-add players to a queue that are in queue.
+	redisClient.UpdatePlayersInQueueSet(player.ID, models.StatusOnline)
 	queueName := fmt.Sprintf("queue:%f", player.SelectedBet)
 	err := redisClient.RemovePlayerFromQueue(queueName, player)
 	if err != nil {
