@@ -113,7 +113,7 @@ func processQueueForBet(bet float64) {
 		if err != nil {
 			log.Printf("[RoomWorker-%d] - No second player found in %s, re-queueing player 1.\n", pid, queueName)
 			// Since we failed to get the player2, we will requeue the player1.
-			time.Sleep(time.Second * 3)
+			time.Sleep(time.Second * 1)
 			addPlayerToQueue(player1, false, false)
 			continue
 		}
