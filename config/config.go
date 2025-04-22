@@ -27,8 +27,10 @@ import (
 
 type Config struct {
 	Redis struct {
-		Addr string `json:"addr"`
-		DB   int    `json:"db"`
+		Addr     string `json:"addr"`
+		DB       int    `json:"db"`
+		User     string `json:"user,omitempty"`
+		Password string `json:"password,omitempty"`
 	} `json:"redis"`
 	Postgres struct {
 		User     string `json:"user"`
@@ -49,11 +51,19 @@ type Config struct {
 var Cfg Config
 
 func LoadConfig() {
+	if os.Getenv("PROD") != "" {
+		loadConfigFromFile() // we load it from file.
+		loadConfigFromEnv()  // then we override with vens, to make the transition smoother
+	} else {
+		loadConfigFromFile()
+	}
+}
+
+func loadConfigFromFile() {
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
 		log.Fatal("[config.go] - CONFIG_PATH not set")
 	}
-	//log.Println("[config.go] - Config path is:", configPath)
 
 	file, err := os.Open(configPath)
 	if err != nil {
@@ -65,5 +75,11 @@ func LoadConfig() {
 	if err := decoder.Decode(&Cfg); err != nil {
 		log.Fatalf("[config.go] - Error decoding JSON: %v", err)
 	}
-	//log.Printf("[config.go] - Config loaded: %+v", Cfg)
+}
+
+func loadConfigFromEnv() {
+	Cfg.Redis.Addr = os.Getenv("REDIS_ADDR")
+	Cfg.Redis.DB = 0
+	Cfg.Redis.User = os.Getenv("REDIS_USER")
+	Cfg.Redis.Password = os.Getenv("REDIS_PASS")
 }

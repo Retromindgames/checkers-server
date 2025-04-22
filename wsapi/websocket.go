@@ -35,8 +35,8 @@ const (
 
 func init() {
 	config.LoadConfig()
-	redisAddr := config.Cfg.Redis.Addr
-	client, err := redisdb.NewRedisClient(redisAddr)
+	redisConData := config.Cfg.Redis
+	client, err := redisdb.NewRedisClient(redisConData.Addr, redisConData.User, redisConData.Password)
 	if err != nil {
 		log.Fatalf("[Redis] Error initializing Redis client: %v", err)
 	}
