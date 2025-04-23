@@ -32,30 +32,30 @@ jobs:
       - name: Build and push wsapi image
         run: |
           docker build -f wsapi.dockerfile -t $ECR_REGISTRY/wsapi:latest .
-          docker push $ECR_REGISTRY/wsapi:latest
+          docker push $ECR_REGISTRY/retromindgames/checkers:wsapi
 
       - name: Build and push restapi image
         run: |
           docker build -f restapiworker.dockerfile -t $ECR_REGISTRY/restapi:latest .
-          docker push $ECR_REGISTRY/restapi:latest
+          docker push $ECR_REGISTRY/retromindgames/checkers:restapi
 
       - name: Build and push pstatus image
         run: |
           docker build -f pstatusworker.dockerfile -t $ECR_REGISTRY/pstatus:latest .
-          docker push $ECR_REGISTRY/pstatus:latest
+          docker push $ECR_REGISTRY/retromindgames/checkers:pstatus
 
       - name: Build and push room image
         run: |
           docker build -f roomworker.dockerfile -t $ECR_REGISTRY/room:latest .
-          docker push $ECR_REGISTRY/room:latest
+          docker push $ECR_REGISTRY/retromindgames/checkers:room
 
       - name: Build and push game image
         run: |
           docker build -f gameworker.dockerfile -t $ECR_REGISTRY/game:latest .
-          docker push $ECR_REGISTRY/game:latest
+          docker push $ECR_REGISTRY/retromindgames/checkers:game
 
       - name: Build and push broadcast image
         run: |
           docker build -f broadcastworker.dockerfile -t $ECR_REGISTRY/broadcast:latest .
-          docker push $ECR_REGISTRY/broadcast:latest
+          docker push $ECR_REGISTRY/retromindgames/checkers:broadcast
 
