@@ -8,7 +8,7 @@ jobs:
   build_and_push:
     runs-on: ubuntu-22.04
     env:
-      ECR_REGISTRY: 923500641637.dkr.ecr.eu-central-1.amazonaws.com
+      ECR_REGISTRY: 923500641637.dkr.ecr.eu-central-1.amazonaws.com/retromindgames/checkers
 
     steps:
       - name: Checkout code
@@ -32,30 +32,30 @@ jobs:
       - name: Build and push wsapi image
         run: |
           docker build -f wsapi.dockerfile -t $ECR_REGISTRY/wsapi .
-          docker push $ECR_REGISTRY/retromindgames/checkers:wsapi
+          docker push $ECR_REGISTRY:wsapi
 
       - name: Build and push restapi image
         run: |
           docker build -f restapiworker.dockerfile -t $ECR_REGISTRY/restapi .
-          docker push $ECR_REGISTRY/retromindgames/checkers:restapi
+          docker push $ECR_REGISTRY:restapi
 
       - name: Build and push pstatus image
         run: |
           docker build -f pstatusworker.dockerfile -t $ECR_REGISTRY/pstatus .
-          docker push $ECR_REGISTRY/retromindgames/checkers:pstatus
+          docker push $ECR_REGISTRY:pstatus
 
       - name: Build and push room image
         run: |
           docker build -f roomworker.dockerfile -t $ECR_REGISTRY/room .
-          docker push $ECR_REGISTRY/retromindgames/checkers:room
+          docker push $ECR_REGISTRY:room
 
       - name: Build and push game image
         run: |
           docker build -f gameworker.dockerfile -t $ECR_REGISTRY/game .
-          docker push $ECR_REGISTRY/retromindgames/checkers:game
+          docker push $ECR_REGISTRY:game
 
       - name: Build and push broadcast image
         run: |
           docker build -f broadcastworker.dockerfile -t $ECR_REGISTRY/broadcast .
-          docker push $ECR_REGISTRY/retromindgames/checkers:broadcast
+          docker push $ECR_REGISTRY:broadcast
 
