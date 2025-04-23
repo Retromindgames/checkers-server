@@ -7,6 +7,8 @@ on:
 jobs:
   build_and_push:
     runs-on: ubuntu-22.04
+    env:
+      ECR_REGISTRY: 923500641637.dkr.ecr.eu-central-1.amazonaws.com
 
     steps:
       - name: Checkout code
