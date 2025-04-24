@@ -1,7 +1,6 @@
 package wsapi
 
 import (
-	"checkers-server/config"
 	"checkers-server/interfaces"
 	"checkers-server/messages"
 	"checkers-server/models"
@@ -16,7 +15,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var redisClient *redisdb.RedisClient
+var RedisClient *redisdb.RedisClient
 
 var (
 	players      = make(map[string]*models.Player) // Store players by ID
@@ -33,17 +32,6 @@ const (
 	pingInterval = 2 * time.Second // must be < pongWait
 )
 
-func init() {
-	config.LoadConfig()
-	redisConData := config.Cfg.Redis
-	client, err := redisdb.NewRedisClient(redisConData.Addr, redisConData.User, redisConData.Password)
-	if err != nil {
-		log.Fatalf("[Redis] Error initializing Redis client: %v", err)
-	}
-	redisClient = client
-	go subscribeToBroadcastChannel() // This is a global channel. WSAPI will send the messages from this channel to all active ws connections
-}
-
 func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	//log.Printf("[wsapi] - HandleConnection: Raw query string: %s\n", r.URL.RawQuery)
 	token := r.URL.Query().Get("token")
@@ -54,7 +42,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unauthorized: token[%v], sessionid[%v], currency[%v]", token, sessionID, currency), http.StatusUnauthorized)
 		if session != nil {
-			redisClient.RemoveSession(session.ID)
+			RedisClient.RemoveSession(session.ID)
 		}
 		return
 	}
@@ -68,7 +56,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	var player *models.Player
 	// We will just check if the player that connected is part of our disconnected players, this is a list of in game players that disconnected.
 	// players not in game will just be deleted, and recreated when they are reconnected.
-	discPlayer := redisClient.GetDisconnectedPlayerData(sessionID)
+	discPlayer := RedisClient.GetDisconnectedPlayerData(sessionID)
 	if discPlayer != nil {
 		player = &models.Player{
 			ID:                 discPlayer.ID,
@@ -83,7 +71,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			OperatorIdentifier: session.OperatorIdentifier,
 		}
 	} else {
-		existingPlayer, _ := redisClient.GetPlayer(sessionID)
+		existingPlayer, _ := RedisClient.GetPlayer(sessionID)
 		if existingPlayer != nil {
 			log.Println("Session with active player")
 			conn.Close()
@@ -102,7 +90,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 			OperatorIdentifier: session.OperatorIdentifier,
 		}
 		player = newPlayer
-		redisClient.AddPlayer(player) // Since its a new player, we add it to redis.
+		RedisClient.AddPlayer(player) // Since its a new player, we add it to redis.
 	}
 	player.StartWriteGoroutineNew(func() {
 		handlePlayerDisconnect(player)
@@ -120,7 +108,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	go subscribeToPlayerChannel(player, subscriptionReady)
 	<-subscriptionReady // Wait for the subscription to be ready
 	module := interfaces.OperatorModules[player.OperatorIdentifier.OperatorName]
-	walletBalance, err := module.HandleFetchWalletBalance(*session, redisClient)
+	walletBalance, err := module.HandleFetchWalletBalance(*session, RedisClient)
 	if err != nil {
 		log.Printf("Failed to fetch wallet : %v", err)
 		handlePlayerDisconnect(player)
@@ -136,14 +124,14 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 
 	// Now that our player has subscribbed to our stuff, we will notify the gameworker of the reconnect.
 	if discPlayer != nil {
-		redisClient.RPush("reconnect_game", player)
+		RedisClient.RPush("reconnect_game", player)
 	}
 	go handleMessages(player)
 }
 
 // Function to handle player channel subscription
 func subscribeToPlayerChannelOld(player *models.Player, ready chan bool) {
-	redisClient.SubscribePlayerChannel(*player, func(message string) {
+	RedisClient.SubscribePlayerChannel(*player, func(message string) {
 		//log.Println("[wsapi] - Received server to PLAYER message:", message)
 		player.WriteChan <- []byte(message)
 	})
@@ -152,7 +140,7 @@ func subscribeToPlayerChannelOld(player *models.Player, ready chan bool) {
 
 func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	// Subscribe to the player's specific channel
-	redisClient.SubscribePlayerChannel(*player, func(message string) {
+	RedisClient.SubscribePlayerChannel(*player, func(message string) {
 		// Check if the message indicates a disconnect for this player
 		if message == fmt.Sprintf("disconnect:%s", player.ID) {
 			log.Printf("[wsapi] - Disconnecting player: %s", player.ID)
@@ -166,8 +154,8 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	ready <- true // Notify that the subscription is ready
 }
 
-func subscribeToBroadcastChannel() {
-	redisClient.Subscribe("game_info", func(message string) {
+func SubscribeToBroadcastChannel() {
+	RedisClient.Subscribe("game_info", func(message string) {
 		//fmt.Println("[wsapi] - Received BROADCAST message:", message)
 		msg, err := messages.ParseMessage([]byte(message))
 		if err != nil {
@@ -188,11 +176,11 @@ func subscribeToBroadcastChannel() {
 }
 
 func unsubscribeFromPlayerChannel(player *models.Player) {
-	redisClient.UnsubscribePlayerChannel(*player)
+	RedisClient.UnsubscribePlayerChannel(*player)
 }
 
 func FetchAndValidateSession(token, sessionID, currency string) (*models.Session, error) {
-	session, err := redisClient.GetSessionByID(sessionID)
+	session, err := RedisClient.GetSessionByID(sessionID)
 	if err != nil {
 		log.Printf("[FetchAndValidateSession] - Error fetching session from Redis: %v\n", err)
 		return nil, fmt.Errorf("[Session] - failed to fetch session: %v", err)
