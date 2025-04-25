@@ -83,8 +83,8 @@ func loadConfigFromFile() {
 func loadConfigFromEnv() {
 	Cfg.Redis.Addr = os.Getenv("REDIS_ADDR")
 	Cfg.Redis.DB = 0
-	Cfg.Redis.User = os.Getenv("REDIS_USER")
-	Cfg.Redis.Password = os.Getenv("REDIS_PASS")
+	Cfg.Redis.User = os.Getenv("REDIS_USERNAME")
+	Cfg.Redis.Password = os.Getenv("REDIS_PASSWORD")
 	log.Println("[config.go] - Loaded Redis config from environment variables:")
 	log.Printf("  Redis Address: %s\n", Cfg.Redis.Addr)
 	log.Printf("  Redis DB: %d\n", Cfg.Redis.DB)
