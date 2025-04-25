@@ -36,6 +36,7 @@ func init() {
 		config.Cfg.Postgres.DBName,
 		config.Cfg.Postgres.Host,
 		config.Cfg.Postgres.Port,
+		config.Cfg.Postgres.Ssl,
 	)
 	if err != nil {
 		log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)

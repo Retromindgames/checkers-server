@@ -10,18 +10,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/mux"
 )
 
-var pid int
 var postgresClient *postgrescli.PostgresCli
 var redisClient *redisdb.RedisClient
-var name = "restapiworker"
+var name = "restapi"
 
 func init() {
-	pid = os.Getpid()
 	config.LoadConfig()
 
 	redisConData := config.Cfg.Redis
@@ -37,9 +34,10 @@ func init() {
 		config.Cfg.Postgres.DBName,
 		config.Cfg.Postgres.Host,
 		config.Cfg.Postgres.Port,
+		config.Cfg.Postgres.Ssl,
 	)
 	if err != nil {
-		log.Fatalf("[%PostgreSQL] Error initializing POSTGRES client: %v\n", err)
+		log.Fatalf("[PostgreSQL] Error initializing POSTGRES client: %v\n", err)
 	}
 	postgresClient = sqlcliente
 }
@@ -101,12 +99,20 @@ func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
 	json.NewEncoder(w).Encode(payload)
 }
 
-func main() {
-	router := mux.NewRouter()
-	router.HandleFunc("/gamelaunch", gameLaunchHandler).Methods("POST")
-	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+func registerRoutes(r *mux.Router) {
+	r.HandleFunc("/gamelaunch", gameLaunchHandler).Methods("POST")
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}).Methods("GET")
-	log.Println("Server started on :8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+}
+
+func main() {
+	router := mux.NewRouter()
+	registerRoutes(router)
+
+	port := config.FirstPortFromConfig(name)
+	addrs := fmt.Sprintf(":%d", port)
+
+	log.Printf("[restapi] - WebSocket server starting on %d...", port)
+	log.Fatal(http.ListenAndServe(addrs, router))
 }

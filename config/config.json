@@ -10,10 +10,12 @@
     "password": "checkersdb",
     "dbname": "checkers",
     "host": "postgres",
-    "port": "5432"
+    "port": "5432",
+    "ssl": false
   },
   "services": {
-    "wsapi": { "ports": [80, 443] },
+    "wsapi": { "ports": [80] },
+    "restapi": { "ports": [80] },
     "pstatusworker": {},
     "roomworker": { "timer" : 2},
     "gameworker": {

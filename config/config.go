@@ -38,6 +38,7 @@ type Config struct {
 		DBName   string `json:"dbname"`
 		Host     string `json:"host"`
 		Port     string `json:"port"`
+		Ssl      bool   `json:"ssl"`
 	} `json:"postgres"`
 	Services map[string]struct {
 		Ports         []int  `json:"ports,omitempty"`
@@ -95,9 +96,20 @@ func loadConfigFromEnv() {
 	Cfg.Postgres.DBName = os.Getenv("PG_DATABASE")
 	Cfg.Postgres.User = os.Getenv("PG_USERNAME")
 	Cfg.Postgres.Password = os.Getenv("PG_PASSWORD")
-	log.Println("[config.go] - Loaded Postgres config from environment variables:")
-	log.Printf("  Postgres Host: %s\n", Cfg.Postgres.Host)
-	log.Printf("  Postgres DB: %s\n", Cfg.Postgres.DBName)
-	log.Printf("  Postgres User: %s\n", Cfg.Postgres.User)
-	log.Printf("  Postgres Password: %s\n", Cfg.Postgres.Password)
+	Cfg.Postgres.Ssl = true
+
+	//log.Println("[config.go] - Loaded Postgres config from environment variables:")
+	//log.Printf("  Postgres Host: %s\n", Cfg.Postgres.Host)
+	//log.Printf("  Postgres DB: %s\n", Cfg.Postgres.DBName)
+	//log.Printf("  Postgres User: %s\n", Cfg.Postgres.User)
+	//log.Printf("  Postgres Password: %s\n", Cfg.Postgres.Password)
+}
+
+// Should be used to fetch the first port from the config for the required service..
+func FirstPortFromConfig(serviceName string) int {
+	ports := Cfg.Services[serviceName].Ports
+	if len(ports) == 0 {
+		log.Fatalf("[%s] - No ports defined for service", serviceName)
+	}
+	return ports[0]
 }
