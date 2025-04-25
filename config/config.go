@@ -97,7 +97,7 @@ func loadConfigFromEnv() {
 	Cfg.Postgres.Password = os.Getenv("PG_PASSWORD")
 	log.Println("[config.go] - Loaded Postgres config from environment variables:")
 	log.Printf("  Postgres Host: %s\n", Cfg.Postgres.Host)
-	log.Printf("  Postgres DB: %d\n", Cfg.Postgres.DBName)
+	log.Printf("  Postgres DB: %s\n", Cfg.Postgres.DBName)
 	log.Printf("  Postgres User: %s\n", Cfg.Postgres.User)
 	log.Printf("  Postgres Password: %s\n", Cfg.Postgres.Password)
 }

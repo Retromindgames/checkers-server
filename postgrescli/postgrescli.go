@@ -15,7 +15,7 @@ type PostgresCli struct {
 }
 
 func NewPostgresCli(user, password, dbname, host, port string) (*PostgresCli, error) {
-	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable", user, password, dbname, host, port)
+	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=require", user, password, dbname, host, port)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
