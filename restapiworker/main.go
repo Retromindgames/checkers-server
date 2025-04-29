@@ -100,10 +100,13 @@ func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
 }
 
 func registerRoutes(r *mux.Router) {
-	r.HandleFunc("/gamelaunch", gameLaunchHandler).Methods("POST")
-	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/api/gamelaunch", gameLaunchHandler).Methods("POST")
+
+	healthHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	}).Methods("GET")
+	}
+	r.HandleFunc("/health", healthHandler).Methods("GET")
+	r.HandleFunc("/api/health", healthHandler).Methods("GET")
 }
 
 func main() {
@@ -113,6 +116,6 @@ func main() {
 	port := config.FirstPortFromConfig(name)
 	addrs := fmt.Sprintf(":%d", port)
 
-	log.Printf("[restapi] - WebSocket server starting on %d...", port)
+	log.Printf("[API] - HTTP server starting on %d...", port)
 	log.Fatal(http.ListenAndServe(addrs, router))
 }
