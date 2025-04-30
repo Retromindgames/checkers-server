@@ -46,12 +46,12 @@ func main() {
 	go wsapi.SubscribeToBroadcastChannel() // This is a global channel. WSAPI will send the messages from this channel to all active ws connections
 	has, certPath, keyPath := hasLocalCerts()
 	if has {
-		http.HandleFunc("/ws", wsapi.HandleConnection)
+		http.HandleFunc("/ws/checkers", wsapi.HandleConnection)
 		log.Println("[wsapi] - SSL certificate paths set, listening on HTTPS .")
 		log.Printf("[wsapi] - WebSocket server started on %s\n", addrs)
 		log.Fatal(http.ListenAndServeTLS(addrs, certPath, keyPath, nil))
 	} else {
-		http.HandleFunc("/ws", wsapi.HandleConnection)
+		http.HandleFunc("/ws/checkers", wsapi.HandleConnection)
 		log.Println("[wsapi] - SSL certificate paths not set, defaulting to listen on HTTP.")
 		log.Printf("[wsapi] - WebSocket server started on %s\n", addrs)
 		log.Fatal(http.ListenAndServe(addrs, nil))
