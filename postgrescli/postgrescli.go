@@ -63,7 +63,7 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 		return fmt.Errorf("error inserting session: %w", err)
 	}
 
-	log.Printf("Session saved with ID: %s\n", session.ID)
+	//log.Printf("Session saved with ID: %s\n", session.ID)
 	return nil
 }
 
