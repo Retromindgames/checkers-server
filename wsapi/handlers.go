@@ -44,7 +44,6 @@ func handleMessages(player *models.Player) {
 				Command: "pong",
 			}
 			msgBytes, _ := json.Marshal(msg)
-			log.Print(msgBytes)
 			player.WriteChan <- msgBytes
 		}
 
@@ -105,8 +104,9 @@ func handleLeaveQueue(player *models.Player) {
 		player.WriteChan <- msg
 		return
 	}
-	redisClient.UpdatePlayersInQueueSet(player.ID, models.StatusOnline)
+	player.SetStatusOnline()
 	redisClient.UpdatePlayer(player) // This is important, we will only re-add players to a queue that are in queue.
+	redisClient.UpdatePlayersInQueueSet(player.ID, models.StatusOnline)
 	queueName := fmt.Sprintf("queue:%f", player.SelectedBet)
 	err := redisClient.RemovePlayerFromQueue(queueName, player)
 	if err != nil {
@@ -171,7 +171,7 @@ func handleLeaveRoom(player *models.Player) {
 		player.WriteChan <- msgBytes
 		return
 	}
-	msgBytes, _ := messages.GenerateGenericMessage("invalid", "Processing 'leave_room'")
+	msgBytes, _ := messages.GenerateGenericMessage("info", "Processing 'leave_room'")
 	player.WriteChan <- msgBytes
 	// we update our player to redis.
 	err := redisClient.UpdatePlayer(player)
