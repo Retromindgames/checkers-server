@@ -320,7 +320,7 @@ func (app *App) loginRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	var active bool
 	err = app.DB.DB.QueryRow(`
-		SELECT u.active AND o.active
+		SELECT u.active
 		FROM users u
 		LEFT JOIN operators o ON u.operatorname = o.operatorname
 		WHERE u.email = $1`, req.Email).Scan(&active)
