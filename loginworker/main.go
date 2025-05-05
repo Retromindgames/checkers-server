@@ -277,21 +277,26 @@ func (app *App) registerHandler(w http.ResponseWriter, r *http.Request) {
 		Message: "User registered",
 	})
 }
-
 func (app *App) loginRequestHandler(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
+	var responded bool
+	defer func() {
+		if !responded {
+			respondJSON(w, http.StatusOK, Response{
+				Success: true,
+				Message: "Login code sent to email",
+			})
+		}
+	}()
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondError(w, http.StatusBadRequest, "Invalid request format")
+		responded = true
 		return
 	}
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 
-	// Throttle: 1 request per 60 seconds
 	if last, ok := app.Throttle[req.Email]; ok && time.Since(last) < 60*time.Second {
-		respondJSON(w, http.StatusOK, Response{
-			Success: true,
-			Message: "Login code sent to email",
-		})
 		return
 	}
 	app.Throttle[req.Email] = time.Now()
@@ -299,28 +304,32 @@ func (app *App) loginRequestHandler(w http.ResponseWriter, r *http.Request) {
 	code, err := generateLoginCode()
 	if err != nil {
 		log.Printf("Code gen error: %v", err)
-		respondJSON(w, http.StatusOK, Response{Success: true, Message: "Login code sent to email"})
+		return
+	}
+
+	var active bool
+	err = app.DB.DB.QueryRow(`
+		SELECT u.active AND o.active
+		FROM users u
+		LEFT JOIN operators o ON u.operatorname = o.operatorname
+		WHERE u.email = $1`, req.Email).Scan(&active)
+
+	if err != nil || !active {
+		log.Printf("Inactive or invalid user: %s", req.Email)
 		return
 	}
 
 	expiresAt := time.Now().Add(15 * time.Minute)
-	res, err := app.DB.DB.Exec(`
+	_, err = app.DB.DB.Exec(`
 		UPDATE users 
 		SET LoginCode = $1, CodeExpiresAt = $2, UpdatedAt = NOW() 
 		WHERE Email = $3`, code, expiresAt, req.Email)
 
 	if err != nil {
-		log.Printf("DB error for %s: %v", req.Email, err)
-	} else if rows, _ := res.RowsAffected(); rows == 0 {
-		log.Printf("Login attempt for non-existent user: %s", req.Email)
+		log.Printf("DB update error for %s: %v", req.Email, err)
 	}
 
 	go app.sendEmail(req, code)
-
-	respondJSON(w, http.StatusOK, Response{
-		Success: true,
-		Message: "Login code sent to email",
-	})
 }
 
 func (app *App) loginVerifyHandler(w http.ResponseWriter, r *http.Request) {

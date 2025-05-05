@@ -93,5 +93,6 @@ CREATE TABLE IF NOT EXISTS users (
     LoginCode VARCHAR(8),
     CodeExpiresAt TIMESTAMP,
     UpdatedAt TIMESTAMP DEFAULT NOW(),
-    OperatorName VARCHAR(255)
+    OperatorName VARCHAR(255),
+    IsActive BOOLEAN DEFAULT TRUE
 );
