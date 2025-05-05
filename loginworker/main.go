@@ -17,6 +17,7 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"github.com/rs/cors"
 )
 
 type App struct {
@@ -230,8 +231,18 @@ func main() {
 	r.HandleFunc("/login/verify", app.loginVerifyHandler).Methods("POST")
 	r.HandleFunc("/login/register", app.registerHandler).Methods("POST")
 
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins: []string{
+			"http://localhost:5173",       // For local dev (frontend)
+			"http://frontend.example.com", // Replace with your staging/frontend domain
+		},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}).Handler(r)
+
 	log.Println("Server running on :8081")
-	http.ListenAndServe(":8081", r)
+	http.ListenAndServe(":8081", corsHandler)
 }
 
 // Generate random 8-character code (uppercase letters and digits)
