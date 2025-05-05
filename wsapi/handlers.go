@@ -44,7 +44,6 @@ func handleMessages(player *models.Player) {
 				Command: "pong",
 			}
 			msgBytes, _ := json.Marshal(msg)
-			log.Print(msgBytes)
 			player.WriteChan <- msgBytes
 		}
 
@@ -171,7 +170,7 @@ func handleLeaveRoom(player *models.Player) {
 		player.WriteChan <- msgBytes
 		return
 	}
-	msgBytes, _ := messages.GenerateGenericMessage("invalid", "Processing 'leave_room'")
+	msgBytes, _ := messages.GenerateGenericMessage("info", "Processing 'leave_room'")
 	player.WriteChan <- msgBytes
 	// we update our player to redis.
 	err := RedisClient.UpdatePlayer(player)

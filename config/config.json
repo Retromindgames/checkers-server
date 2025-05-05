@@ -17,7 +17,7 @@
     "wsapi": { "ports": [80] },
     "restapi": { "ports": [80] },
     "pstatusworker": {},
-    "roomworker": { "timer" : 2},
+    "roomworker": { "timer" : 1},
     "gameworker": {
       "timer": 15,  
       "pieces_in_match": 12,

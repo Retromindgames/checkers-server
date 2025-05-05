@@ -16,20 +16,38 @@ type QueueHandler struct {
 	msg         *messages.Message[json.RawMessage]
 
 	// Track changes for cleanup
-	statusUpdated  bool
-	addedToQueue   bool
-	queueCountIncr bool
+	initialValidationsFailed bool
+	statusUpdated            bool
+	addedToQueue             bool
+	queueCountIncr           bool
 }
 
 func (qh *QueueHandler) process() {
 	defer qh.cleanup()
 
 	if !qh.validateStatusTransition() {
+		qh.initialValidationsFailed = true
+		log.Print("QueueHandler process invalid status transition.")
 		return
 	}
 
 	betValue, err := qh.parseBetValue()
 	if err != nil {
+		qh.initialValidationsFailed = true
+		log.Print("QueueHandler failed to parse bet.")
+		return
+	}
+
+	found := false
+	for _, v := range models.DamasValidBetAmounts {
+		if v == betValue {
+			found = true
+			break
+		}
+	}
+	if !found {
+		qh.initialValidationsFailed = true
+		log.Print("Bet is not valid for the configured ValidBetAmounts")
 		return
 	}
 
@@ -41,6 +59,13 @@ func (qh *QueueHandler) process() {
 
 func (qh *QueueHandler) cleanup() {
 	var sendFailedQueueConfirmation = false
+
+	if qh.initialValidationsFailed {
+		qh.player.UpdatePlayerStatus(models.StatusOnline)
+		qh.redisClient.UpdatePlayer(qh.player)
+		sendFailedQueueConfirmation = true
+	}
+
 	if qh.statusUpdated {
 		qh.player.UpdatePlayerStatus(models.StatusOnline)
 		qh.redisClient.UpdatePlayer(qh.player)
