@@ -220,8 +220,8 @@ func main() {
 	app := &App{
 		DB: sqlcliente, Throttle: make(map[string]time.Time),
 		EmailSender: &EmailSender{
-			From:     "retromindgames@gmail.com",
-			Password: "ftcg wmea grde hdge",
+			From:     config.Cfg.Email.Email,
+			Password: config.Cfg.Email.Password,
 		},
 	}
 

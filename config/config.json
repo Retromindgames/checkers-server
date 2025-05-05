@@ -10,6 +10,10 @@
     "host": "postgres",
     "port": "5432"
   },
+  "email": {
+    "email":"retromindgames@gmail.com", 
+    "password":"ftcg wmea grde hdge"
+  },
   "services": {
     "wsapi": { "ports": [80, 443] },
     "pstatusworker": {},
