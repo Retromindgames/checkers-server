@@ -14,6 +14,9 @@ type Message[T any] struct {
 	Command string `json:"command"`
 	Value   T      `json:"value,omitempty"`
 }
+type MessageSimple struct {
+	Command string `json:"command"`
+}
 
 type OpponentReady struct {
 	IsReady bool `json:"is_ready"`
@@ -152,7 +155,7 @@ func GeneratePairedMessage(player1, player2 *models.Player, roomID string, color
 		Color:    color,
 		Opponent: player2.Name,
 		RoomID:   roomID,
-		Winnings: float64(winnings),
+		Winnings: float64(winnings) / 100,
 	}
 	return NewMessage("paired", pairedValue)
 }

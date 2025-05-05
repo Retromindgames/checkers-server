@@ -341,6 +341,7 @@ func CalculateWinAmount(betValue int64, winFactor float64) int64 {
 	// Multiply by 2 then by 0.9 (equivalent to multiplying by 1.8)
 	// Using float64 for precise multiplication then converting back to int
 	winAmount := float64(betValue*2) * winFactor
+	//log.Printf("Calculating win amount:[betValue: %v], [winFactor: %v], final value: [%v]", betValue, winFactor, winAmount)
 	return int64(winAmount) // Truncates decimal places
 }
 
@@ -385,7 +386,7 @@ func (m *TestModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, re
 }
 
 func (m *TestModule) HandleFetchWalletBalance(s models.Session, rc *redisdb.RedisClient) (int64, error) {
-	return 0, nil
+	return int64(10000), nil
 }
 
 func (m *TestModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, error) {

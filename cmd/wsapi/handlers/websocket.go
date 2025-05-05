@@ -30,8 +30,8 @@ var upgrader = websocket.Upgrader{
 
 const (
 	writeWait    = 10 * time.Second
-	pongWait     = 2 * time.Second
-	pingInterval = 1 * time.Second // must be < pongWait
+	pongWait     = 3 * time.Second
+	pingInterval = 2 * time.Second // must be < pongWait
 )
 
 func init() {
@@ -124,11 +124,13 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	walletBalance, err := module.HandleFetchWalletBalance(*session, redisClient)
 	if err != nil {
 		log.Printf("Failed to fetch wallet : %v", err)
+		handlePlayerDisconnect(player)
 		return
 	}
 	msg, err := messages.GenerateConnectedMessage(*player, walletBalance)
 	if err != nil {
 		log.Printf("Failed to generate connected message : %v", err)
+		handlePlayerDisconnect(player)
 		return
 	}
 	player.WriteChan <- msg
