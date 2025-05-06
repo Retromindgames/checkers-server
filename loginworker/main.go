@@ -288,6 +288,7 @@ func (app *App) registerHandler(w http.ResponseWriter, r *http.Request) {
 		Message: "User registered",
 	})
 }
+
 func (app *App) loginRequestHandler(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	var responded bool
@@ -320,7 +321,7 @@ func (app *App) loginRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 	var active bool
 	err = app.DB.DB.QueryRow(`
-		SELECT u.active
+		SELECT u.isactive
 		FROM users u
 		LEFT JOIN operators o ON u.operatorname = o.operatorname
 		WHERE u.email = $1`, req.Email).Scan(&active)
