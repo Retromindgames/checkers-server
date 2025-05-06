@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
@@ -45,7 +46,10 @@ type VerifyRequest struct {
 type Response struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
+	Token   string `json:"token"`
 }
+
+var jwtKey = []byte("your-secret-key")
 
 var htmlTemplate = `<!DOCTYPE html>
 <html lang="en" style="margin: 0; padding: 0">
@@ -153,6 +157,15 @@ var htmlTemplate = `<!DOCTYPE html>
     </table>
   </body>
 </html>`
+
+func generateToken(email string, hours int) (string, error) {
+	claims := jwt.MapClaims{
+		"email": email,
+		"exp":   time.Now().Add(time.Duration(hours) * time.Hour).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(jwtKey)
+}
 
 func (e *EmailSender) SendEmail(to, code string) error {
 	server := "smtp.gmail.com"
@@ -388,9 +401,17 @@ func (app *App) loginVerifyHandler(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusInternalServerError, "Database error")
 		return
 	}
+
+	tokenString, err := generateToken(req.Email, 24)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Token generation failed")
+		return
+	}
+
 	respondJSON(w, http.StatusOK, Response{
 		Success: true,
 		Message: "Login successful",
+		Token:   tokenString,
 	})
 }
 
