@@ -45,6 +45,12 @@ func init() {
 }
 
 func main() {
+	defer func() {
+		if redisClient != nil {
+			redisClient.CloseRedisClient()
+		}
+	}()
+
 	log.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
 	go processGameCreation()
 	go processGameMoves()

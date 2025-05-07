@@ -110,6 +110,12 @@ func registerRoutes(r *mux.Router) {
 }
 
 func main() {
+	defer func() {
+		if redisClient != nil {
+			redisClient.CloseRedisClient()
+		}
+	}()
+
 	router := mux.NewRouter()
 	registerRoutes(router)
 

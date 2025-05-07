@@ -40,6 +40,18 @@ services:
       - redis
       - postgres
 
+  loginworker:
+    container_name: loginworker
+    build:
+      context: .
+      dockerfile: loginworker.dockerfile
+    expose:
+      - "8081"  # Expose port 8081 internally
+    networks:
+      - app-network
+    depends_on:
+      - postgres
+
   pstatusworker:
     container_name: pstatusworker
     build:

@@ -13,6 +13,10 @@
     "port": "5432",
     "ssl": false
   },
+  "email": {
+    "email":"retromindgames@gmail.com", 
+    "password":"ftcg wmea grde hdge"
+  },
   "services": {
     "wsapi": { "ports": [80] },
     "restapi": { "ports": [80] },

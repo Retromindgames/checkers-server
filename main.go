@@ -31,6 +31,11 @@ func hasLocalCerts() (exists bool, cert string, key string) {
 }
 
 func main() {
+	defer func() {
+		if wsapi.RedisClient != nil {
+			wsapi.RedisClient.CloseRedisClient()
+		}
+	}()
 
 	port := config.FirstPortFromConfig("wsapi")
 	addrs := fmt.Sprintf(":%d", port)

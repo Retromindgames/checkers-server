@@ -40,6 +40,10 @@ type Config struct {
 		Port     string `json:"port"`
 		Ssl      bool   `json:"ssl"`
 	} `json:"postgres"`
+	Email struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	} `json:"email"`
 	Services map[string]struct {
 		Ports         []int  `json:"ports,omitempty"`
 		Timer         int    `json:"timer,omitempty"`

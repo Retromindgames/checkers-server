@@ -52,6 +52,15 @@ func NewRedisClient(addr string, username string, password string) (*RedisClient
 	}, nil
 }
 
+func (r *RedisClient) CloseRedisClient() {
+	if r != nil {
+		err := r.Client.Close()
+		if err != nil {
+			log.Fatalf("Error closing Redis connection: %v", err)
+		}
+	}
+}
+
 // RPush - Push serialized player to Redis
 func (r *RedisClient) RPush(queue string, player *models.Player) error {
 	data, err := json.Marshal(player)
