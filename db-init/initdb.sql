@@ -86,3 +86,13 @@ CREATE TABLE IF NOT EXISTS transactions (
     RoundID UUID,                       -- Foreign key to the round / game
     Timestamp TIMESTAMP  DEFAULT CURRENT_TIMESTAMP  -- Timestamp in UTC
 );
+
+CREATE TABLE IF NOT EXISTS users (
+    Id UUID PRIMARY KEY,
+    Email VARCHAR(255) UNIQUE NOT NULL,
+    LoginCode VARCHAR(8),
+    CodeExpiresAt TIMESTAMP,
+    UpdatedAt TIMESTAMP DEFAULT NOW(),
+    OperatorName VARCHAR(255),
+    IsActive BOOLEAN DEFAULT TRUE
+);

@@ -10,17 +10,17 @@ import (
 )
 
 func main() {
-  
+
 	config.LoadConfig()
 	ports := config.Cfg.Services["wsapi"].Ports
 	if len(ports) == 0 {
 		log.Fatal("[wsapi] - No ports defined for wsapi\n")
 	}
-  
+
 	// Get SSL cert paths from env
 	certPath := os.Getenv("SSL_CERT_PATH")
 	keyPath := os.Getenv("SSL_KEY_PATH")
-	
+
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

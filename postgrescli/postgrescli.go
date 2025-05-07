@@ -24,6 +24,7 @@ func NewPostgresCli(user, password, dbname, host, port string) (*PostgresCli, er
 	// Ping to make sure the connection is valid
 	err = db.Ping()
 	if err != nil {
+		db.Close()
 		return nil, err
 	}
 

@@ -46,6 +46,12 @@ func init() {
 func main() {
 	log.Printf("[RoomWorker-%d] - Waiting for room messages...\n", pid)
 
+	defer func() {
+		if redisClient != nil {
+			redisClient.CloseRedisClient()
+		}
+	}()
+
 	go processReadyQueue()
 	go processRoomEnding()
 	go processQueue()
