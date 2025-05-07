@@ -10,6 +10,11 @@ import (
 )
 
 func main() {
+	defer func() {
+		if wsapi.RedisClient != nil {
+			wsapi.RedisClient.CloseRedisClient()
+		}
+	}()
 
 	config.LoadConfig()
 	ports := config.Cfg.Services["wsapi"].Ports
