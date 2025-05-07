@@ -246,8 +246,9 @@ func main() {
 
 	corsHandler := cors.New(cors.Options{
 		AllowedOrigins: []string{
-			"http://localhost:5173",       // For local dev (frontend)
-			"http://frontend.example.com", // Replace with your staging/frontend domain
+			"http://localhost:5173", // For local dev (frontend)
+			"https://portal.retromindgames.pt",
+			"http://portal.retromindgames.pt",
 		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
