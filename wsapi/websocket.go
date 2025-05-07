@@ -45,6 +45,12 @@ func init() {
 }
 
 func HandleConnection(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if redisClient != nil {
+			redisClient.CloseRedisClient()
+		}
+	}()
+
 	//log.Printf("[wsapi] - HandleConnection: Raw query string: %s\n", r.URL.RawQuery)
 	token := r.URL.Query().Get("token")
 	sessionID := r.URL.Query().Get("sessionid")

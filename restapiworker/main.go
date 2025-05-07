@@ -102,6 +102,12 @@ func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
 }
 
 func main() {
+	defer func() {
+		if redisClient != nil {
+			redisClient.CloseRedisClient()
+		}
+	}()
+
 	router := mux.NewRouter()
 	router.HandleFunc("/gamelaunch", gameLaunchHandler).Methods("POST")
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

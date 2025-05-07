@@ -25,6 +25,11 @@ func init() {
 
 func main() {
 	log.Printf("[PStatus Worker-%d] - Waiting for player connections...\n", pid)
+	defer func() {
+		if redisClient != nil {
+			redisClient.CloseRedisClient()
+		}
+	}()
 	//go processPlayerOnline()
 	go processPlayerOffline()
 	//go redisClient.StartSessionCleanup(time.Minute * 60) // TODO: This might need to be reviwed... What if there are multiple pstatus workers? Maybe I need to make a separate worker to clean up the sessions.
