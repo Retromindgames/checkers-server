@@ -105,7 +105,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		redisClient.AddPlayer(player) // Since its a new player, we add it to redis.
 	}
 	player.StartWriteGoroutineNew(func() {
-		handlePlayerDisconnect(player)
+		handlePlayerDisconnect(player, "defer of StartWriteGoroutineNew")
 	}, pingInterval, writeWait)
 
 	// We add the player to our player map.
@@ -123,13 +123,13 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	walletBalance, err := module.HandleFetchWalletBalance(*session, redisClient)
 	if err != nil {
 		log.Printf("Failed to fetch wallet : %v", err)
-		handlePlayerDisconnect(player)
+		handlePlayerDisconnect(player, "Failed to fetch wallet")
 		return
 	}
 	msg, err := messages.GenerateConnectedMessage(*player, walletBalance)
 	if err != nil {
 		log.Printf("Failed to generate connected message : %v", err)
-		handlePlayerDisconnect(player)
+		handlePlayerDisconnect(player, "Failed to generate connected message")
 		return
 	}
 	player.WriteChan <- msg
@@ -157,7 +157,7 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 		if message == fmt.Sprintf("disconnect:%s", player.ID) {
 			log.Printf("[wsapi] - Disconnecting player: %s", player.ID)
 			player.Conn.Close() // Close the WebSocket connection for the player
-			handlePlayerDisconnect(player)
+			handlePlayerDisconnect(player, "disconnected message from player channel sub.")
 		} else {
 			// Send normal messages to the player's write channel
 			player.WriteChan <- []byte(message)

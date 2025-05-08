@@ -22,13 +22,13 @@ func handleMessages(player *models.Player) {
 	for {
 		if player.Conn == nil {
 			UpdatePlayerDataFromRedis(player)
-			handlePlayerDisconnect(player)
+			handlePlayerDisconnect(player, "player conn == nill in handleMessages")
 			break
 		}
 		_, msg, err := player.Conn.ReadMessage()
 		if err != nil {
 			UpdatePlayerDataFromRedis(player)
-			handlePlayerDisconnect(player)
+			handlePlayerDisconnect(player, "player.conn.readmessages == nill in handleMessages")
 			break
 		}
 		UpdatePlayerDataFromRedis(player)
@@ -227,8 +227,8 @@ func handleMovePiece(message *messages.Message[json.RawMessage], player *models.
 	}
 }
 
-func handlePlayerDisconnect(player *models.Player) {
-	//log.Println("Player disconnected:", player.ID)
+func handlePlayerDisconnect(player *models.Player, source string) {
+	log.Println("Player disconnected:", player.ID)
 	playersMutex.Lock()
 	delete(players, player.ID)
 	playersMutex.Unlock()
