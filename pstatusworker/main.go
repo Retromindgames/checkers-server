@@ -2,11 +2,9 @@ package main
 
 import (
 	"checkers-server/config"
-	"checkers-server/models"
 	"checkers-server/redisdb"
 	"log"
 	"os"
-	"time"
 )
 
 var pid int
@@ -31,11 +29,12 @@ func main() {
 		}
 	}()
 	//go processPlayerOnline()
-	go processPlayerOffline()
+	//go processPlayerOffline()
 	//go redisClient.StartSessionCleanup(time.Minute * 60) // TODO: This might need to be reviwed... What if there are multiple pstatus workers? Maybe I need to make a separate worker to clean up the sessions.
 	select {}
 }
 
+/*
 func processPlayerOffline() {
 	for {
 		playerData, err := redisClient.BLPop("player_offline", 0) // Block
@@ -103,3 +102,4 @@ func handleDisconnectPlayer(player *models.Player) {
 	}
 
 }
+*/

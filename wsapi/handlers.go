@@ -234,9 +234,27 @@ func handlePlayerDisconnect(player *models.Player) {
 	playersMutex.Unlock()
 	// Unsubscribe from Redis channels
 	unsubscribeFromPlayerChannel(player)
+
 	// Notify worker of disconnection
 	RedisClient.UpdatePlayersInQueueSet(player.ID, models.StatusOffline)
-	RedisClient.RPush("player_offline", player)
+
+	// RedisClient.RPush("player_offline", player)
+
+	// We dont need to issue a command to leave the queue, since the queue fetched the player-
+	if player.RoomID != "" || player.Status == models.StatusInRoom || player.Status == models.StatusInRoomReady {
+		//log.Printf("[PStatus Worker-%d] - Removed player is in a Room, sending notification to room worker!: %v\n", pid, player)
+		RedisClient.RPush("leave_room", player)
+	}
+	if player.GameID != "" || player.Status == models.StatusInGame {
+		//log.Printf("[PStatus Worker-%d] - Removed player is in a Game, sending notification to Game worker!: %v\n", pid, player)
+		RedisClient.RPush("disconnect_game", player)
+	}
+
+	err := RedisClient.RemovePlayer(string(player.ID))
+	if err != nil {
+		log.Printf("[Handlers - handlePlayerDisconnect] - Failed to remove player: %v\n", err)
+		return
+	}
 }
 
 func UpdatePlayerDataFromRedis(player *models.Player) {
