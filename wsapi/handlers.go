@@ -228,7 +228,7 @@ func handleMovePiece(message *messages.Message[json.RawMessage], player *models.
 }
 
 func handlePlayerDisconnect(player *models.Player, source string) {
-	log.Println("Player disconnected:", player.ID)
+	log.Printf("Player disconnected:%v, reason: %v", player.ID, source)
 	playersMutex.Lock()
 	delete(players, player.ID)
 	playersMutex.Unlock()
