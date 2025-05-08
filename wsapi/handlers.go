@@ -27,8 +27,9 @@ func handleMessages(player *models.Player) {
 		}
 		_, msg, err := player.Conn.ReadMessage()
 		if err != nil {
+			log.Println("[handleMessages] - player.Conn.ReadMessage error:", err)
 			UpdatePlayerDataFromRedis(player)
-			handlePlayerDisconnect(player, "player.conn.readmessages == nill in handleMessages")
+			handlePlayerDisconnect(player, "player.conn.readmessages error nill in handleMessages")
 			break
 		}
 		UpdatePlayerDataFromRedis(player)
