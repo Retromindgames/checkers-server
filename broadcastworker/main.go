@@ -40,7 +40,7 @@ func main() {
 		if err != nil {
 			log.Printf("[BroadcastWorker-%d] Error publishing message: %v\n", pid, err)
 		} else {
-			log.Printf("[BroadcastWorker-%d] Published room aggregates\n", pid)
+			//log.Printf("[BroadcastWorker-%d] Published room aggregates\n", pid)
 		}
 	}
 }

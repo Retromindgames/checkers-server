@@ -124,6 +124,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	walletBalance, err := module.HandleFetchWalletBalance(*session, RedisClient)
 	if err != nil {
 		log.Printf("Failed to fetch wallet : %v", err)
+		player.Conn.Close()
 		handlePlayerDisconnect(player)
 		return
 	}
@@ -131,6 +132,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Failed to generate connected message : %v", err)
 		handlePlayerDisconnect(player)
+		player.Conn.Close()
 		return
 	}
 	player.WriteChan <- msg

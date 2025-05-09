@@ -28,7 +28,8 @@ func handleMessages(player *models.Player) {
 		}
 		_, msg, err := player.Conn.ReadMessage()
 		if err != nil {
-			log.Println("[Handlers] - handleMessages, failed to read player.Conn.message.")
+			player.Conn.Close()
+			log.Println("[Handlers] - handleMessages, failed to read player.Conn.message connection closed.")
 			UpdatePlayerDataFromRedis(player)
 			handlePlayerDisconnect(player)
 			return
@@ -230,7 +231,7 @@ func handleMovePiece(message *messages.Message[json.RawMessage], player *models.
 }
 
 func handlePlayerDisconnect(player *models.Player) {
-	//log.Println("Player disconnected:", player.ID)
+	log.Println("[handlePlayerDisconnect] - Player disconnected:", player.ID)
 	playersMutex.Lock()
 	delete(players, player.ID)
 	playersMutex.Unlock()
