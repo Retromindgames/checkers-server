@@ -18,23 +18,23 @@ func handleMessages(player *models.Player) {
 		player.Conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
-
+	log.Println("[handleMessages] - Starting handleMessages")
 	for {
 		if player.Conn == nil {
 			log.Println("[Handlers] - handleMessages, player.Conn is nill.")
-			UpdatePlayerDataFromRedis(player)
-			handlePlayerDisconnect(player)
+			UpdatePlayerDataFromRedis(player, "player con is nill")
+			handlePlayerDisconnect(player, "player con is nill")
 			return
 		}
 		_, msg, err := player.Conn.ReadMessage()
 		if err != nil {
 			player.Conn.Close()
 			log.Println("[Handlers] - handleMessages, failed to read player.Conn.message connection closed.")
-			UpdatePlayerDataFromRedis(player)
-			handlePlayerDisconnect(player)
+			UpdatePlayerDataFromRedis(player, "player con is nill")
+			handlePlayerDisconnect(player, "player con is nill")
 			return
 		}
-		UpdatePlayerDataFromRedis(player)
+		UpdatePlayerDataFromRedis(player, "player con is nill")
 
 		message, err := messages.ParseMessage(msg)
 		if err != nil {
@@ -230,8 +230,8 @@ func handleMovePiece(message *messages.Message[json.RawMessage], player *models.
 	}
 }
 
-func handlePlayerDisconnect(player *models.Player) {
-	log.Println("[handlePlayerDisconnect] - Player disconnected:", player.ID)
+func handlePlayerDisconnect(player *models.Player, origin string) {
+	log.Printf("[handlePlayerDisconnect] - Player disconnected:%v, origin: %v", player.ID, origin)
 	playersMutex.Lock()
 	delete(players, player.ID)
 	playersMutex.Unlock()
@@ -260,10 +260,10 @@ func handlePlayerDisconnect(player *models.Player) {
 	}
 }
 
-func UpdatePlayerDataFromRedis(player *models.Player) {
+func UpdatePlayerDataFromRedis(player *models.Player, origin string) {
 	playerData, err := RedisClient.GetPlayer(string(player.ID))
 	if err != nil {
-		log.Printf("[Handlers] - Failed to update player data from redis!: Player: %s", player.ID)
+		log.Printf("[Handlers] - Failed to update player data from redis!: Player: %s, origin: %v", player.ID, origin)
 		return
 	}
 	player.Currency = playerData.Currency

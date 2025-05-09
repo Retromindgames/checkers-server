@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 )
 
 func (r *RedisClient) AddPlayer(player *models.Player) error {
@@ -12,6 +13,7 @@ func (r *RedisClient) AddPlayer(player *models.Player) error {
 	if err != nil {
 		return fmt.Errorf("[RedisClient] - failed to serialize player: %v", err)
 	}
+	log.Println("Adding player back to redis")
 	// Uses a shared key ("players") , store the player data under their ID
 	return r.Client.HSet(context.Background(), "players", player.ID, data).Err()
 }
