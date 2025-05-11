@@ -10,6 +10,8 @@ COPY messages /app/messages
 COPY models /app/models
 COPY interfaces /app/interfaces
 COPY config /app/config
+COPY walletrequests /app/walletrequests
+COPY postgrescli /app/postgrescli
 COPY redisdb /app/redisdb
 # RUN echo "Files after copying shared code:" && ls -l /app/
 COPY ./broadcastworker /app/
