@@ -16,7 +16,8 @@ COPY redisdb /app/redisdb
 # RUN echo "Files after copying shared code:" && ls -l /app/
 COPY ./serverws /app/
 # RUN echo "Files after copying serverws source code:" && ls -l /app/
-
+RUN echo "Listing /app/ contentes:" && ls -l /app/
+RUN echo "Listing . contentes:" && ls -l .
 RUN go mod tidy
 RUN go mod download
 RUN go build -o serverws .

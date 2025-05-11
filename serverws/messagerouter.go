@@ -9,8 +9,6 @@ import (
 
 	"github.com/Lavizord/checkers-server/models"
 	"github.com/Lavizord/checkers-server/redisdb"
-
-	queueHandler "github.com/Lavizord/checkers-server/serverws/queuehandler"
 )
 
 // Directly route to the right handler based on the command.
@@ -55,7 +53,7 @@ func RouteMessages(message *messages.Message[json.RawMessage], player *models.Pl
 }
 
 func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player, redis *redisdb.RedisClient) {
-	qh := queueHandler.NewQueueHandler(player, redis, msg)
+	qh := NewQueueHandler(player, redis, msg)
 	qh.Process()
 }
 

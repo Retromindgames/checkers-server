@@ -1,4 +1,4 @@
-package queuehandler
+package main
 
 import (
 	"context"
