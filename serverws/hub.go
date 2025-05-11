@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/Lavizord/checkers-server/models"
 	"github.com/Lavizord/checkers-server/redisdb"
 )
 
@@ -48,6 +49,15 @@ func (h *Hub) run() {
 		case client := <-h.unregister:
 			//log.Println("[HUB.Run] - Unregister")
 			if _, ok := h.clients[client]; ok {
+				h.redis.UpdatePlayersInQueueSet(client.player.ID, models.StatusOffline)
+				if client.player.RoomID != "" || client.player.Status == models.StatusInRoom || client.player.Status == models.StatusInRoomReady {
+					log.Printf("[Hub.Run] - Removed player is in a Room, sending notification to room worker!: %v\n", client.player)
+					h.redis.RPush("leave_room", client.player)
+				}
+				if client.player.GameID != "" || client.player.Status == models.StatusInGame {
+					log.Printf("[Hub.Run] - Removed player is in a Game, sending notification to Game worker!: %v\n", client.player)
+					h.redis.RPush("disconnect_game", client.player)
+				}
 				h.redis.RemovePlayer(client.player.ID)
 				delete(h.clients, client)
 				close(client.send)

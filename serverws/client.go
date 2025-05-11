@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -108,6 +109,13 @@ func (c *Client) readPump() {
 			msgBytes, _ := json.Marshal(msg)
 			c.send <- msgBytes
 			continue
+		}
+
+		// we will update out player object, if something is wrong with the update we will exit our loop.
+		err = UpdatePlayerDataFromRedis(c.player, c.hub.redis)
+		if err != nil {
+			log.Printf("error: %v", err)
+			break
 		}
 		RouteMessages(parsedmessage, c.player, c.hub.redis)
 	}
@@ -242,4 +250,16 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		hub.redis.RPush("reconnect_game", player)
 	}
 
+}
+
+func UpdatePlayerDataFromRedis(player *models.Player, redis *redisdb.RedisClient) error {
+	playerData, err := redis.GetPlayer(string(player.ID))
+	if err != nil {
+		return fmt.Errorf("[Handlers] - Failed to update player data from redis!: Player: %s", player.ID)
+	}
+	player.Currency = playerData.Currency
+	player.Status = playerData.Status
+	player.SelectedBet = playerData.SelectedBet
+	player.RoomID = playerData.RoomID
+	return nil
 }
