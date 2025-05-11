@@ -85,8 +85,6 @@ func (c *Client) readPump() {
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
 	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
-	// TODO: In the original chat example, every message from the cliente was sento to the hub to be broadcasted to other clients,
-	//		this needs to be changed, we want to sent messaged to redis, to be prococessed by other services.
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
@@ -95,8 +93,6 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-		// message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		//c.hub.broadcast <- message
 
 		// I question if this message parsed is really needed. Right now it only helps to make sure some of the values received
 		// are the right ones or not, and transforms or message into the right type.
@@ -121,7 +117,7 @@ func (c *Client) readPump() {
 			log.Printf("error: %v", err)
 			break
 		}
-		RouteMessages(parsedmessage, c.player, c.hub.redis)
+		go RouteMessages(parsedmessage, c.player, c.hub.redis)
 	}
 }
 
@@ -135,6 +131,7 @@ func (c *Client) writePump() {
 	defer func() {
 		log.Println("[Client] - writePump defer")
 		c.cancel()
+		c.hub.unregister <- c
 		ticker.Stop()
 		c.conn.Close()
 	}()
@@ -200,6 +197,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	ok, session, err := AuthValid(w, r, hub.redis)
 	if !ok {
 		log.Println("[Client] - auth failed:", err)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -222,6 +220,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		hub.redis.RemovePlayer(player.ID)
 		return
 	}

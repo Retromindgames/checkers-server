@@ -71,6 +71,16 @@ func (h *Hub) run() {
 				select {
 				case client.send <- message:
 				default:
+					h.redis.UpdatePlayersInQueueSet(client.player.ID, models.StatusOffline)
+					if client.player.RoomID != "" || client.player.Status == models.StatusInRoom || client.player.Status == models.StatusInRoomReady {
+						log.Printf("[Hub.Run] - Removed player is in a Room, sending notification to room worker!: %v\n", client.player)
+						h.redis.RPush("leave_room", client.player)
+					}
+					if client.player.GameID != "" || client.player.Status == models.StatusInGame {
+						log.Printf("[Hub.Run] - Removed player is in a Game, sending notification to Game worker!: %v\n", client.player)
+						h.redis.RPush("disconnect_game", client.player)
+					}
+					h.redis.RemovePlayer(client.player.ID)
 					close(client.send)
 					delete(h.clients, client)
 				}
