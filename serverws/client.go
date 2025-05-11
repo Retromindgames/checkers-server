@@ -93,7 +93,6 @@ func (c *Client) readPump() {
 			}
 			break
 		}
-
 		// I question if this message parsed is really needed. Right now it only helps to make sure some of the values received
 		// are the right ones or not, and transforms or message into the right type.
 		parsedmessage, err := messages.ParseMessage(message)
@@ -110,14 +109,15 @@ func (c *Client) readPump() {
 			c.send <- msgBytes
 			continue
 		}
+		//log.Print(parsedmessage)
 
 		// we will update out player object, if something is wrong with the update we will exit our loop.
-		err = UpdatePlayerDataFromRedis(c.player, c.hub.redis)
+		err = c.UpdatePlayerDataFromRedis()
 		if err != nil {
 			log.Printf("error: %v", err)
 			break
 		}
-		go RouteMessages(parsedmessage, c.player, c.hub.redis)
+		go RouteMessages(parsedmessage, c, c.hub.redis)
 	}
 }
 
@@ -144,7 +144,7 @@ func (c *Client) writePump() {
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
-
+			//log.Print(message)
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				return
@@ -256,14 +256,15 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 
 }
 
-func UpdatePlayerDataFromRedis(player *models.Player, redis *redisdb.RedisClient) error {
-	playerData, err := redis.GetPlayer(string(player.ID))
+func (c *Client) UpdatePlayerDataFromRedis() error {
+	playerData, err := c.hub.redis.GetPlayer(string(c.player.ID))
 	if err != nil {
-		return fmt.Errorf("[Handlers] - Failed to update player data from redis!: Player: %s", player.ID)
+		return fmt.Errorf("[Handlers] - Failed to update player data from redis!: Player: %s", c.player.ID)
 	}
-	player.Currency = playerData.Currency
-	player.Status = playerData.Status
-	player.SelectedBet = playerData.SelectedBet
-	player.RoomID = playerData.RoomID
+	c.player.Currency = playerData.Currency
+	c.player.Status = playerData.Status
+	c.player.SelectedBet = playerData.SelectedBet
+	c.player.RoomID = playerData.RoomID
+	c.player.GameID = playerData.GameID
 	return nil
 }

@@ -159,7 +159,7 @@ func processReadyQueue() {
 			log.Printf("[RoomWorker-%d] - Error retrieving player:%v\n", pid, err)
 			continue
 		}
-		//log.Printf("[RoomWorker-%d] - processing ready room!: %+v\n", pid, playerData)
+		log.Printf("[RoomWorker-%d] - processing ready room!: %+v\n", pid, playerData)
 		// Aqui ou damos handle do ready queue ou handle do unreadyqueue
 		if playerData.Status == models.StatusInRoomReady {
 			handleReadyRoom(playerData)

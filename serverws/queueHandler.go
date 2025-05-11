@@ -12,7 +12,7 @@ import (
 )
 
 type QueueHandler struct {
-	Player      *models.Player
+	Client      *Client
 	RedisClient *redisdb.RedisClient
 	Msg         *messages.Message[json.RawMessage]
 
@@ -23,9 +23,9 @@ type QueueHandler struct {
 	queueCountIncr           bool
 }
 
-func NewQueueHandler(player *models.Player, redis *redisdb.RedisClient, msg *messages.Message[json.RawMessage]) *QueueHandler {
+func NewQueueHandler(client *Client, redis *redisdb.RedisClient, msg *messages.Message[json.RawMessage]) *QueueHandler {
 	return &QueueHandler{
-		Player:      player,
+		Client:      client,
 		RedisClient: redis,
 		Msg:         msg,
 	}
@@ -70,38 +70,38 @@ func (qh *QueueHandler) cleanup() {
 	var sendFailedQueueConfirmation = false
 
 	if qh.initialValidationsFailed {
-		qh.Player.UpdatePlayerStatus(models.StatusOnline)
-		qh.RedisClient.UpdatePlayer(qh.Player)
+		qh.Client.player.UpdatePlayerStatus(models.StatusOnline)
+		qh.RedisClient.UpdatePlayer(qh.Client.player)
 		sendFailedQueueConfirmation = true
 	}
 
 	if qh.statusUpdated {
-		qh.Player.UpdatePlayerStatus(models.StatusOnline)
-		qh.RedisClient.UpdatePlayer(qh.Player)
+		qh.Client.player.UpdatePlayerStatus(models.StatusOnline)
+		qh.RedisClient.UpdatePlayer(qh.Client.player)
 		sendFailedQueueConfirmation = true
 	}
 
 	if qh.addedToQueue {
-		queueName := fmt.Sprintf("queue:%f", qh.Player.SelectedBet)
-		qh.RedisClient.Client.LRem(context.Background(), queueName, 1, qh.Player)
+		queueName := fmt.Sprintf("queue:%f", qh.Client.player.SelectedBet)
+		qh.RedisClient.Client.LRem(context.Background(), queueName, 1, qh.Client.player)
 		sendFailedQueueConfirmation = true
 	}
 
 	if qh.queueCountIncr {
-		qh.RedisClient.DecrementQueueCount(qh.Player.SelectedBet)
+		qh.RedisClient.DecrementQueueCount(qh.Client.player.SelectedBet)
 		sendFailedQueueConfirmation = true
 	}
 
 	if sendFailedQueueConfirmation {
 		msg, _ := messages.GenerateQueueConfirmationMessage(false)
-		qh.Player.WriteChan <- msg
+		qh.Client.send <- msg
 	}
 }
 
 func (qh *QueueHandler) validateStatusTransition() bool {
-	if qh.Player.UpdatePlayerStatus(models.StatusInQueue) != nil {
+	if qh.Client.player.UpdatePlayerStatus(models.StatusInQueue) != nil {
 		msgBytes, _ := messages.GenerateGenericMessage("invalid", "Invalid status transition to 'queue'")
-		qh.Player.WriteChan <- msgBytes
+		qh.Client.send <- msgBytes
 		return false
 	}
 	qh.statusUpdated = true
@@ -114,26 +114,26 @@ func (qh *QueueHandler) parseBetValue() (float64, error) {
 	if err != nil {
 		log.Printf("Error determining player bet value: %v\n", err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "Error determining player bet value")
-		qh.Player.WriteChan <- msgBytes
+		qh.Client.send <- msgBytes
 		return 0, err
 	}
 	return betValue, nil
 }
 
 func (qh *QueueHandler) updatePlayerState(betValue float64) {
-	qh.Player.SelectedBet = betValue
-	qh.Player.Status = models.StatusInQueue
-	qh.RedisClient.UpdatePlayersInQueueSet(qh.Player.ID, models.StatusInQueue)
-	qh.RedisClient.UpdatePlayer(qh.Player)
+	qh.Client.player.SelectedBet = betValue
+	qh.Client.player.Status = models.StatusInQueue
+	qh.RedisClient.UpdatePlayersInQueueSet(qh.Client.player.ID, models.StatusInQueue)
+	qh.RedisClient.UpdatePlayer(qh.Client.player)
 }
 
 func (qh *QueueHandler) addToRedisQueue() error {
-	queueName := fmt.Sprintf("queue:%f", qh.Player.SelectedBet)
-	err := qh.RedisClient.RPush(queueName, qh.Player)
+	queueName := fmt.Sprintf("queue:%f", qh.Client.player.SelectedBet)
+	err := qh.RedisClient.RPush(queueName, qh.Client.player)
 	if err != nil {
 		log.Printf("Error pushing player to Redis queue: %v\n", err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "error adding player to queue")
-		qh.Player.WriteChan <- msgBytes
+		qh.Client.send <- msgBytes
 		return err
 	}
 	qh.addedToQueue = true
@@ -141,12 +141,12 @@ func (qh *QueueHandler) addToRedisQueue() error {
 }
 
 func (qh *QueueHandler) updateQueueCount() {
-	exists, err := qh.RedisClient.CheckQueueCountExists(qh.Player.SelectedBet)
+	exists, err := qh.RedisClient.CheckQueueCountExists(qh.Client.player.SelectedBet)
 	if err == nil {
 		if !exists {
-			qh.RedisClient.CreateQueueCount(qh.Player.SelectedBet)
+			qh.RedisClient.CreateQueueCount(qh.Client.player.SelectedBet)
 		} else {
-			qh.RedisClient.IncrementQueueCount(qh.Player.SelectedBet)
+			qh.RedisClient.IncrementQueueCount(qh.Client.player.SelectedBet)
 		}
 		qh.queueCountIncr = true
 	}
@@ -157,10 +157,10 @@ func (qh *QueueHandler) sendConfirmation() {
 	if err != nil {
 		fmt.Println("Error generating queue confirmation:", err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "error generating confirmation")
-		qh.Player.WriteChan <- msgBytes
+		qh.Client.send <- msgBytes
 		return
 	}
-	qh.Player.WriteChan <- m
+	qh.Client.send <- m
 
 	// Success - disable cleanup
 	qh.statusUpdated = false

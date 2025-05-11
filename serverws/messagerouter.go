@@ -15,62 +15,68 @@ import (
 //
 // The valid command sent will be processsed and router to the right handler. Some of those handlers
 // might send the message to redis.
-func RouteMessages(message *messages.Message[json.RawMessage], player *models.Player, redis *redisdb.RedisClient) {
+func RouteMessages(message *messages.Message[json.RawMessage], client *Client, redis *redisdb.RedisClient) {
 	switch message.Command {
 	case "queue":
-		handleQueue(message, player, redis)
+		handleQueue(message, client, redis)
+		return
 
 	case "leave_queue":
-		handleLeaveQueue(player, redis)
+		handleLeaveQueue(client, redis)
+		return
 
 	case "ready_queue":
-		handleReadyQueue(message, player, redis)
+		handleReadyQueue(message, client, redis)
+		return
 
 	case "leave_room":
-		if player.Status != models.StatusInRoom {
+		if client.player.Status != models.StatusInRoom {
 			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a leave room when not in a Room.")
-			player.WriteChan <- msg
+			client.send <- msg
 			return
 		}
-		handleLeaveRoom(player, redis)
+		handleLeaveRoom(client, redis)
+		return
 
 	case "leave_game":
-		if player.Status != models.StatusInGame {
+		if client.player.Status != models.StatusInGame {
 			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a leave game when not in a game.")
-			player.WriteChan <- msg
+			client.send <- msg
 			return
 		}
-		handleLeaveGame(player, redis)
+		handleLeaveGame(client, redis)
+		return
 
 	case "move_piece":
-		if player.Status != models.StatusInGame {
+		if client.player.Status != models.StatusInGame {
 			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a move when not in a Game.")
-			player.WriteChan <- msg
+			client.send <- msg
 			return
 		}
-		handleMovePiece(message, player, redis)
+		handleMovePiece(message, client, redis)
+		return
 	}
 }
 
-func handleQueue(msg *messages.Message[json.RawMessage], player *models.Player, redis *redisdb.RedisClient) {
-	qh := NewQueueHandler(player, redis, msg)
+func handleQueue(msg *messages.Message[json.RawMessage], client *Client, redis *redisdb.RedisClient) {
+	qh := NewQueueHandler(client, redis, msg)
 	qh.Process()
 }
 
-func handleLeaveQueue(player *models.Player, redis *redisdb.RedisClient) {
-	if player.UpdatePlayerStatus(models.StatusOnline) != nil {
+func handleLeaveQueue(client *Client, redis *redisdb.RedisClient) {
+	if client.player.UpdatePlayerStatus(models.StatusOnline) != nil {
 		msg, _ := messages.GenerateGenericMessage("invalid", "Invalid status transition to 'Online'")
-		player.WriteChan <- msg
+		client.send <- msg
 		return
 	}
-	player.SetStatusOnline()
-	redis.UpdatePlayer(player) // This is important, we will only re-add players to a queue that are in queue.
-	redis.UpdatePlayersInQueueSet(player.ID, models.StatusOnline)
-	queueName := fmt.Sprintf("queue:%f", player.SelectedBet)
-	err := redis.RemovePlayerFromQueue(queueName, player)
+	client.player.SetStatusOnline()
+	redis.UpdatePlayer(client.player) // This is important, we will only re-add players to a queue that are in queue.
+	redis.UpdatePlayersInQueueSet(client.player.ID, models.StatusOnline)
+	queueName := fmt.Sprintf("queue:%f", client.player.SelectedBet)
+	err := redis.RemovePlayerFromQueue(queueName, client.player)
 	if err != nil {
 		//log.Printf("Error removing player from Redis queue: %v\n", err)	//! This was commented, it fails when there is only 1 player in queue.
-		//player.WriteChan <- []byte("Error removing player to queue")
+		//client.send <- []byte("Error removing player to queue")
 		return
 	}
 	// we update out player status., send a confirmation message back to the player
@@ -78,102 +84,102 @@ func handleLeaveQueue(player *models.Player, redis *redisdb.RedisClient) {
 	if err != nil {
 		msg, _ := messages.GenerateGenericMessage("error", "Error generating queue confirmation false:"+err.Error())
 		log.Println("Error generating queue confirmation false:", err)
-		player.WriteChan <- msg
+		client.send <- msg
 		return
 	}
-	player.WriteChan <- m
+	client.send <- m
 }
 
-func handleReadyQueue(msg *messages.Message[json.RawMessage], player *models.Player, redis *redisdb.RedisClient) {
+func handleReadyQueue(msg *messages.Message[json.RawMessage], client *Client, redis *redisdb.RedisClient) {
 	// We have to check if the message for readyqueue true or false.
 	var value bool
 	json.Unmarshal(msg.Value, &value)
 	if value {
 		// update the player status to ready / awaiting opponent.
-		if player.UpdatePlayerStatus(models.StatusInRoomReady) != nil {
+		if client.player.UpdatePlayerStatus(models.StatusInRoomReady) != nil {
 			msg, _ := messages.GenerateGenericMessage("invalid", "Invalid status transition to 'ready_queue true'")
-			player.WriteChan <- msg
+			client.send <- msg
 			return
 		}
 	} else {
 		// update the player status, to unready / waiting ready.
-		if player.UpdatePlayerStatus(models.StatusInRoom) != nil {
+		if client.player.UpdatePlayerStatus(models.StatusInRoom) != nil {
 			msg, _ := messages.GenerateGenericMessage("invalid", "Invalid status transition to 'ready_queue false'")
-			player.WriteChan <- msg
+			client.send <- msg
 			return
 		}
 	}
 	msgBytes, _ := messages.GenerateGenericMessage("info", "Processing 'ready_queue'")
-	player.WriteChan <- msgBytes
+	client.send <- msgBytes
 	// we update our player to redis.
-	redis.UpdatePlayersInQueueSet(player.ID, player.Status)
-	err := redis.UpdatePlayer(player)
+	redis.UpdatePlayersInQueueSet(client.player.ID, client.player.Status)
+	err := redis.UpdatePlayer(client.player)
 	if err != nil {
 		log.Printf("Error updating player to Redis: %v\n", err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "Error Updating player: "+err.Error())
-		player.WriteChan <- msgBytes
+		client.send <- msgBytes
 		return
 	}
-	err = redis.RPush("ready_queue", player) // now we tell roomworker to process this player ready.
+	err = redis.RPush("ready_queue", client.player) // now we tell roomworker to process this player ready.
 	if err != nil {
 		log.Printf("Error pushing player to Redis ready queue: %v\n", err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "Pushing player to queue: "+err.Error())
-		player.WriteChan <- msgBytes
+		client.send <- msgBytes
 		return
 	}
 }
 
-func handleLeaveRoom(player *models.Player, redis *redisdb.RedisClient) {
+func handleLeaveRoom(client *Client, redis *redisdb.RedisClient) {
 	// update the player status
-	if player.UpdatePlayerStatus(models.StatusOnline) != nil {
+	if client.player.UpdatePlayerStatus(models.StatusOnline) != nil {
 		msgBytes, _ := messages.GenerateGenericMessage("invalid", "Invalid status transition to 'leave_room'")
-		player.WriteChan <- msgBytes
+		client.send <- msgBytes
 		return
 	}
 	msgBytes, _ := messages.GenerateGenericMessage("info", "Processing 'leave_room'")
-	player.WriteChan <- msgBytes
+	client.send <- msgBytes
 	// we update our player to redis.
-	err := redis.UpdatePlayer(player)
+	err := redis.UpdatePlayer(client.player)
 	if err != nil {
 		log.Printf("Error updagint player to Redis on HandleLeaveRoom: %v\n", err)
 		msg, _ := messages.GenerateGenericMessage("error", "error updating player.")
-		player.WriteChan <- msg
+		client.send <- msg
 		return
 	}
-	err = redis.RPush("leave_room", player)
+	err = redis.RPush("leave_room", client.player)
 	if err != nil {
 		log.Printf("Error pushing player to Redis leave_room queue: %v\n", err)
 		msg, _ := messages.GenerateGenericMessage("error", "error leaving room.")
-		player.WriteChan <- msg
+		client.send <- msg
 		return
 	}
 }
 
-func handleLeaveGame(player *models.Player, redis *redisdb.RedisClient) {
+func handleLeaveGame(client *Client, redis *redisdb.RedisClient) {
 	msgBytes, _ := messages.GenerateGenericMessage("invalid", "Processing 'leave_game'")
-	player.WriteChan <- msgBytes
-	err := redis.RPush("leave_game", player)
+	client.send <- msgBytes
+	err := redis.RPush("leave_game", client.player)
 	if err != nil {
 		log.Printf("Error pushing player to Redis leave_game queue: %v\n", err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "Error adding player to leave_game")
-		player.WriteChan <- msgBytes
+		client.send <- msgBytes
 		return
 	}
 }
 
-func handleMovePiece(message *messages.Message[json.RawMessage], player *models.Player, redis *redisdb.RedisClient) {
+func handleMovePiece(message *messages.Message[json.RawMessage], client *Client, redis *redisdb.RedisClient) {
 	var move models.Move
 	err := json.Unmarshal([]byte(message.Value), &move)
 	if err != nil {
 		log.Printf("[Handlers] - Handle Move Piece - JSON Unmarshal Error: %v\n", err)
 		msg, _ := messages.GenerateGenericMessage("invalid", "Handle Move Piece - JSON Unmarshal Error.")
-		player.WriteChan <- msg
+		client.send <- msg
 		return
 	}
-	if move.PlayerID != player.ID {
+	if move.PlayerID != client.player.ID {
 		log.Printf("[Handlers] - Handle Move Piece - move.PlayerID != player.ID\n")
 		msg, _ := messages.GenerateGenericMessage("invalid", "Handle Move Piece - move.PlayerID != player.ID.")
-		player.WriteChan <- msg
+		client.send <- msg
 		return
 	}
 	// movement message is sent to the game worker
@@ -181,7 +187,7 @@ func handleMovePiece(message *messages.Message[json.RawMessage], player *models.
 	if err != nil {
 		log.Printf("Error pushing move to Redis handleMovePiece queue: %v\n", err)
 		msg, _ := messages.GenerateGenericMessage("error", "error pushing move to gameworker.")
-		player.WriteChan <- msg
+		client.send <- msg
 		return
 	}
 }

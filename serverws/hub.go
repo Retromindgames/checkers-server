@@ -47,8 +47,9 @@ func (h *Hub) run() {
 			h.clients[client] = true
 
 		case client := <-h.unregister:
-			//log.Println("[HUB.Run] - Unregister")
+			log.Println("[HUB.Run] - Unregister")
 			if _, ok := h.clients[client]; ok {
+				client.UpdatePlayerDataFromRedis()
 				h.redis.UpdatePlayersInQueueSet(client.player.ID, models.StatusOffline)
 				if client.player.RoomID != "" || client.player.Status == models.StatusInRoom || client.player.Status == models.StatusInRoomReady {
 					log.Printf("[Hub.Run] - Removed player is in a Room, sending notification to room worker!: %v\n", client.player)
