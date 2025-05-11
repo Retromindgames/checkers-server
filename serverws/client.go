@@ -141,41 +141,47 @@ func (c *Client) writePump() {
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
+				log.Println("[Clien] - writePump - the hub closed the channel.")
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 			//log.Print(message)
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
+				log.Printf("[Client] - writePump - error getting message: %v", err)
 				return
 			}
 			w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
 			n := len(c.send)
-			for i := 0; i < n; i++ {
+			for range n {
 				w.Write(newline)
 				w.Write(<-c.send)
 			}
 
 			if err := w.Close(); err != nil {
+				log.Printf("[Client] - writePump - error getting message: %v", err)
 				return
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Printf("[Client] - writePump - error writing ping message: %v", err)
 				return
 			}
 		}
 	}
 }
 
-func (c *Client) redisSubscribe() {
+func (c *Client) redisSubscribe(ready chan bool) {
 	channel := redisdb.GetPlayerPubSubChannel(*c.player)
 	pubsub := c.hub.redis.Client.Subscribe(c.ctx, channel)
 	defer pubsub.Close()
 
 	ch := pubsub.Channel()
+
+	ready <- true
 
 	for {
 		select {
@@ -234,7 +240,9 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	client.hub.register <- client
 
 	// Subscription to redis pub sub.
-	go client.redisSubscribe()
+	subscriptionReady := make(chan bool)
+	go client.redisSubscribe(subscriptionReady)
+	<-subscriptionReady // Wait for the subscription to be ready
 
 	// Allow collection of memory referenced by the caller by doing all work in
 	// new goroutines.

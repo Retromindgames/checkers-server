@@ -110,7 +110,8 @@ func CreatePlayer(redis *redisdb.RedisClient, session *models.Session) (*models.
 			OperatorIdentifier: session.OperatorIdentifier,
 		}
 		player = newPlayer
-		redis.AddPlayer(player) // Since its a new player, we add it to redis.
+		//redis.AddPlayer(player) // Since its a new player, we add it to redis.
 	}
+	redis.AddPlayer(player)
 	return player, wasdisconnected, nil
 }
