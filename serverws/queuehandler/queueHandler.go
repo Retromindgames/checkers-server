@@ -1,4 +1,4 @@
-package wsapi
+package queuehandler
 
 import (
 	"context"
