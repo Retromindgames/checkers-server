@@ -1,10 +1,6 @@
 package interfaces
 
 import (
-	"checkers-server/models"
-	"checkers-server/postgrescli"
-	"checkers-server/redisdb"
-	"checkers-server/walletrequests"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -12,6 +8,11 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/postgrescli"
+	"github.com/Lavizord/checkers-server/redisdb"
+	"github.com/Lavizord/checkers-server/walletrequests"
 )
 
 // OperatorModule defines the interface for operator-specific code

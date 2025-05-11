@@ -1,12 +1,13 @@
 package main
 
 import (
-	"checkers-server/config"
-	"checkers-server/messages"
-	"checkers-server/redisdb"
 	"log"
 	"os"
 	"time"
+
+	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/messages"
+	"github.com/Lavizord/checkers-server/redisdb"
 )
 
 var pid int

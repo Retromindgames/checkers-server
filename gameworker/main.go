@@ -1,18 +1,19 @@
 package main
 
 import (
-	"checkers-server/config"
-	"checkers-server/interfaces"
-	"checkers-server/messages"
-	"checkers-server/models"
-	"checkers-server/postgrescli"
-	"checkers-server/redisdb"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"time"
+
+	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/interfaces"
+	"github.com/Lavizord/checkers-server/messages"
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/postgrescli"
+	"github.com/Lavizord/checkers-server/redisdb"
 )
 
 var pid int

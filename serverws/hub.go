@@ -1,9 +1,10 @@
 package main
 
 import (
-	"checkers-server/redisdb"
 	"context"
 	"log"
+
+	"github.com/Lavizord/checkers-server/redisdb"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the

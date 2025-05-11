@@ -1,12 +1,13 @@
 package messages
 
 import (
-	"checkers-server/models"
-	"checkers-server/redisdb"
 	"encoding/json"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/redisdb"
 )
 
 type Message[T any] struct {

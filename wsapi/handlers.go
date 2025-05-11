@@ -1,12 +1,13 @@
 package wsapi
 
 import (
-	"checkers-server/messages"
-	"checkers-server/models"
 	"encoding/json"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/Lavizord/checkers-server/messages"
+	"github.com/Lavizord/checkers-server/models"
 )
 
 func handleMessages(player *models.Player) {

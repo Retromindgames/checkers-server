@@ -1,11 +1,12 @@
 package redisdb
 
 import (
-	"checkers-server/models"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
+
+	"github.com/Lavizord/checkers-server/models"
 )
 
 func (r *RedisClient) AddPlayer(player *models.Player) error {

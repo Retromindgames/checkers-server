@@ -1,12 +1,14 @@
 package main
 
 import (
-	"checkers-server/messages"
-	"checkers-server/models"
-	"checkers-server/redisdb"
 	"encoding/json"
 	"fmt"
 	"log"
+
+	"github.com/Lavizord/checkers-server/messages"
+
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/redisdb"
 
 	queueHandler "github.com/Lavizord/checkers-server/serverws/queuehandler"
 )

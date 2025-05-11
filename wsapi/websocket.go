@@ -1,17 +1,18 @@
 package wsapi
 
 import (
-	"checkers-server/config"
-	"checkers-server/interfaces"
-	"checkers-server/messages"
-	"checkers-server/models"
-	"checkers-server/redisdb"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/interfaces"
+	"github.com/Lavizord/checkers-server/messages"
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/redisdb"
 
 	"github.com/gorilla/websocket"
 )

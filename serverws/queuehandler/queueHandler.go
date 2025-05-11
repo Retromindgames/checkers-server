@@ -1,13 +1,14 @@
 package wsapi
 
 import (
-	"checkers-server/messages"
-	"checkers-server/models"
-	"checkers-server/redisdb"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
+
+	"github.com/Lavizord/checkers-server/messages"
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/redisdb"
 )
 
 type QueueHandler struct {

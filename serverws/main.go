@@ -1,10 +1,11 @@
 package main
 
 import (
-	"checkers-server/config"
 	"flag"
 	"log"
 	"net/http"
+
+	"github.com/Lavizord/checkers-server/config"
 )
 
 var addr = flag.String("addr", ":80", "http service address")

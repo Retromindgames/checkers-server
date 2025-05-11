@@ -1,14 +1,15 @@
 package main
 
 import (
-	"checkers-server/messages"
-	"checkers-server/models"
-	"checkers-server/redisdb"
 	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/Lavizord/checkers-server/messages"
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/redisdb"
 
 	"github.com/gorilla/websocket"
 )

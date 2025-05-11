@@ -1,12 +1,13 @@
 package main
 
 import (
-	"checkers-server/interfaces"
-	"checkers-server/models"
-	"checkers-server/redisdb"
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/Lavizord/checkers-server/interfaces"
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/redisdb"
 )
 
 // Method to validate that the request is valid
