@@ -228,6 +228,18 @@ func GenerateGameStartMessage(game models.Game) ([]byte, error) {
 	return NewMessage("game_start", gamestart)
 }
 
+func GenerateGameBoardState(game models.Game) ([]byte, error) {
+	gamestart := GameStartMessage{
+		GameID:          game.ID,
+		Board:           game.Board.Grid,
+		MaxTimer:        game.Players[0].Timer,
+		CurrentPlayerID: game.CurrentPlayerID,
+		GamePlayers:     ConvertGamePlayersToResponse(game.Players),
+		WinFactor:       game.OperatorIdentifier.WinFactor,
+	}
+	return NewMessage("board_state", gamestart)
+}
+
 func GenerateGameReconnectMessage(game models.Game) ([]byte, error) {
 	gamestart := GameStartMessage{
 		GameID:          game.ID,
