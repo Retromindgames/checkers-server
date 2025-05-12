@@ -19,7 +19,7 @@ services:
     container_name: wsapi
     build:
       context: .
-      dockerfile: wsapi.dockerfile
+      dockerfile: serverws.dockerfile
     expose:
       - "80"
     environment:
