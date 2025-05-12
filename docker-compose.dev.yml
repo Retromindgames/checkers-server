@@ -54,16 +54,6 @@ services:
     depends_on:
       - postgres
 
-  pstatusworker:
-    container_name: pstatusworker
-    build:
-      context: .
-      dockerfile: pstatusworker.dockerfile
-    depends_on:
-      - redis
-    networks:
-      - app-network
-
   roomworker:
     container_name: roomworker
     build:
