@@ -35,10 +35,10 @@ var (
 	space   = []byte{' '}
 )
 
-var prodEVEND string
+var prodVenv string
 
 func init() {
-	prodEVEND = os.Getenv("PROD")
+	prodVenv = os.Getenv("PROD")
 }
 
 var upgrader = websocket.Upgrader{
@@ -46,7 +46,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
-		if prodEVEND == "" {
+		if prodVenv == "" {
 			return true // allow all if no config path
 		}
 		return origin == "http://localhost:8060" || origin == "https://play.retromindgames.pt/"
