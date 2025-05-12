@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/Lavizord/checkers-server/messages"
@@ -34,12 +35,21 @@ var (
 	space   = []byte{' '}
 )
 
+var prodEVEND string
+
+func init() {
+	prodEVEND = os.Getenv("PROD")
+}
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
-		return origin == "http://localhost:8060" || origin == "https://yourdomain.com"
+		if prodEVEND == "" {
+			return true // allow all if no config path
+		}
+		return origin == "http://localhost:8060" || origin == "https://play.retromindgames.pt/"
 	},
 }
 
