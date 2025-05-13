@@ -217,10 +217,11 @@ func ConvertGamePlayersToResponse(players []models.GamePlayer) []GamePlayerRespo
 }
 
 func GenerateGameStartMessage(game models.Game) ([]byte, error) {
+	maxTimer, _ := game.CalcGameMaxTimer()
 	gamestart := GameStartMessage{
 		GameID:          game.ID,
 		Board:           game.Board.Grid,
-		MaxTimer:        game.Players[0].Timer,
+		MaxTimer:        maxTimer,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers:     ConvertGamePlayersToResponse(game.Players),
 		WinFactor:       game.OperatorIdentifier.WinFactor,
@@ -229,10 +230,11 @@ func GenerateGameStartMessage(game models.Game) ([]byte, error) {
 }
 
 func GenerateGameBoardState(game models.Game) ([]byte, error) {
+	maxTimer, _ := game.CalcGameMaxTimer()
 	gamestart := GameStartMessage{
 		GameID:          game.ID,
 		Board:           game.Board.Grid,
-		MaxTimer:        game.Players[0].Timer,
+		MaxTimer:        maxTimer,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers:     ConvertGamePlayersToResponse(game.Players),
 		WinFactor:       game.OperatorIdentifier.WinFactor,
@@ -241,10 +243,12 @@ func GenerateGameBoardState(game models.Game) ([]byte, error) {
 }
 
 func GenerateGameReconnectMessage(game models.Game) ([]byte, error) {
+	maxTimer, _ := game.CalcGameMaxTimer()
+
 	gamestart := GameStartMessage{
 		GameID:          game.ID,
 		Board:           game.Board.Grid,
-		MaxTimer:        game.Players[0].Timer,
+		MaxTimer:        maxTimer,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers:     ConvertGamePlayersToResponse(game.Players),
 		WinFactor:       game.OperatorIdentifier.WinFactor,

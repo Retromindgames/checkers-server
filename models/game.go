@@ -126,6 +126,17 @@ func (g *Game) SetUpPlayerTimers() {
 	}
 }
 
+func (g *Game) CalcGameMaxTimer() (int, error) {
+	switch g.TimerSetting {
+	case "reset":
+		return config.Cfg.Services["gameworker"].Timer, nil
+
+	case "cumulative":
+		return config.Cfg.Services["gameworker"].Timer * config.Cfg.Services["gameworker"].PiecesInMatch, nil
+	}
+	return 0, nil
+}
+
 func (g *Game) CountPlayerPieces(playerID string) int {
 	count := 0
 	for _, piece := range g.Board.Grid {
@@ -181,6 +192,20 @@ func (g *Game) GetGamePlayer(playerID string) (*GamePlayer, error) {
 	}
 
 	return nil, fmt.Errorf("player not found for player ID: %s", playerID)
+}
+
+func (g *Game) UpdatePlayerTimer(playerID string, timer int) error {
+	if len(g.Players) != 2 {
+		return fmt.Errorf("invalid number of players in game")
+	}
+
+	for i := range g.Players {
+		if g.Players[i].ID == playerID {
+			g.Players[i].Timer = timer
+			return nil
+		}
+	}
+	return fmt.Errorf("player not found for player ID: %s", playerID)
 }
 
 // Updates player id and turn count.
