@@ -164,6 +164,7 @@ func (c *Client) writePump() {
 			w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
+			// Was commented out because it was causing the godot client to receive two jsons at once.
 			//n := len(c.send)
 			//for range n {
 			//	w.Write(newline)
