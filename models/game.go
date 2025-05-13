@@ -126,6 +126,17 @@ func (g *Game) SetUpPlayerTimers() {
 	}
 }
 
+func (g *Game) CalcGameMaxTimer() (int, error) {
+	switch g.TimerSetting {
+	case "reset":
+		return config.Cfg.Services["gameworker"].Timer, nil
+
+	case "cumulative":
+		return config.Cfg.Services["gameworker"].Timer * config.Cfg.Services["gameworker"].PiecesInMatch, nil
+	}
+	return 0, nil
+}
+
 func (g *Game) CountPlayerPieces(playerID string) int {
 	count := 0
 	for _, piece := range g.Board.Grid {
