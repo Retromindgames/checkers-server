@@ -1,8 +1,6 @@
 package main
 
 import (
-	"checkers-server/config"
-	"checkers-server/postgrescli"
 	"crypto/rand"
 	"crypto/tls"
 	"database/sql"
@@ -14,6 +12,9 @@ import (
 	"net/smtp"
 	"strings"
 	"time"
+
+	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/postgrescli"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"

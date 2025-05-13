@@ -1,7 +1,6 @@
 package redisdb
 
 import (
-	"checkers-server/models"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Lavizord/checkers-server/models"
 
 	"github.com/redis/go-redis/v9"
 )

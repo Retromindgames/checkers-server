@@ -1,12 +1,13 @@
 package main
 
 import (
-	"checkers-server/config"
-	"checkers-server/wsapi"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/wsapi"
 )
 
 func main() {

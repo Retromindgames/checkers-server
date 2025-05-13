@@ -1,12 +1,13 @@
 package wsapi
 
 import (
-	"checkers-server/messages"
-	"checkers-server/models"
 	"encoding/json"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/Lavizord/checkers-server/messages"
+	"github.com/Lavizord/checkers-server/models"
 )
 
 func handleMessages(player *models.Player) {
@@ -18,20 +19,23 @@ func handleMessages(player *models.Player) {
 		player.Conn.SetReadDeadline(time.Now().Add(pongWait))
 		return nil
 	})
-
+	log.Println("[handleMessages] - Starting handleMessages")
 	for {
 		if player.Conn == nil {
-			UpdatePlayerDataFromRedis(player)
-			handlePlayerDisconnect(player)
-			break
+			log.Println("[Handlers] - handleMessages, player.Conn is nill.")
+			UpdatePlayerDataFromRedis(player, "player con is nill")
+			handlePlayerDisconnect(player, "player con is nill")
+			return
 		}
 		_, msg, err := player.Conn.ReadMessage()
 		if err != nil {
-			UpdatePlayerDataFromRedis(player)
-			handlePlayerDisconnect(player)
-			break
+			player.Conn.Close()
+			log.Println("[Handlers] - handleMessages, failed to read player.Conn.message connection closed.")
+			UpdatePlayerDataFromRedis(player, "player con is nill")
+			handlePlayerDisconnect(player, "player con is nill")
+			return
 		}
-		UpdatePlayerDataFromRedis(player)
+		UpdatePlayerDataFromRedis(player, "player con is nill")
 
 		message, err := messages.ParseMessage(msg)
 		if err != nil {
@@ -227,22 +231,40 @@ func handleMovePiece(message *messages.Message[json.RawMessage], player *models.
 	}
 }
 
-func handlePlayerDisconnect(player *models.Player) {
-	//log.Println("Player disconnected:", player.ID)
+func handlePlayerDisconnect(player *models.Player, origin string) {
+	log.Printf("[handlePlayerDisconnect] - Player disconnected:%v, origin: %v", player.ID, origin)
 	playersMutex.Lock()
 	delete(players, player.ID)
 	playersMutex.Unlock()
 	// Unsubscribe from Redis channels
 	unsubscribeFromPlayerChannel(player)
+
 	// Notify worker of disconnection
 	RedisClient.UpdatePlayersInQueueSet(player.ID, models.StatusOffline)
-	RedisClient.RPush("player_offline", player)
+
+	// RedisClient.RPush("player_offline", player)
+
+	// We dont need to issue a command to leave the queue, since the queue fetched the player-
+	if player.RoomID != "" || player.Status == models.StatusInRoom || player.Status == models.StatusInRoomReady {
+		//log.Printf("[PStatus Worker-%d] - Removed player is in a Room, sending notification to room worker!: %v\n", pid, player)
+		RedisClient.RPush("leave_room", player)
+	}
+	if player.GameID != "" || player.Status == models.StatusInGame {
+		//log.Printf("[PStatus Worker-%d] - Removed player is in a Game, sending notification to Game worker!: %v\n", pid, player)
+		RedisClient.RPush("disconnect_game", player)
+	}
+
+	err := RedisClient.RemovePlayer(string(player.ID))
+	if err != nil {
+		log.Printf("[Handlers - handlePlayerDisconnect] - Failed to remove player: %v\n", err)
+		return
+	}
 }
 
-func UpdatePlayerDataFromRedis(player *models.Player) {
+func UpdatePlayerDataFromRedis(player *models.Player, origin string) {
 	playerData, err := RedisClient.GetPlayer(string(player.ID))
 	if err != nil {
-		log.Printf("[Handlers] - Failed to update player data from redis!: Player: %s", player.ID)
+		log.Printf("[Handlers] - Failed to update player data from redis!: Player: %s, origin: %v", player.ID, origin)
 		return
 	}
 	player.Currency = playerData.Currency

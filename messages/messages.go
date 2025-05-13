@@ -1,12 +1,13 @@
 package messages
 
 import (
-	"checkers-server/models"
-	"checkers-server/redisdb"
 	"encoding/json"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/redisdb"
 )
 
 type Message[T any] struct {
@@ -225,6 +226,18 @@ func GenerateGameStartMessage(game models.Game) ([]byte, error) {
 		WinFactor:       game.OperatorIdentifier.WinFactor,
 	}
 	return NewMessage("game_start", gamestart)
+}
+
+func GenerateGameBoardState(game models.Game) ([]byte, error) {
+	gamestart := GameStartMessage{
+		GameID:          game.ID,
+		Board:           game.Board.Grid,
+		MaxTimer:        game.Players[0].Timer,
+		CurrentPlayerID: game.CurrentPlayerID,
+		GamePlayers:     ConvertGamePlayersToResponse(game.Players),
+		WinFactor:       game.OperatorIdentifier.WinFactor,
+	}
+	return NewMessage("board_state", gamestart)
 }
 
 func GenerateGameReconnectMessage(game models.Game) ([]byte, error) {

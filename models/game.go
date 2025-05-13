@@ -1,10 +1,11 @@
 package models
 
 import (
-	"checkers-server/config"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/Lavizord/checkers-server/config"
 
 	"github.com/google/uuid"
 )

@@ -1,17 +1,18 @@
 package wsapi
 
 import (
-	"checkers-server/config"
-	"checkers-server/interfaces"
-	"checkers-server/messages"
-	"checkers-server/models"
-	"checkers-server/redisdb"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/interfaces"
+	"github.com/Lavizord/checkers-server/messages"
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/redisdb"
 
 	"github.com/gorilla/websocket"
 )
@@ -28,7 +29,7 @@ var upgrader = websocket.Upgrader{
 }
 
 const (
-	writeWait    = 10 * time.Second
+	writeWait    = 1 * time.Second
 	pongWait     = 3 * time.Second
 	pingInterval = 2 * time.Second // must be < pongWait
 )
@@ -50,7 +51,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	sessionID := r.URL.Query().Get("sessionid")
 	currency := r.URL.Query().Get("currency")
-	//log.Printf("[wsapi] - HandleConnection: token[%v], sessionid[%v], currency[%v]\n", token, sessionID, currency)
+	log.Printf("[wsapi] - HandleConnection: token[%v], sessionid[%v], currency[%v]\n", token, sessionID, currency)
 	session, err := FetchAndValidateSession(token, sessionID, currency)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Unauthorized: token[%v], sessionid[%v], currency[%v]", token, sessionID, currency), http.StatusUnauthorized)
@@ -106,7 +107,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 		RedisClient.AddPlayer(player) // Since its a new player, we add it to redis.
 	}
 	player.StartWriteGoroutineNew(func() {
-		handlePlayerDisconnect(player)
+		handlePlayerDisconnect(player, "exit write gouroutine ")
 	}, pingInterval, writeWait)
 
 	// We add the player to our player map.
@@ -114,6 +115,7 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	_, exists := players[player.ID] // Check if player exists
 	if !exists {
 		players[player.ID] = player
+		log.Println("[HandleConnection] - Player added to the map")
 	}
 	playersMutex.Unlock()
 
@@ -124,13 +126,15 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	walletBalance, err := module.HandleFetchWalletBalance(*session, RedisClient)
 	if err != nil {
 		log.Printf("Failed to fetch wallet : %v", err)
-		handlePlayerDisconnect(player)
+		player.Conn.Close()
+		handlePlayerDisconnect(player, "failed to fetch wallet")
 		return
 	}
 	msg, err := messages.GenerateConnectedMessage(*player, walletBalance)
 	if err != nil {
 		log.Printf("Failed to generate connected message : %v", err)
-		handlePlayerDisconnect(player)
+		handlePlayerDisconnect(player, "failed to generate connected message")
+		player.Conn.Close()
 		return
 	}
 	player.WriteChan <- msg
@@ -142,15 +146,6 @@ func HandleConnection(w http.ResponseWriter, r *http.Request) {
 	go handleMessages(player)
 }
 
-// Function to handle player channel subscription
-func subscribeToPlayerChannelOld(player *models.Player, ready chan bool) {
-	RedisClient.SubscribePlayerChannel(*player, func(message string) {
-		//log.Println("[wsapi] - Received server to PLAYER message:", message)
-		player.WriteChan <- []byte(message)
-	})
-	ready <- true // Notify that the subscription is ready
-}
-
 func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 	// Subscribe to the player's specific channel
 	RedisClient.SubscribePlayerChannel(*player, func(message string) {
@@ -158,7 +153,7 @@ func subscribeToPlayerChannel(player *models.Player, ready chan bool) {
 		if message == fmt.Sprintf("disconnect:%s", player.ID) {
 			log.Printf("[wsapi] - Disconnecting player: %s", player.ID)
 			player.Conn.Close() // Close the WebSocket connection for the player
-			handlePlayerDisconnect(player)
+			handlePlayerDisconnect(player, "pub sub close connection")
 		} else {
 			// Send normal messages to the player's write channel
 			player.WriteChan <- []byte(message)

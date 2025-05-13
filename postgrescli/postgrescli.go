@@ -1,11 +1,12 @@
 package postgrescli
 
 import (
-	"checkers-server/models"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
+
+	"github.com/Lavizord/checkers-server/models"
 
 	_ "github.com/lib/pq"
 )

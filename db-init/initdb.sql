@@ -24,7 +24,7 @@ BEGIN
             'SokkerDuel',
             'damasSokkerDuel',
             'BatalhaDasDamas',
-            'https://s3.eu-central-1.amazonaws.com/play.retromindgames.pt/games/damasSokkerDuel/index.html',
+            'https://play.retromindgames.pt/games/damasSokkerDuel/index.html',
             'https://tt2.sokkerduel.com',
             0.9
         ),
@@ -32,7 +32,7 @@ BEGIN
             'TestOp',
             'damasSokkerDuel',
             'BatalhaDasDamas',
-            'https://s3.eu-central-1.amazonaws.com/play.retromindgames.pt/games/damasSokkerDuel/index.html',
+            'https://play.retromindgames.pt/games/damasSokkerDuel/index.html',
             '',
             0.9
         );

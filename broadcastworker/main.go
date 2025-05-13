@@ -1,12 +1,13 @@
 package main
 
 import (
-	"checkers-server/config"
-	"checkers-server/messages"
-	"checkers-server/redisdb"
 	"log"
 	"os"
 	"time"
+
+	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/messages"
+	"github.com/Lavizord/checkers-server/redisdb"
 )
 
 var pid int
@@ -40,7 +41,7 @@ func main() {
 		if err != nil {
 			log.Printf("[BroadcastWorker-%d] Error publishing message: %v\n", pid, err)
 		} else {
-			log.Printf("[BroadcastWorker-%d] Published room aggregates\n", pid)
+			//log.Printf("[BroadcastWorker-%d] Published room aggregates\n", pid)
 		}
 	}
 }

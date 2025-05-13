@@ -14,12 +14,13 @@ COPY config /app/config
 COPY postgrescli /app/postgrescli
 COPY redisdb /app/redisdb
 # RUN echo "Files after copying shared code:" && ls -l /app/
-COPY ./gameworker /app/
-# RUN echo "Files after copying gameworker source code:" && ls -l /app/
-
+COPY ./serverws /app/
+# RUN echo "Files after copying serverws source code:" && ls -l /app/
+RUN echo "Listing /app/ contentes:" && ls -l /app/
+RUN echo "Listing . contentes:" && ls -l .
 RUN go mod tidy
 RUN go mod download
-RUN go build -o gameworker .
+RUN go build -o serverws .
 # RUN ls -l /app/
 # RUN ls -l .
 
@@ -31,5 +32,5 @@ COPY --from=builder /app/ .
 # RUN ls -l .
 # RUN ls -lh /root/
 ENV CONFIG_PATH=/root/config/config.json
-# Run the gameworker service
-CMD ["./gameworker"]
+# Run the serverws service
+CMD ["./serverws"]

@@ -1,5 +1,7 @@
 FROM golang:1.23.6-alpine AS builder
 WORKDIR /app/
+RUN apk add --no-cache git
+
 
 #RUN echo "Files on /app/:" && ls -l /app/
 #RUN echo "Files on .:" && ls -l .

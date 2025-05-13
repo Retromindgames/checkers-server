@@ -1,10 +1,12 @@
 package redisdb
 
 import (
-	"checkers-server/models"
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+
+	"github.com/Lavizord/checkers-server/models"
 )
 
 func (r *RedisClient) AddPlayer(player *models.Player) error {
@@ -12,6 +14,7 @@ func (r *RedisClient) AddPlayer(player *models.Player) error {
 	if err != nil {
 		return fmt.Errorf("[RedisClient] - failed to serialize player: %v", err)
 	}
+	log.Println("Adding player back to redis")
 	// Uses a shared key ("players") , store the player data under their ID
 	return r.Client.HSet(context.Background(), "players", player.ID, data).Err()
 }
