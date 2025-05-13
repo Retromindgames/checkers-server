@@ -409,8 +409,10 @@ func startCumulativeTimer(game *models.Game) {
 			// Publish the updated timer to both players
 			game, _ := redisClient.GetGame(game.ID)
 			msg, _ := messages.GenerateGameTimerMessage(*game, activePlayerTimer)
-			redisClient.PublishToGamePlayer(game.Players[0], string(msg))
-			redisClient.PublishToGamePlayer(game.Players[1], string(msg))
+			game.UpdatePlayerTimer(activePlayer.ID, activePlayerTimer)
+			go redisClient.UpdateGame(game)
+			go redisClient.PublishToGamePlayer(game.Players[0], string(msg))
+			go redisClient.PublishToGamePlayer(game.Players[1], string(msg))
 
 			// Check if the active player's timer has expired
 			if activePlayerTimer <= 0 {
