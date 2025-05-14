@@ -31,7 +31,7 @@ jobs:
 
       - name: Build and push wsapi image
         run: |
-          docker build -f wsapi.dockerfile -t $ECR_REGISTRY:wsapi .
+          docker build -f serverws.dockerfile -t $ECR_REGISTRY:wsapi .
           docker push $ECR_REGISTRY:wsapi
 
       - name: Build and push restapi image

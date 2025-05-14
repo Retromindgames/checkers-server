@@ -56,7 +56,7 @@ type Config struct {
 var Cfg Config
 
 func LoadConfig() {
-	if os.Getenv("PROD") != "" {
+	if os.Getenv("PROD") != "" || os.Getenv("STAGING") != "" {
 		log.Println("[config.go] - Loading config from file and environment variables (production mode)")
 		loadConfigFromFile() // we load it from file.
 		loadConfigFromEnv()  // then we override with vens, to make the transition smoother
