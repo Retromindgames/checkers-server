@@ -2,7 +2,6 @@ package walletrequests
 
 import (
 	"bytes"
-	"checkers-server/models"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +10,8 @@ import (
 	"net/url"
 	"path"
 	"time"
+
+	"github.com/Lavizord/checkers-server/models"
 )
 
 func SokkerDuelGetWallet(baseUrl string, token string) (*models.WalletResponse, error) {

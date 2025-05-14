@@ -1,13 +1,14 @@
 package main
 
 import (
-	"checkers-server/config"
-	"checkers-server/redisdb"
-	"checkers-server/wsapi"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/redisdb"
+	"github.com/Lavizord/checkers-server/wsapi"
 )
 
 func init() {

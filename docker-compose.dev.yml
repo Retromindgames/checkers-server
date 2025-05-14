@@ -19,7 +19,7 @@ services:
     container_name: wsapi
     build:
       context: .
-      dockerfile: wsapi.dockerfile
+      dockerfile: serverws.dockerfile
     expose:
       - "80"
     environment:
@@ -53,16 +53,6 @@ services:
       - app-network
     depends_on:
       - postgres
-
-  pstatusworker:
-    container_name: pstatusworker
-    build:
-      context: .
-      dockerfile: pstatusworker.dockerfile
-    depends_on:
-      - redis
-    networks:
-      - app-network
 
   roomworker:
     container_name: roomworker

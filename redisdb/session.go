@@ -1,11 +1,12 @@
 package redisdb
 
 import (
-	"checkers-server/models"
 	"context"
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/Lavizord/checkers-server/models"
 )
 
 func (r *RedisClient) AddSession(session *models.Session) error {

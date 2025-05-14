@@ -1,15 +1,16 @@
 package main
 
 import (
-	"checkers-server/config"
-	"checkers-server/interfaces"
-	"checkers-server/models"
-	"checkers-server/postgrescli"
-	"checkers-server/redisdb"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/interfaces"
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/postgrescli"
+	"github.com/Lavizord/checkers-server/redisdb"
 
 	"github.com/gorilla/mux"
 )

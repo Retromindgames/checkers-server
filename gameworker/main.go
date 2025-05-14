@@ -1,18 +1,19 @@
 package main
 
 import (
-	"checkers-server/config"
-	"checkers-server/interfaces"
-	"checkers-server/messages"
-	"checkers-server/models"
-	"checkers-server/postgrescli"
-	"checkers-server/redisdb"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"time"
+
+	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/interfaces"
+	"github.com/Lavizord/checkers-server/messages"
+	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/postgrescli"
+	"github.com/Lavizord/checkers-server/redisdb"
 )
 
 var pid int
@@ -140,7 +141,8 @@ func processGameMoves() {
 		piece := game.Board.GetPieceByID(move.PieceID)
 		if !validMove(game, move, piece) {
 			log.Printf("Invalid move detected")
-			msginv, _ := messages.NewMessage("invalid_move", "")
+			boardState, _ := messages.GenerateGameBoardState(*game)
+			msginv, _ := messages.NewMessage("invalid_move", boardState)
 			redisClient.PublishToPlayer(*player, string(msginv))
 			continue
 		}
@@ -172,7 +174,7 @@ func processGameMoves() {
 
 		// We check for game Over
 		if game.CheckGameOver() {
-			handleGameEnd(*game, "winner", move.PlayerID)
+			handleGameEnd(game, "winner", move.PlayerID)
 			continue
 		}
 		// We check for a capture.
@@ -212,7 +214,7 @@ func processLeaveGame() {
 			continue
 		}
 		winnrID, _ := game.GetOpponentPlayerID(playerData.ID)
-		handleGameEnd(*game, "player_left", winnrID)
+		handleGameEnd(game, "player_left", winnrID)
 	}
 }
 
@@ -408,15 +410,17 @@ func startCumulativeTimer(game *models.Game) {
 			// Publish the updated timer to both players
 			game, _ := redisClient.GetGame(game.ID)
 			msg, _ := messages.GenerateGameTimerMessage(*game, activePlayerTimer)
-			redisClient.PublishToGamePlayer(game.Players[0], string(msg))
-			redisClient.PublishToGamePlayer(game.Players[1], string(msg))
+			game.UpdatePlayerTimer(activePlayer.ID, activePlayerTimer)
+			go redisClient.UpdateGame(game)
+			go redisClient.PublishToGamePlayer(game.Players[0], string(msg))
+			go redisClient.PublishToGamePlayer(game.Players[1], string(msg))
 
 			// Check if the active player's timer has expired
 			if activePlayerTimer <= 0 {
 				// The other player wins
 				winner := game.Players[1-activePlayerIndex].ID
 				//log.Printf("Cumulative timer expired for player %s in game %s. Player %s wins.\n", activePlayer.ID, game.ID, winner)
-				handleGameEnd(*game, "timeout", winner)
+				handleGameEnd(game, "timeout", winner)
 				return
 			}
 
@@ -436,73 +440,78 @@ func startCumulativeTimer(game *models.Game) {
 	}
 }
 
-func handleGameEnd(game models.Game, reason string, winnerID string) {
+func handleGameEnd(game *models.Game, reason string, winnerID string) {
 	//log.Printf("Handling Game End for game [%v] - reason: [%v]", game.ID, reason)
-	var winAmount int64 = 0
-	// if the game is over, lets stop the timers.
+
 	publishStopToTimerChannel(game.ID)
 	game.FinishGame(winnerID)
 
-	// Now we update the winner player
-	winnerPlayer, err := redisClient.GetPlayer(game.Winner)
+	winAmount := interfaces.CalculateWinAmount(int64(game.BetValue*100), game.OperatorIdentifier.WinFactor)
+	gameOverMsg, err := messages.GenerateGameOverMessage(reason, *game, winAmount)
 	if err != nil {
-		log.Printf("[%s-%d] - (Handle Game Over) - Failed to get winner player!: %v\n", name, pid, err)
-		return
-	} else {
-		// Now we handle the wallet side of things.
-		module, exists := interfaces.OperatorModules[winnerPlayer.OperatorIdentifier.OperatorName]
-		if !exists {
-			log.Printf("[RoomWorker-%d] - Error handleGameEnd getting GenerateOpponentReadyMessage(true) for opponent:%s\n", pid, err)
-			return
-		}
-		session, err := redisClient.GetSessionByID(winnerPlayer.SessionID)
-		if err != nil {
-			log.Printf("[RoomWorker-%d] - Error handleGameEnd fetching player1 sessionID:%s\n", pid, err)
-			return
-		}
-		//log.Printf("[RoomWorker-%d] - Session extract ID, before posting bet :%s\n", pid, err)
-		var newBalance int64
-		newBalance, winAmount, err = module.HandlePostWin(postgresClient, redisClient, *session, int64(game.BetValue*100), game.ID)
-		if err != nil {
-			log.Printf("[RoomWorker-%d] - Error posting the win :%s\n", pid, err)
-		} else {
-			msgP1, _ := messages.NewMessage("balance_update", float64(newBalance)/100)
-			redisClient.PublishPlayerEvent(winnerPlayer, string(msgP1))
-		}
-		// Update status and game Id of players
-		winnerPlayer.GameID = ""
-		winnerPlayer.UpdatePlayerStatus(models.StatusOnline)
-		redisClient.UpdatePlayer(winnerPlayer)
-	}
-	msg, err := messages.GenerateGameOverMessage(reason, game, winAmount)
-	if err != nil {
-		log.Printf("[%s-%d] - (Handle Game Over) - Failed to get game!: %v\n", name, pid, err)
+		log.Printf("[%s] - (Handle Game Over) - Failed to generate game over message!: %v\n", name, err)
 		return
 	}
-	redisClient.PublishToGamePlayer(*&game.Players[0], string(msg))
-	redisClient.PublishToGamePlayer(*&game.Players[1], string(msg))
-
-	opponentID, _ := game.GetOpponentPlayerID(winnerPlayer.ID)
-	opponentPlayer, err := redisClient.GetPlayer(opponentID)
-	if err != nil {
-		log.Printf("[%s-%d] - (Handle Game Over) - Failed to get looser player!: %v\n", name, pid, err)
-		return
-	} else {
-		// Update status and game Id of players
-		opponentPlayer.GameID = ""
-		opponentPlayer.UpdatePlayerStatus(models.StatusOnline)
-		redisClient.UpdatePlayer(opponentPlayer)
-	}
+	p1 := game.Players[0]
+	p2 := game.Players[1]
+	go cleanUpGameDisconnectedPlayers(*game) // This was at the end, was moved up here, might make the reconect when the game is over more smooth...?
+	go processGameEndForPlayer(winnerID, game, p1, reason, winAmount, gameOverMsg)
+	go processGameEndForPlayer(winnerID, game, p2, reason, winAmount, gameOverMsg)
 
 	// since the game is Over, we remove it from redis.
 	if redisClient.RemoveGame(game.ID) != nil {
-		log.Printf("[%s-%d] - (Handle Game Over) - Failed to remove game!: %v\n", name, pid, err)
+		log.Printf("[%s] - (Handle Game Over) - Failed to remove game!: %v\n", name, err)
 	} else {
-		log.Printf("[%s-%d] - (Handle Game Over) - Removed game!: %v\n", name, pid, err)
+		log.Printf("[%s] - (Handle Game Over) - Removed game!: %v\n", name, err)
 	}
-	// We then save the game to POSTGRES.
-	postgresClient.SaveGame(game, reason)
-	cleanUpGameDisconnectedPlayers(game)
+	postgresClient.SaveGame(*game, reason)
+}
+
+func processGameEndForPlayer(winnerID string, game *models.Game, gamePlayer models.GamePlayer, reason string, winAmount int64, gameOverMsg []byte) {
+	var interfaceModule interfaces.OperatorInterface
+	interfaceModule = interfaces.OperatorModules[game.OperatorIdentifier.OperatorName]
+	var balanceUpdateMsg []byte
+
+	// 1. The Winner needs to have a post to the wallet.
+	if winnerID == gamePlayer.ID {
+		// Get the session from the ID, since they share the same ID.
+		winnerSession, err := redisClient.GetSessionByID(winnerID)
+		if err != nil {
+			log.Printf("[GameWorker] - error -> handleGameEnd - processGameEndForPlayer: fetching winner player session:%s\n", err)
+			return
+		}
+		if winnerSession == nil {
+			log.Printf("[GameWorker] - error -> handleGameEnd - processGameEndForPlayer: session id is nill!:%s\n", err)
+			return
+		}
+		// we use our winner session here, because this way the winner will be payed out even if offline.
+		var newBalance int64
+		newBalance, _, err = interfaceModule.HandlePostWin(postgresClient, redisClient, *winnerSession, int64(game.BetValue*100), game.ID)
+		if err != nil {
+			log.Printf("[RoomWorker] - Error posting the win :%s\n", err)
+		} else {
+			// We then generate the balance update message and send it over to the game Player. The player can be offline, but I guess the message just wont get delivered.
+			// I could try to fetch the player from redis...? Is it worth it?... I fetch the player down the line...
+			balanceUpdateMsg, _ = messages.NewMessage("balance_update", float64(newBalance)/100)
+		}
+	}
+
+	// 2. Update player data, if it exists. If not prolly offline.
+	player, err := redisClient.GetPlayer(gamePlayer.ID)
+	if err != nil {
+		log.Printf("[%s-%d] - (Handle Game Over) - processGameEndForPlayer - Failed to get player!: %v\n", name, pid, err)
+		return
+	}
+	if player == nil {
+		log.Printf("[%s-%d] - (Handle Game Over) - processGameEndForPlayer - player is nill !: %v\n", name, pid, err)
+		return
+	}
+	player.GameID = ""
+	player.UpdatePlayerStatus(models.StatusOnline)
+	redisClient.UpdatePlayer(player)
+	redisClient.PublishToGamePlayer(gamePlayer, string(gameOverMsg))
+	redisClient.PublishToGamePlayer(gamePlayer, string(balanceUpdateMsg))
+
 }
 
 func cleanUpGameDisconnectedPlayers(game models.Game) {

@@ -1,13 +1,14 @@
 package redisdb
 
 import (
-	"checkers-server/models"
 	"context"
 	"fmt"
 	"log"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/Lavizord/checkers-server/models"
 )
 
 func (r *RedisClient) CreateQueueCount(aggregateValue float64) {
@@ -85,7 +86,7 @@ func (r *RedisClient) GetQueueNumberResponse() (*models.QueueNumbersResponse, er
 			if err != nil {
 				continue // Skip invalid counts
 			}
-			games, _ := r.CountGamesByBetValue(aggregateValue)	// Now we fetch our games.
+			games, _ := r.CountGamesByBetValue(aggregateValue) // Now we fetch our games.
 			playerCount = append(playerCount, models.PlayerCountPerBetValue{
 				BetValue:    aggregateValue,
 				PlayerCount: count + (games * 2),

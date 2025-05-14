@@ -1,5 +1,6 @@
 FROM golang:1.23.6-alpine AS builder
 WORKDIR /app/
+RUN apk add --no-cache git
 
 #RUN echo "Files on /app/:" && ls -l /app/
 #RUN echo "Files on .:" && ls -l .
@@ -9,6 +10,8 @@ COPY messages /app/messages
 COPY models /app/models
 COPY interfaces /app/interfaces
 COPY config /app/config
+COPY walletrequests /app/walletrequests
+COPY postgrescli /app/postgrescli
 COPY redisdb /app/redisdb
 # RUN echo "Files after copying shared code:" && ls -l /app/
 COPY ./broadcastworker /app/
