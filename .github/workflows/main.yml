@@ -39,11 +39,6 @@ jobs:
           docker build -f restapiworker.dockerfile -t $ECR_REGISTRY:restapi .
           docker push $ECR_REGISTRY:restapi
 
-      - name: Build and push pstatus image
-        run: |
-          docker build -f pstatusworker.dockerfile -t $ECR_REGISTRY:pstatus .
-          docker push $ECR_REGISTRY:pstatus
-
       - name: Build and push room image
         run: |
           docker build -f roomworker.dockerfile -t $ECR_REGISTRY:room .
