@@ -5,7 +5,9 @@ import { check, fail } from 'k6';
 export {options};     // This will be the options from the config. They will be used to run the test.
 import { Trend } from 'k6/metrics';
 
-export let connectTime = new Trend('ws_connect_message_time', true);
+export let gamelaunchResponseTime = new Trend('http_gamelaunch_response_time', true);
+export let connectedMsgTime = new Trend('ws_connected_message_time', true);
+export let connectTime = new Trend('ws_connect_time', true);
 
 /*
   TODO: Find way to hook up a web dashboard to this.
@@ -15,8 +17,10 @@ export let connectTime = new Trend('ws_connect_message_time', true);
 
 function runGamelaunch() {
   const url = getUrlHttps('http', 'gamelaunch');
+  const start = Date.now();
   const res = http.post(url, payloads.gamelaunch(), { headers });
-
+  const elapsed = Date.now() - start; 
+  gamelaunchResponseTime.add(elapsed);
   console.log(`Status: ${res.status}`);
   console.log(`Body: ${res.body}`);
 
@@ -36,12 +40,14 @@ function runGamelaunch() {
   return data.url;
 }
 
-export function connectWebSocket(wsConUrl) {
+function connectWebSocket(wsConUrl) {
   console.log('Connecting to websocket');
   const start = Date.now();
 
   const res = ws.connect(wsConUrl, null, function (socket) {
     socket.on('open', () => {
+      const elapsed = Date.now() - start; 
+      connectTime.add(elapsed)
       console.log('WebSocket connection opened');
     });
 
@@ -52,7 +58,10 @@ export function connectWebSocket(wsConUrl) {
       if (data.command === 'connected') {
         const elapsed = Date.now() - start;
         console.log(`Connected message received after ${elapsed} ms`);
-        connectTime.add(elapsed); // record metric
+        connectedMsgTime.add(elapsed); // record metric
+        // TODO: Send the queue message, call method for that.
+        // TODO: Reset start?
+        //  
       }
     });
 
