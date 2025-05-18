@@ -44,3 +44,6 @@ pprof/
 
 # GoLand specific files
 *.iml
+
+# Other
+neon staging.txt
