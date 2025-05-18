@@ -15,7 +15,7 @@ func main() {
 	config.LoadConfig()
 	redisConfig := config.Cfg.Redis
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/ws/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
