@@ -21,6 +21,8 @@ func main() {
 
 	flag.Parse()
 	hub := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password)
+	defer hub.Close() // close Redis on exit
+
 	go hub.run()
 	// we subscribe to our redis broadcast channel.
 	hub.SubscribeBroadcast()

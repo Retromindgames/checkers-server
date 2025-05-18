@@ -6,6 +6,7 @@ import (
 
 	"github.com/Lavizord/checkers-server/models"
 	"github.com/Lavizord/checkers-server/redisdb"
+	"github.com/redis/go-redis/v9"
 )
 
 // Hub maintains the set of active clients and broadcasts messages to the
@@ -24,6 +25,11 @@ type Hub struct {
 	unregister chan *Client
 
 	redis *redisdb.RedisClient
+
+	broadastpubsub *redis.PubSub
+
+	//pubsub *redisdb.RedisClient.PubSub
+
 }
 
 func newHub(addr string, username string, password string) *Hub {
@@ -38,6 +44,13 @@ func newHub(addr string, username string, password string) *Hub {
 		clients:    make(map[*Client]bool),
 		redis:      redisclient,
 	}
+}
+
+func (h *Hub) Close() {
+	if h.broadastpubsub != nil {
+		h.broadastpubsub.Close()
+	}
+	h.redis.CloseRedisClient()
 }
 
 func (h *Hub) run() {
@@ -92,6 +105,7 @@ func (h *Hub) run() {
 
 func (h *Hub) SubscribeBroadcast() {
 	pubsub := h.redis.Client.Subscribe(context.Background(), "game_info")
+	h.broadastpubsub = pubsub
 	ch := pubsub.Channel()
 
 	go func() {
