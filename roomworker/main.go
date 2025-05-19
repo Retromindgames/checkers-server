@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -14,6 +15,7 @@ import (
 	"github.com/Lavizord/checkers-server/models"
 	"github.com/Lavizord/checkers-server/postgrescli"
 	"github.com/Lavizord/checkers-server/redisdb"
+	"github.com/redis/go-redis/v9"
 )
 
 var pid int
@@ -103,19 +105,29 @@ func processQueueForBet(bet float64) {
 			log.Printf("[RoomWorker-%d] - Error retrieving player 1 from %s: %v\n", pid, queueName, err)
 			continue
 		}
-		//log.Printf("[RoomWorker-%d] - Retrieved player 1 from %s: %v\n", pid, queueName, player1)
+		var p1disc, p2disc bool
+
+		// log.Printf("[RoomWorker-%d] - Retrieved player 1 from %s: %v\n", pid, queueName, player1)
 		player1Details, err := redisClient.GetPlayer(player1.ID)
 		if err != nil {
-			log.Printf("[RoomWorker-%d] - Error retrieving player 1 details, player removed from queue: %v\n", pid, err)
-			redisClient.DecrementQueueCount(bet)
-			continue
+			// We will make a check if the player is one of the disconnected players.
+			player1Details = redisClient.GetDisconnectedInQueuePlayerData(player1.ID)
+			if player1Details == nil {
+				log.Printf("[RoomWorker-%v] - Error retrieving player 1 details, player removed from queue: %v\n", pid, err)
+				redisClient.DecrementQueueCount(bet)
+				continue
+			}
+			p1disc = true
+			log.Printf("[RoomWorker-%v] -Player 1 details retrieved from offline queue list.", pid)
 		}
-		// we check to see if the player is eligible to be processed.
+
+		// We check to see if the player is eligible to be processed.
 		if !player1Details.IsEligibleForQueue(bet) {
 			log.Printf("[RoomWorker-%d] - player1 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
 			redisClient.DecrementQueueCount(bet)
 			continue
 		}
+
 		// Try fetching the second player with a timeout
 		player2, err := redisClient.BLPop(queueName, config.Cfg.Services["roomworker"].Timer)
 		if err != nil {
@@ -125,21 +137,29 @@ func processQueueForBet(bet float64) {
 			redisClient.RPush(queueName, player1)
 			continue
 		}
-		//log.Printf("[RoomWorker-%d] - Retrieved player 2 from %s: %v\n", pid, queueName, player2)
+
+		// log.Printf("[RoomWorker-%d] - Retrieved player 2 from %s: %v\n", pid, queueName, player2)
 		player2Details, err := redisClient.GetPlayer(player2.ID)
 		if err != nil {
-			log.Printf("[RoomWorker-%d] - Error retrieving player 2 details: %v\n", pid, err)
-			redisClient.RPush(queueName, player1)
-			redisClient.DecrementQueueCount(bet)
-			continue
+			// We will make a check if the player is one of the disconnected players.
+			player2Details = redisClient.GetDisconnectedInQueuePlayerData(player2.ID)
+			if player2Details == nil {
+				log.Printf("[RoomWorker-%v] - Error retrieving player 2 details, player removed from queue: %v\n", pid, err)
+				redisClient.DecrementQueueCount(bet)
+				continue
+			}
+			p2disc = true
+			log.Printf("[RoomWorker-%v] -Player 2 details retrieved from offline queue list.", pid)
 		}
+
 		if player1Details.ID == player2Details.ID {
 			log.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
 			redisClient.RPush(queueName, player1)
 			redisClient.DecrementQueueCount(bet)
 			continue
 		}
-		// before we handle the paired, we will do a final check to make sure the players2 is still online / valid.
+
+		// Before we handle the paired, we will do a final check to make sure the players2 is still online / valid.
 		if !player2Details.IsEligibleForQueue(bet) {
 			// If it is not valid, we will add player 1 back to the queue.
 			log.Printf("[RoomWorker-%d] - player2 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
@@ -147,9 +167,10 @@ func processQueueForBet(bet float64) {
 			redisClient.DecrementQueueCount(bet)
 			continue
 		}
+
 		// Process both players
-		//log.Printf("[RoomWorker-%d] - Pairing players: %s and %s from %s\n", pid, player1, player2, queueName)
-		handleQueuePaired(player1, player2)
+		// log.Printf("[RoomWorker-%d] - Pairing players: %s and %s from %s\n", pid, player1, player2, queueName)
+		handleQueuePaired(player1, player2, p1disc, p2disc)
 	}
 }
 
@@ -206,6 +227,7 @@ func processRoomEnding() {
 		addPlayerToQueue(player2, true, true)
 		playerWhoLeft.SetStatusOnline()
 		redisClient.UpdatePlayer(playerWhoLeft)
+		redisClient.PublishToRoomPubSub(room.ID, "room_end")
 		err = redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		if err != nil {
 			log.Printf("[RoomWorker-%d] - processRoomEnding - Error removing room: %v\n", pid, err)
@@ -216,7 +238,7 @@ func processRoomEnding() {
 	}
 }
 
-func handleQueuePaired(player1, player2 *models.Player) {
+func handleQueuePaired(player1, player2 *models.Player, p1disc, p2disc bool) {
 	room := &models.Room{
 		ID:                 models.GenerateUUID(),
 		Player1:            player1,
@@ -231,8 +253,17 @@ func handleQueuePaired(player1, player2 *models.Player) {
 	player2.RoomID = room.ID
 	player1.Status = models.StatusInRoom
 	player2.Status = models.StatusInRoom
-	redisClient.UpdatePlayer(player1)
-	redisClient.UpdatePlayer(player2)
+
+	if p1disc == true {
+		redisClient.SaveDisconnectInQueuePlayerData(player1)
+	} else {
+		redisClient.UpdatePlayer(player1)
+	}
+	if p2disc == true {
+		redisClient.SaveDisconnectInQueuePlayerData(player2)
+	} else {
+		redisClient.UpdatePlayer(player2)
+	}
 
 	cleanup := true
 	defer func() {
@@ -241,8 +272,16 @@ func handleQueuePaired(player1, player2 *models.Player) {
 			player2.RoomID = ""
 			player1.Status = models.StatusOnline
 			player2.Status = models.StatusOnline
-			redisClient.UpdatePlayer(player1)
-			redisClient.UpdatePlayer(player2)
+			if p1disc == true {
+				redisClient.SaveDisconnectInQueuePlayerData(player1)
+			} else {
+				redisClient.UpdatePlayer(player1)
+			}
+			if p2disc == true {
+				redisClient.SaveDisconnectInQueuePlayerData(player2)
+			} else {
+				redisClient.UpdatePlayer(player2)
+			}
 			redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 			redisClient.DecrementQueueCount(player1.SelectedBet)
 			redisClient.DecrementQueueCount(player2.SelectedBet)
@@ -284,12 +323,14 @@ func handleQueuePaired(player1, player2 *models.Player) {
 		log.Printf("Failed to publish message to player1: %v\n", err)
 		return
 	}
-
 	err = redisClient.PublishToPlayer(*player2, string(message2))
 	if err != nil {
 		log.Printf("Failed to publish message to player2: %v\n", err)
 		return
 	}
+
+	// This will start a pubsub tied to a timer.
+	listenRoom(context.Background(), redisClient.Client, room)
 
 	cleanup = false
 	redisClient.DecrementQueueCount(player1.SelectedBet)
@@ -403,12 +444,15 @@ func handleReadyRoom(player *models.Player) {
 	redisClient.PublishPlayerEvent(player, string(msgP1))
 	redisClient.PublishPlayerEvent(player2, string(msgP2))
 
+	redisClient.PublishToRoomPubSub(proom.ID, "room_end")
+
 	// Then we start a match
 	roomdata, err := json.Marshal(proom)
 	err = redisClient.RPushGeneric("create_game", roomdata)
 	if err != nil {
 		log.Printf("[RoomWorker-%d] - Error handleReadyRoom Creating Game RPushGeneric:%s\n", pid, err)
 	}
+
 }
 
 func handleUnReadyRoom(player *models.Player) {
@@ -529,6 +573,10 @@ func handleCreateRoom(player *models.Player) {
 	log.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
 }
 
+func handleEndRoom(room *models.Room) {
+
+}
+
 func addPlayerToQueue(player *models.Player, incrementQueueCount, notify bool) {
 	// Reset both player data.
 	player.RoomID = ""
@@ -550,4 +598,47 @@ func addPlayerToQueue(player *models.Player, incrementQueueCount, notify bool) {
 		queueMsg, _ := messages.GenerateQueueConfirmationMessage(true)
 		redisClient.PublishPlayerEvent(player, string(queueMsg))
 	}
+}
+
+// Method to listen to room messages.
+//
+// Initially created to manage the room timer, but should be expanded to be used by a few
+// other messages.
+// TODO: I should move some code from the other handlers to here... This seems like a better way to do it.
+// For now I guess we will just wait for the timmer, or for a comunication to close the timer, if the rooms ends in any other way.
+func listenRoom(ctx context.Context, rdb *redis.Client, room *models.Room) {
+	pubsub := rdb.Subscribe(ctx, "roompubsub:"+room.ID)
+	ch := pubsub.Channel()
+
+	go func() {
+		defer pubsub.Close()
+
+		countdown := 30
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case msg := <-ch:
+				println("Received:", msg.Payload)
+				// Stop countdown if message indicates game start or readiness
+				if msg.Payload == "room_end" {
+					println("Timer canceled by message room_end")
+					return
+				}
+
+			case <-ticker.C:
+				countdown--
+				println("Countdown:", countdown)
+				if countdown <= 0 {
+					println("Room timed out")
+					handleEndRoom(room)
+					return
+				}
+
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
 }

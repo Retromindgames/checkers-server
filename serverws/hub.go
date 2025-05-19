@@ -63,7 +63,13 @@ func (h *Hub) run() {
 			log.Println("[HUB.Run] - Unregister")
 			if _, ok := h.clients[client]; ok {
 				client.UpdatePlayerDataFromRedis()
-				h.redis.UpdatePlayersInQueueSet(client.player.ID, models.StatusOffline)
+
+				//h.redis.UpdatePlayersInQueueSet(client.player.ID, models.StatusOffline)
+				// If our player is in queue, we add it to a special redis set to handle players in queue that were disconnected.
+				if client.player.Status == models.StatusInQueue {
+					log.Printf("[Hub.Run] - Removed player is in a Room, saving player to in queue disconnect!: %v\n", client.player)
+					h.redis.SaveDisconnectInQueuePlayerData(client.player)
+				}
 				if client.player.RoomID != "" || client.player.Status == models.StatusInRoom || client.player.Status == models.StatusInRoomReady {
 					log.Printf("[Hub.Run] - Removed player is in a Room, sending notification to room worker!: %v\n", client.player)
 					h.redis.RPush("leave_room", client.player)
@@ -85,7 +91,7 @@ func (h *Hub) run() {
 				select {
 				case client.send <- message:
 				default:
-					h.redis.UpdatePlayersInQueueSet(client.player.ID, models.StatusOffline)
+					//h.redis.UpdatePlayersInQueueSet(client.player.ID, models.StatusOffline)
 					if client.player.RoomID != "" || client.player.Status == models.StatusInRoom || client.player.Status == models.StatusInRoomReady {
 						log.Printf("[Hub.Run] - Removed player is in a Room, sending notification to room worker!: %v\n", client.player)
 						h.redis.RPush("leave_room", client.player)
