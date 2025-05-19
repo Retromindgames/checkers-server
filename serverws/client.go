@@ -219,7 +219,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Now we will create our player, and check if there is any existing player with the same session.
-	player, wasdisconnected, err := CreatePlayer(hub.redis, session)
+	player, wasdisconnectedInGame, wasDisconnectedInQueue, err := CreatePlayer(hub.redis, session)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, err.Error(), http.StatusConflict)
@@ -269,8 +269,17 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	client.send <- msg
 
 	// Now that our player has subscribbed to our stuff, we will notify the gameworker of the reconnect.
-	if wasdisconnected {
+	if wasdisconnectedInGame {
 		hub.redis.RPush("reconnect_game", player)
+	}
+	if wasDisconnectedInQueue {
+		msg, err := messages.GenerateQueueConfirmationMessage(true)
+		if err != nil {
+			log.Printf("Failed to generate connected message : %v", err)
+			client.CloseConnection()
+			return
+		}
+		client.send <- msg
 	}
 
 }
