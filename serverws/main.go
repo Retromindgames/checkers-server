@@ -13,14 +13,16 @@ var addr = flag.String("addr", ":80", "http service address")
 func main() {
 
 	config.LoadConfig()
-	redisAddr := config.Cfg.Redis.Addr
+	redisConfig := config.Cfg.Redis
 
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/ws/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
 	flag.Parse()
-	hub := newHub(redisAddr)
+	hub := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password)
+	defer hub.Close() // close Redis on exit
+
 	go hub.run()
 	// we subscribe to our redis broadcast channel.
 	hub.SubscribeBroadcast()
