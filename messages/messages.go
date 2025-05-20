@@ -160,6 +160,16 @@ func GeneratePairedMessage(player1, player2 *models.Player, roomID string, color
 	return NewMessage("paired", pairedValue)
 }
 
+func GeneratePairedMessageFromP2Name(p2Name string, roomID string, color int, winnings int64) ([]byte, error) {
+	pairedValue := models.PairedValue{
+		Color:    color,
+		Opponent: p2Name,
+		RoomID:   roomID,
+		Winnings: float64(winnings) / 100,
+	}
+	return NewMessage("paired", pairedValue)
+}
+
 func GenerateRoomCreatedMessage(room models.Room) ([]byte, error) {
 	roomValue := models.RoomValue{
 		ID:       room.ID,
