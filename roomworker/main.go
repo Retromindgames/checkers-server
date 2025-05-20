@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Lavizord/checkers-server/config"
@@ -15,7 +16,6 @@ import (
 	"github.com/Lavizord/checkers-server/models"
 	"github.com/Lavizord/checkers-server/postgrescli"
 	"github.com/Lavizord/checkers-server/redisdb"
-	"github.com/redis/go-redis/v9"
 )
 
 var pid int
@@ -330,7 +330,7 @@ func handleQueuePaired(player1, player2 *models.Player, p1disc, p2disc bool) {
 	}
 
 	// This will start a pubsub tied to a timer.
-	listenRoom(context.Background(), redisClient.Client, room)
+	listenRoom(context.Background(), redisClient, room)
 
 	cleanup = false
 	redisClient.DecrementQueueCount(player1.SelectedBet)
@@ -573,6 +573,7 @@ func handleCreateRoom(player *models.Player) {
 	log.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
 }
 
+// TODO: Does nothing.
 func handleEndRoom(room *models.Room) {
 
 }
@@ -605,9 +606,9 @@ func addPlayerToQueue(player *models.Player, incrementQueueCount, notify bool) {
 // Initially created to manage the room timer, but should be expanded to be used by a few
 // other messages.
 // TODO: I should move some code from the other handlers to here... This seems like a better way to do it.
-// For now I guess we will just wait for the timmer, or for a comunication to close the timer, if the rooms ends in any other way.
-func listenRoom(ctx context.Context, rdb *redis.Client, room *models.Room) {
-	pubsub := rdb.Subscribe(ctx, "roompubsub:"+room.ID)
+// For now I guess we will just wait for the timer, or for a comunication to close the timer, if the rooms ends in any other way.
+func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room) {
+	pubsub := rdb.Client.Subscribe(ctx, "roompubsub:"+room.ID)
 	ch := pubsub.Channel()
 
 	go func() {
@@ -621,10 +622,18 @@ func listenRoom(ctx context.Context, rdb *redis.Client, room *models.Room) {
 			select {
 			case msg := <-ch:
 				println("Received:", msg.Payload)
-				// Stop countdown if message indicates game start or readiness
-				if msg.Payload == "room_end" {
+
+				switch {
+				case msg.Payload == "room_end":
 					println("Timer canceled by message room_end")
 					return
+
+				case strings.HasPrefix(msg.Payload, "player_reconnect:"):
+					playerID := strings.TrimPrefix(msg.Payload, "player_reconnect:")
+					println("Player reconnected:", playerID)
+					opponentName, _ := room.GetOpponentName(playerID)
+					outBoundMsg, _ := messages.GeneratePairedMessageFromP2Name(opponentName, room.ID, room.DeducePlayerColor(playerID), interfaces.CalculateWinAmount(int64(room.BetValue), room.OperatorIdentifier.WinFactor))
+					rdb.PublishToPlayerID(playerID, string(outBoundMsg))
 				}
 
 			case <-ticker.C:
@@ -640,5 +649,6 @@ func listenRoom(ctx context.Context, rdb *redis.Client, room *models.Room) {
 				return
 			}
 		}
+
 	}()
 }

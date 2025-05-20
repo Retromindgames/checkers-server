@@ -105,7 +105,7 @@ func CreatePlayer(redis *redisdb.RedisClient, session *models.Session) (*models.
 			Name:               discPlayer.Name,
 			SessionID:          discPlayer.SessionID,
 			Currency:           session.Currency,
-			Status:             models.StatusInQueue,
+			Status:             discPlayer.Status,
 			RoomID:             discPlayer.RoomID,
 			GameID:             "",
 			OperatorIdentifier: session.OperatorIdentifier,

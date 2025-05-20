@@ -184,6 +184,20 @@ func (r *RedisClient) GetDisconnectedInQueuePlayerData(sessionID string) *models
 	return &player
 }
 
+func (r *RedisClient) DeleteDisconnectedInQueuePlayerData(sessionID string) error {
+	key := fmt.Sprintf("players_disc_in_queue:%s", sessionID)
+
+	// Delete the key from Redis
+	err := r.Client.Del(context.Background(), key).Err()
+	if err != nil {
+		log.Println("Error deleting player disconnected in queue from Redis:", err)
+		return err
+	}
+
+	//fmt.Println("Player session deleted with key:", key)
+	return nil
+}
+
 func (r *RedisClient) DeleteDisconnectedPlayerSession(sessionID string) error {
 	key := fmt.Sprintf("players_disconnected:%s", sessionID)
 

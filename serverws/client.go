@@ -272,14 +272,23 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	if wasdisconnectedInGame {
 		hub.redis.RPush("reconnect_game", player)
 	}
+
+	// The queue handling of a disconnected player also has to be done...
+	// Its separated to try and not break the game reconect.
 	if wasDisconnectedInQueue {
-		msg, err := messages.GenerateQueueConfirmationMessage(true)
-		if err != nil {
-			log.Printf("Failed to generate connected message : %v", err)
-			client.CloseConnection()
-			return
+		hub.redis.DeleteDisconnectedInQueuePlayerData(player.ID)
+		if player.Status == models.StatusInQueue {
+			msg, err := messages.GenerateQueueConfirmationMessage(true)
+			if err != nil {
+				log.Printf("Failed to generate connected when wasDisconnectedInQueue : %v", err)
+				client.CloseConnection()
+				return
+			}
+			client.send <- msg
 		}
-		client.send <- msg
+		if player.Status == models.StatusInRoom {
+			hub.redis.PublishToRoomPubSub(player.RoomID, "player_reconnect:"+player.ID)
+		}
 	}
 
 }
