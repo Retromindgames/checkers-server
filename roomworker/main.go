@@ -575,8 +575,57 @@ func handleCreateRoom(player *models.Player) {
 }
 
 // TODO: Does nothing.
-func handleEndRoom(room *models.Room) {
+func handleEndRoom(rdb *redisdb.RedisClient, room *models.Room) {
+	p1, _ := rdb.GetPlayer(room.Player1.ID)
+	p2, _ := rdb.GetPlayer(room.Player2.ID)
 
+	key := fmt.Sprintf("%t_%t", p1 != nil, p2 != nil)
+	switch key {
+	case "false_false":
+		// both nil, no players, we will just remove the room, and remove both players from possible offline lists.
+		rdb.DeleteDisconnectedInQueuePlayerData(p1.ID)
+		rdb.DeleteDisconnectedInQueuePlayerData(p2.ID)
+		err := rdb.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
+		if err != nil {
+			log.Printf("[RoomWorker-%d] - handleEndRoom - Error removing room: %v\n", pid, err)
+			return
+		}
+
+	case "true_false":
+		// only p1, we will handle the removal of the P2, and requeue the p2.
+		rdb.DeleteDisconnectedInQueuePlayerData(p2.ID)
+		addPlayerToQueue(p1, true, true)
+		err := rdb.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
+		if err != nil {
+			log.Printf("[RoomWorker-%d] - handleEndRoom - Error removing room: %v\n", pid, err)
+			return
+		}
+		return
+	case "true_true":
+		// both, this means that the timer ran out...
+		// Now this can get a little tricky...
+		// Lets say our player has the status in room ready... This player should be added to the queue.
+		// p1.Status == models.StatusInRoomReady
+
+		if p1.Status == models.StatusInRoomReady {
+			addPlayerToQueue(p1, true, true)
+		} else {
+			p1.SetStatusOnline()
+			rdb.UpdatePlayer(p1)
+		}
+		if p2.Status == models.StatusInRoomReady {
+			addPlayerToQueue(p2, true, true)
+		} else {
+			p2.SetStatusOnline()
+			rdb.UpdatePlayer(p2)
+		}
+		err := rdb.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
+		if err != nil {
+			log.Printf("[RoomWorker-%d] - handleEndRoom - Error removing room: %v\n", pid, err)
+			return
+		}
+		return
+	}
 }
 
 func addPlayerToQueue(player *models.Player, incrementQueueCount, notify bool) {
@@ -642,7 +691,7 @@ func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room
 				println("Countdown:", countdown)
 				if countdown <= 0 {
 					println("Room timed out")
-					handleEndRoom(room)
+					handleEndRoom(rdb, room)
 					return
 				}
 				timerMsg, _ := messages.NewMessage("room_timer", strconv.Itoa(countdown))
