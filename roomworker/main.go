@@ -574,7 +574,6 @@ func handleCreateRoom(player *models.Player) {
 	log.Printf("[RoomWorker-%d] - Player successfully handled and notified, %+v\n", pid, string(messageBytes))
 }
 
-// TODO: Does nothing.
 func handleEndRoom(rdb *redisdb.RedisClient, room *models.Room) {
 	p1, _ := rdb.GetPlayer(room.Player1.ID)
 	p2, _ := rdb.GetPlayer(room.Player2.ID)
