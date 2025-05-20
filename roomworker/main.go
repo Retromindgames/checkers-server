@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -644,6 +645,9 @@ func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room
 					handleEndRoom(room)
 					return
 				}
+				timerMsg, _ := messages.NewMessage("room_timer", strconv.Itoa(countdown))
+				rdb.PublishToPlayerID(room.Player1.ID, string(timerMsg))
+				rdb.PublishToPlayerID(room.Player2.ID, string(timerMsg))
 
 			case <-ctx.Done():
 				return
