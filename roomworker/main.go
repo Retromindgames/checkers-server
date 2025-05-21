@@ -604,17 +604,19 @@ func handleEndRoom(rdb *redisdb.RedisClient, room *models.Room) {
 		// Now this can get a little tricky...
 		// Lets say our player has the status in room ready... This player should be added to the queue.
 		// p1.Status == models.StatusInRoomReady
-
+		msg, _ := messages.NewMessage("room_failed_ready_check", true)
 		if p1.Status == models.StatusInRoomReady {
 			addPlayerToQueue(p1, true, true)
 		} else {
 			p1.SetStatusOnline()
+			rdb.PublishToPlayerID(p1.ID, string(msg))
 			rdb.UpdatePlayer(p1)
 		}
 		if p2.Status == models.StatusInRoomReady {
 			addPlayerToQueue(p2, true, true)
 		} else {
 			p2.SetStatusOnline()
+			rdb.PublishToPlayerID(p2.ID, string(msg))
 			rdb.UpdatePlayer(p2)
 		}
 		err := rdb.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))

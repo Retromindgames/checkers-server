@@ -31,6 +31,7 @@ var validCommands = map[string]CommandInfo{
 	"queue_confirmation":         {Type: ServerCommand}, // This confirms that the player was placed in Queue.
 	"room_created":               {Type: ServerCommand}, // DEPRECATED
 	"room_timer":                 {Type: ServerCommand},
+	"room_failed_ready_check":    {Type: ServerCommand},
 	"paired":                     {Type: ServerCommand}, // This lets players know they were paired.
 	"opponent_ready":             {Type: ServerCommand}, // This lets the player know if the opponent is ready.
 	"opponent_left_room":         {Type: ServerCommand}, // This is a message sent when a player leaves a room.
