@@ -93,10 +93,11 @@ type CreateRoomMessage struct {
 }
 
 type PairedValue struct {
-	Color    int    `json:"color"`
-	Opponent string `json:"opponent"`
-	RoomID   string `json:"room_id"`
+	Color    int     `json:"color"`
+	Opponent string  `json:"opponent"`
+	RoomID   string  `json:"room_id"`
 	Winnings float64 `json:"winnings"`
+	Timer    int     `json:"timer"`
 }
 
 type QueueConfirmation struct {

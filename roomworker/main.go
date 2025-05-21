@@ -7,7 +7,6 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -307,13 +306,13 @@ func handleQueuePaired(player1, player2 *models.Player, p1disc, p2disc bool) {
 		return
 	}
 
-	message1, err := messages.GeneratePairedMessage(player1, player2, room.ID, colorp1, interfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor))
+	message1, err := messages.GeneratePairedMessage(player1, player2, room.ID, colorp1, interfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor), 30)
 	if err != nil {
 		log.Printf("Error generating message for player1: %v\n", err)
 		return
 	}
 
-	message2, err := messages.GeneratePairedMessage(player2, player1, room.ID, colorp2, interfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor))
+	message2, err := messages.GeneratePairedMessage(player2, player1, room.ID, colorp2, interfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor), 30)
 	if err != nil {
 		log.Printf("Error generating message for player2: %v\n", err)
 		return
@@ -522,12 +521,12 @@ func handleJoinRoom(player *models.Player) {
 	}
 	var winnings = interfaces.CalculateWinAmount(int64(player.SelectedBet*100), player.OperatorIdentifier.WinFactor)
 
-	message, err := messages.GeneratePairedMessage(rooms[0].Player1, player, rooms[0].ID, colorp1, winnings)
+	message, err := messages.GeneratePairedMessage(rooms[0].Player1, player, rooms[0].ID, colorp1, winnings, 30)
 	if err != nil {
 		log.Printf("[RoomWorker-%d] - Error handling paired message of join room for p1: %s\n", pid, err)
 		return
 	}
-	message2, err2 := messages.GeneratePairedMessage(player, rooms[0].Player1, rooms[0].ID, colorp2, winnings)
+	message2, err2 := messages.GeneratePairedMessage(player, rooms[0].Player1, rooms[0].ID, colorp2, winnings, 30)
 	if err2 != nil {
 		log.Printf("[RoomWorker-%d] - Error handling paired of join room message for p2:%s\n", pid, err2)
 		return
@@ -681,7 +680,7 @@ func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room
 					playerID := strings.TrimPrefix(msg.Payload, "player_reconnect:")
 					println("Player reconnected:", playerID)
 					opponentName, _ := room.GetOpponentName(playerID)
-					outBoundMsg, _ := messages.GeneratePairedMessageFromP2Name(opponentName, room.ID, room.DeducePlayerColor(playerID), interfaces.CalculateWinAmount(int64(room.BetValue), room.OperatorIdentifier.WinFactor))
+					outBoundMsg, _ := messages.GeneratePairedMessageFromP2Name(opponentName, room.ID, room.DeducePlayerColor(playerID), interfaces.CalculateWinAmount(int64(room.BetValue), room.OperatorIdentifier.WinFactor), countdown)
 					rdb.PublishToPlayerID(playerID, string(outBoundMsg))
 				}
 
@@ -693,9 +692,9 @@ func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room
 					handleEndRoom(rdb, room)
 					return
 				}
-				timerMsg, _ := messages.NewMessage("room_timer", strconv.Itoa(countdown))
-				rdb.PublishToPlayerID(room.Player1.ID, string(timerMsg))
-				rdb.PublishToPlayerID(room.Player2.ID, string(timerMsg))
+				//timerMsg, _ := messages.NewMessage("room_timer", strconv.Itoa(countdown))
+				//rdb.PublishToPlayerID(room.Player1.ID, string(timerMsg))
+				//rdb.PublishToPlayerID(room.Player2.ID, string(timerMsg))
 
 			case <-ctx.Done():
 				return

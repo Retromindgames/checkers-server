@@ -286,7 +286,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 			}
 			client.send <- msg
 		}
-		if player.Status == models.StatusInRoom {
+		if player.Status == models.StatusInRoom || player.Status == models.StatusInRoomReady {
 			hub.redis.PublishToRoomPubSub(player.RoomID, "player_reconnect:"+player.ID)
 		}
 	}
