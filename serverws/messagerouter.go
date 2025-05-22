@@ -30,7 +30,7 @@ func RouteMessages(message *messages.Message[json.RawMessage], client *Client, r
 		return
 
 	case "leave_room":
-		if client.player.Status != models.StatusInRoom {
+		if client.player.Status != models.StatusInRoom && client.player.Status != models.StatusInRoomReady {
 			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a leave room when not in a Room.")
 			client.send <- msg
 			return

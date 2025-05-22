@@ -83,7 +83,13 @@ func processGameCreation() {
 		}
 
 		player1, err := redisClient.GetPlayer(room.Player1.ID)
+		if err != nil {
+			player1 = redisClient.GetDisconnectedInQueuePlayerData(room.Player1.ID)
+		}
 		player2, err := redisClient.GetPlayer(room.Player2.ID)
+		if err != nil {
+			player2 = redisClient.GetDisconnectedInQueuePlayerData(room.Player2.ID)
+		}
 		game := room.NewGame()
 		// we need to update our players with a game ID.
 		player1.GameID = game.ID
@@ -96,7 +102,17 @@ func processGameCreation() {
 		player2.UpdatePlayerStatus(models.StatusInGame)
 		// Finnally save stuff to redis.
 		err = redisClient.UpdatePlayer(player1)
+		if err != nil {
+			// since the player is offline, we will move the player over to the offline list.
+			redisClient.SaveDisconnectSessionPlayerData(*player1, *game)
+			redisClient.DeleteDisconnectedInQueuePlayerData(player2.ID)
+		}
 		err = redisClient.UpdatePlayer(player2)
+		if err != nil {
+			// since the player is offline, we will move the player over to the offline list.
+			redisClient.SaveDisconnectSessionPlayerData(*player2, *game)
+			redisClient.DeleteDisconnectedInQueuePlayerData(player1.ID)
+		}
 		err = redisClient.AddGame(game)
 		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		msg, err := messages.GenerateGameStartMessage(*game)

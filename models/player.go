@@ -50,6 +50,7 @@ var validStatusTransitions = map[PlayerStatus]map[PlayerStatus]bool{
 		StatusInRoomReady: true,
 	},
 	StatusInRoomReady: {
+		StatusOnline: true,
 		StatusInRoom: true,
 		StatusInGame: true,
 	},

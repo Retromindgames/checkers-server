@@ -185,11 +185,13 @@ func processReadyQueue() {
 		log.Printf("[RoomWorker-%d] - processing ready room!: %+v\n", pid, playerData)
 		// Aqui ou damos handle do ready queue ou handle do unreadyqueue
 		if playerData.Status == models.StatusInRoomReady {
-			handleReadyRoom(playerData)
+			redisClient.PublishToRoomPubSub(playerData.RoomID, "player_ready:"+playerData.ID)
+			//handleReadyRoom(playerData)
 			continue
 		}
 		if playerData.Status == models.StatusInRoom {
-			handleUnReadyRoom(playerData)
+			redisClient.PublishToRoomPubSub(playerData.RoomID, "player_unready:"+playerData.ID)
+			//handleUnReadyRoom(playerData)
 			continue
 		}
 		log.Printf("Player is neither InRoomReady neither InRoom?!")
@@ -456,6 +458,107 @@ func handleReadyRoom(player *models.Player) {
 
 }
 
+func handleReadyRoomNew(player *models.Player, proom *models.Room) {
+	//log.Printf("[RoomWorker-%d] - Handling player (READY QUEUE): %s (Session: %s, Currency: %s)\n",
+	//	pid, player.ID, player.SessionID, player.Currency)
+
+	var errorWithOpponent bool
+	errorWithOpponent = false
+	defer func() {
+		if errorWithOpponent {
+			addPlayerToQueue(player, true, true)
+		}
+	}()
+	player2, err := proom.GetOpponentPlayer(player.ID)
+	// We will always notify the opponent the we are ready.
+	msg, err := messages.GenerateOpponentReadyMessage(true)
+	if err != nil {
+		log.Printf("[RoomWorker-%d] - Error handleReadyRoom getting GenerateOpponentReadyMessage(true) for opponent:%s\n", pid, err)
+		return
+	}
+	redisClient.PublishPlayerEvent(player2, string(msg))
+	// now we tell our player that is ready if the opponent is ready or not.
+	if player2.Status != models.StatusInRoomReady {
+		//log.Printf("[RoomWorker-%d] - handleReadyRoom Opponent aint ready yet!:%s\n", pid, err)
+		msg, err := messages.GenerateOpponentReadyMessage(false)
+		if err != nil {
+			log.Printf("[RoomWorker-%d] - Error handleReadyRoom getting GenerateOpponentReadyMessage(false) for player:%s\n", pid, err)
+		}
+		redisClient.PublishPlayerEvent(player, string(msg))
+		return
+	}
+	// Now! If both players are ready...!!
+	// Before we start the game, we will need to post to the wallet api of the bet, we will use our api interface for that.
+	module, exists := interfaces.OperatorModules[proom.OperatorIdentifier.OperatorName]
+	if !exists {
+		log.Printf("[RoomWorker-%d] - Error handleReadyRoom getting getting interfaces.OperatorModules[%v]:%s\n", pid, proom.OperatorIdentifier.OperatorName, err)
+		return
+	}
+
+	session1, err := redisClient.GetSessionByID(player.SessionID)
+	if err != nil {
+		log.Printf("[RoomWorker-%d] - Error handleReadyRoom fetching player1 sessionID:%s\n", pid, err)
+		return
+	}
+	session2, err := redisClient.GetSessionByID(player2.SessionID)
+	if err != nil {
+		log.Printf("[RoomWorker-%d] - Error handleReadyRoom fetching player2 sessionID:%s\n", pid, err)
+		return
+	}
+
+	newBalance1, err := module.HandlePostBet(postgresClient, redisClient, *session1, int64(proom.BetValue*100), proom.ID)
+	if err != nil {
+		log.Printf("[RoomWorker-%d] - Error HandlePostBet failed to bet:%s for sessionid:[%s]\n", pid, err, session1.ID)
+		player.SetStatusOnline()
+		redisClient.UpdatePlayer(player)
+		msg, _ := messages.GenerateGenericMessage("error", err.Error())
+		redisClient.PublishPlayerEvent(player, string(msg))
+		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(proom.ID))
+
+		msg, _ = messages.NewMessage("opponent_left_room", true)
+		redisClient.PublishPlayerEvent(player2, string(msg))
+
+		// since the first player failed the api check, we will queue up the second plyer.
+		addPlayerToQueue(player2, true, true)
+		// TODO: CREDITAR VALOR A JOGADOR.
+		return
+	}
+	newBalance2, err := module.HandlePostBet(postgresClient, redisClient, *session2, int64(proom.BetValue*100), proom.ID)
+	if err != nil {
+		log.Printf("[RoomWorker-%d] - Error HandlePostBet failed to bet:%s for sessionid:[%s]\n", pid, err, session1.ID)
+		player2.SetStatusOnline()
+		redisClient.UpdatePlayer(player2)
+		msg, _ := messages.GenerateGenericMessage("error", err.Error())
+		redisClient.PublishPlayerEvent(player2, string(msg))
+		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(proom.ID))
+
+		// since the second player failed the api check, we will queue up the first player.
+		addPlayerToQueue(player2, true, true)
+		// TODO: CREDITAR VALOR A JOGADOR.
+		return
+	}
+	// Now that everything is OK, we will start up the game
+	msgP1, _ := messages.NewMessage("balance_update", float64(newBalance1)/100)
+	msgP2, _ := messages.NewMessage("balance_update", float64(newBalance2)/100)
+
+	// then notify player and store it in redis.
+	redisClient.UpdatePlayer(player)
+	redisClient.UpdatePlayer(player2)
+
+	redisClient.PublishPlayerEvent(player, string(msgP1))
+	redisClient.PublishPlayerEvent(player2, string(msgP2))
+
+	redisClient.PublishToRoomPubSub(proom.ID, "room_end")
+
+	// Then we start a match
+	roomdata, _ := json.Marshal(proom)
+	err = redisClient.RPushGeneric("create_game", roomdata)
+	if err != nil {
+		log.Printf("[RoomWorker-%d] - Error handleReadyRoom Creating Game RPushGeneric:%s\n", pid, err)
+	}
+
+}
+
 func handleUnReadyRoom(player *models.Player) {
 	//log.Printf("[RoomWorker-%d] - Handling player (UN-READY QUEUE): %s (Session: %s, Currency: %s)\n",
 	//	pid, player.ID, player.SessionID, player.Currency)
@@ -488,6 +591,43 @@ func handleUnReadyRoom(player *models.Player) {
 		return
 	}
 
+	// We will always notify the opponent the we are no longer ready.
+	msg, err := messages.GenerateOpponentReadyMessage(false)
+	if err != nil {
+		log.Printf("[RoomWorker-%d] - Error handleUnReadyRoom getting GenerateOpponentReadyMessage(false) for opponent:%s\n", pid, err)
+		return
+	}
+	redisClient.PublishPlayerEvent(player2, string(msg))
+
+	// now we tell our player that is ready if the opponent is ready or not.
+	if player2.Status != models.StatusInRoomReady {
+		//log.Printf("[RoomWorker-%d] - handleUnReadyRoom Opponent aint ready yet!:%s\n", pid, err)
+		msg, err := messages.GenerateOpponentReadyMessage(false)
+		if err != nil {
+			log.Printf("[RoomWorker-%d] - Error handleUnReadyRoom getting GenerateOpponentReadyMessage(false) for player:%s\n", pid, err)
+		}
+		redisClient.PublishPlayerEvent(player, string(msg))
+		return
+	}
+}
+
+func handleUnReadyRoomNew(player *models.Player, proom *models.Room) {
+	//log.Printf("[RoomWorker-%d] - Handling player (UN-READY QUEUE): %s (Session: %s, Currency: %s)\n",
+	//	pid, player.ID, player.SessionID, player.Currency)
+
+	var errorWithOpponent bool
+	errorWithOpponent = false
+	defer func() {
+		if errorWithOpponent {
+			addPlayerToQueue(player, true, true)
+		}
+	}()
+	player2, err := proom.GetOpponentPlayer(player.ID)
+	if err != nil {
+		errorWithOpponent = true
+		log.Printf("[RoomWorker-%d] - Error handleUnReadyRoom getting opponent player:%s\n", pid, err)
+		return
+	}
 	// We will always notify the opponent the we are no longer ready.
 	msg, err := messages.GenerateOpponentReadyMessage(false)
 	if err != nil {
@@ -669,21 +809,36 @@ func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 
+		// Main loop of the listen, will check the channel and the tiker channel for messages.
 		for {
 			select {
 			case msg := <-ch:
 				println("Received:", msg.Payload)
 
+				// Main switch to route the channel specific messages.
 				switch {
 				case msg.Payload == "room_end":
 					println("Timer canceled by message room_end")
 					return
 
+				case strings.HasPrefix(msg.Payload, "player_ready:"):
+					playerID := strings.TrimPrefix(msg.Payload, "player_ready:")
+					room.SetPlayerReady(playerID)
+					player, _ := room.GetPlayer(playerID)
+					handleReadyRoomNew(player, room)
+
+				case strings.HasPrefix(msg.Payload, "player_unready:"):
+					playerID := strings.TrimPrefix(msg.Payload, "player_unready:")
+					room.SetPlayerUnReady(playerID)
+					player, _ := room.GetPlayer(playerID)
+					handleUnReadyRoomNew(player, room)
+
 				case strings.HasPrefix(msg.Payload, "player_reconnect:"):
 					playerID := strings.TrimPrefix(msg.Payload, "player_reconnect:")
 					println("Player reconnected:", playerID)
-					opponentName, _ := room.GetOpponentName(playerID)
-					outBoundMsg, _ := messages.GeneratePairedMessageFromP2Name(opponentName, room.ID, room.DeducePlayerColor(playerID), interfaces.CalculateWinAmount(int64(room.BetValue), room.OperatorIdentifier.WinFactor), countdown)
+					opponent, _ := room.GetOpponentPlayer(playerID)
+					player, _ := room.GetOpponentPlayer(opponent.ID)
+					outBoundMsg, _ := messages.GeneratePairedMessage(player, opponent, room.ID, room.DeducePlayerColor(playerID), interfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor), countdown)
 					rdb.PublishToPlayerID(playerID, string(outBoundMsg))
 				}
 

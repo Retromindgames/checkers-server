@@ -31,6 +31,29 @@ func (r *Room) GetOpponentPlayerID(playerID string) (string, error) {
 	return "", fmt.Errorf("opponent id not found for player ID: %s", playerID)
 }
 
+func (r *Room) GetOpponentPlayer(playerID string) (*Player, error) {
+	if r.Player1 != nil && r.Player1.ID == playerID {
+		if r.Player2 != nil {
+			return r.Player2, nil
+		}
+	} else if r.Player2 != nil && r.Player2.ID == playerID {
+		if r.Player1 != nil {
+			return r.Player1, nil
+		}
+	}
+	return nil, fmt.Errorf("opponent id not found for player ID: %s", playerID)
+}
+
+func (r *Room) GetPlayer(playerID string) (*Player, error) {
+	if r.Player1.ID == playerID {
+		return r.Player1, nil
+	}
+	if r.Player2.ID == playerID {
+		return r.Player2, nil
+	}
+	return nil, fmt.Errorf("player id not found for player ID: %s", playerID)
+}
+
 func (r *Room) GetOpponentName(playerID string) (string, error) {
 	if r.Player1 != nil && r.Player1.ID == playerID {
 		if r.Player2 != nil {
@@ -49,4 +72,22 @@ func (r *Room) DeducePlayerColor(playerId string) int {
 		return 0
 	}
 	return 1
+}
+
+func (r *Room) SetPlayerReady(playerId string) {
+	if r.Player1.ID == playerId {
+		r.Player1.Status = StatusInRoomReady
+	}
+	if r.Player2.ID == playerId {
+		r.Player2.Status = StatusInRoomReady
+	}
+}
+
+func (r *Room) SetPlayerUnReady(playerId string) {
+	if r.Player1.ID == playerId {
+		r.Player1.Status = StatusInRoom
+	}
+	if r.Player2.ID == playerId {
+		r.Player2.Status = StatusInRoom
+	}
 }
