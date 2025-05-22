@@ -100,25 +100,34 @@ func processGameCreation() {
 		// we also change the player status.
 		player1.UpdatePlayerStatus(models.StatusInGame)
 		player2.UpdatePlayerStatus(models.StatusInGame)
+
+		err = redisClient.AddGame(game)
+		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
+		msg, err := messages.GenerateGameStartMessage(*game)
+		//log.Printf("[%s-%d] - (Process Game Creation) - Message to publish: %v\n", name, pid, string(msg))
+		BroadCastToGamePlayers(msg, *game)
 		// Finnally save stuff to redis.
 		err = redisClient.UpdatePlayer(player1)
 		if err != nil {
 			// since the player is offline, we will move the player over to the offline list.
 			redisClient.SaveDisconnectSessionPlayerData(*player1, *game)
 			redisClient.DeleteDisconnectedInQueuePlayerData(player2.ID)
+			// we also notify the opponent that this player is offline.
+			msg, _ := messages.NewMessage("opponent_disconnected_game", "disconnected")
+			opponent, _ := game.GetGamePlayer(player2.ID)
+			redisClient.PublishToGamePlayer(*opponent, string(msg))
 		}
 		err = redisClient.UpdatePlayer(player2)
 		if err != nil {
 			// since the player is offline, we will move the player over to the offline list.
 			redisClient.SaveDisconnectSessionPlayerData(*player2, *game)
 			redisClient.DeleteDisconnectedInQueuePlayerData(player1.ID)
+			// we also notify the opponent that this player is offline.
+			msg, _ := messages.NewMessage("opponent_disconnected_game", "disconnected")
+			opponent, _ := game.GetGamePlayer(player1.ID)
+			redisClient.PublishToGamePlayer(*opponent, string(msg))
 		}
-		err = redisClient.AddGame(game)
-		redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
-		msg, err := messages.GenerateGameStartMessage(*game)
 
-		//log.Printf("[%s-%d] - (Process Game Creation) - Message to publish: %v\n", name, pid, string(msg))
-		BroadCastToGamePlayers(msg, *game)
 		go startTimer(game) // Start turn timer
 	}
 }
