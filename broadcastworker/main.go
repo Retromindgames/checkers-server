@@ -28,6 +28,7 @@ func init() {
 func main() {
 	log.Printf("[BroadcastWorker-%d] - Broadcasting room stats...\n", pid)
 	ticker := time.NewTicker(time.Duration(config.Cfg.Services["broadcastworker"].Timer) * time.Second)
+
 	defer func() {
 		ticker.Stop()
 		if redisClient != nil {
