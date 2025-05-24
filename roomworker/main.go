@@ -715,15 +715,26 @@ func handleCreateRoom(player *models.Player) {
 }
 
 func handleEndRoom(rdb *redisdb.RedisClient, room *models.Room) {
+	// TODO: This needs to actually check for the player in redis...
+	// TODO: I really should have a unified method to get the player from redis, or stop saving it
+	// as a separate list? And stop deleting the player and set a TTL that gets updated when it is o
+	// with a websocket connection.
 	p1, _ := rdb.GetPlayer(room.Player1.ID)
+	//if p1 == nil {
+	//	p1 = rdb.GetDisconnectedInQueuePlayerData(room.Player1.ID)
+	//}
 	p2, _ := rdb.GetPlayer(room.Player2.ID)
+	//if p2 == nil {
+	//	p2 = rdb.GetDisconnectedInQueuePlayerData(room.Player2.ID)
+	//}
 
 	key := fmt.Sprintf("%t_%t", p1 != nil, p2 != nil)
 	switch key {
 	case "false_false":
 		// both nil, no players, we will just remove the room, and remove both players from possible offline lists.
-		rdb.DeleteDisconnectedInQueuePlayerData(p1.ID)
-		rdb.DeleteDisconnectedInQueuePlayerData(p2.ID)
+		log.Printf("[RoomWorker-%d] - handleEndRoom - false_false: %v\n", pid)
+		rdb.DeleteDisconnectedInQueuePlayerData(room.Player1.ID)
+		rdb.DeleteDisconnectedInQueuePlayerData(room.Player2.ID)
 		err := rdb.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		if err != nil {
 			log.Printf("[RoomWorker-%d] - handleEndRoom - Error removing room: %v\n", pid, err)
@@ -731,8 +742,10 @@ func handleEndRoom(rdb *redisdb.RedisClient, room *models.Room) {
 		}
 
 	case "true_false":
-		// only p1, we will handle the removal of the P2, and requeue the p2.
-		rdb.DeleteDisconnectedInQueuePlayerData(p2.ID)
+		// only p1, we will handle the removal of the P2, and requeue the p1.
+		log.Printf("[RoomWorker-%d] - handleEndRoom - false_true: %v\n", pid)
+		rdb.DeleteDisconnectedInQueuePlayerData(room.Player1.ID)
+		rdb.DeleteDisconnectedInQueuePlayerData(room.Player2.ID)
 		addPlayerToQueue(p1, true, true)
 		err := rdb.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		if err != nil {
@@ -740,7 +753,20 @@ func handleEndRoom(rdb *redisdb.RedisClient, room *models.Room) {
 			return
 		}
 		return
+	case "false_true":
+		// only p1, we will handle the removal of the P2, and requeue the p1.
+		log.Printf("[RoomWorker-%d] - handleEndRoom - false_true: %v\n", pid)
+		rdb.DeleteDisconnectedInQueuePlayerData(room.Player1.ID)
+		rdb.DeleteDisconnectedInQueuePlayerData(room.Player2.ID)
+		addPlayerToQueue(p2, true, true)
+		err := rdb.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
+		if err != nil {
+			log.Printf("[RoomWorker-%d] - handleEndRoom - Error removing room:\n", pid)
+			return
+		}
+		return
 	case "true_true":
+		log.Printf("[RoomWorker-%d] - handleEndRoom - true_true:\n", pid)
 		// both, this means that the timer ran out...
 		// Now this can get a little tricky...
 		// Lets say our player has the status in room ready... This player should be added to the queue.
