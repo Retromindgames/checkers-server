@@ -46,8 +46,10 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
+		log.Println("WebSocket request Origin:", origin)
+		return true
 		if prodVenv == "" {
-			return true // allow all if no config path
+			return true
 		}
 		return origin == "http://localhost:8060" || origin == "https://play.retromindgames.pt/"
 	},
