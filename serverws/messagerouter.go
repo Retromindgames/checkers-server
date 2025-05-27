@@ -156,7 +156,7 @@ func handleLeaveRoom(client *Client, redis *redisdb.RedisClient) {
 }
 
 func handleLeaveGame(client *Client, redis *redisdb.RedisClient) {
-	msgBytes, _ := messages.GenerateGenericMessage("invalid", "Processing 'leave_game'")
+	msgBytes, _ := messages.GenerateGenericMessage("info", "Processing 'leave_game'")
 	client.send <- msgBytes
 	err := redis.RPush("leave_game", client.player)
 	if err != nil {

@@ -69,9 +69,9 @@ func (r *Room) GetOpponentName(playerID string) (string, error) {
 
 func (r *Room) DeducePlayerColor(playerId string) int {
 	if r.CurrentPlayerID == playerId {
-		return 0
+		return 1
 	}
-	return 1
+	return 0
 }
 
 func (r *Room) SetPlayerReady(playerId string) {
