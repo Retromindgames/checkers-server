@@ -9,7 +9,7 @@ import {
   options as customOptions,
   payloads
 } from './test-config.js';
-import { getMsgQueueRequest, getMsgLeaveQueue, getMsgReadyRoom } from './helpers.js';
+import { getMsgQueueRequest, getMsgLeaveQueue, getMsgReadyRoom, getMsgLeaveRoom } from './helpers.js';
 
 export let gamelaunchResponseTime = new Trend('http_gamelaunch_response_time', true);
 export let connectedMsgTime = new Trend('ws_connected_message_time', true);
@@ -23,23 +23,17 @@ export let options = {
   scenarios: {
     player1: {
       executor: 'per-vu-iterations',
-      vus: 1,
+      vus: 2,
       iterations: 1,
       exec: 'player1'
-    },
-    player2: {
-      executor: 'per-vu-iterations',
-      vus: 1,
-      iterations: 1,
-      exec: 'player2',
-      startTime: '2s' // Wait for player1 to connect first
-    },
+    }
   },
 };
 
 
-function connectPlayer(playerId, queueDelay = 0) {
+function connectPlayer(playerId, responseDelay = 0) {
   const url = getUrlHttps('http', 'gamelaunch');
+  let opened = false;
   let start = Date.now();
   const res = http.post(url, payloads.gamelaunch(), { headers });
   const elapsed = Date.now() - start; 
@@ -54,9 +48,17 @@ function connectPlayer(playerId, queueDelay = 0) {
     let startQueueRequest;
     let startPairedTimer;
 
+    setTimeout(() => {
+      if (!opened) {
+        check(false, { 'WebSocket opened': (v) => v === true });
+      }
+    }, 3000); // 3s timeout
+    
     socket.on('open', () => {
       const elapsed = Date.now() - start; 
       connectTime.add(elapsed)
+      opened = true;
+      check(true, { 'WebSocket opened': (v) => v === true });
       console.log(`${playerId}: WebSocket opened`);
     });
 
@@ -67,7 +69,7 @@ function connectPlayer(playerId, queueDelay = 0) {
       if (data.command === 'connected' && !queueSent) {
         const elapsed = Date.now() - start;
         connectedMsgTime.add(elapsed); // record metric        
-        sleep(queueDelay); // Optional delay to control timing
+        sleep(responseDelay); // Optional delay to control timing
         socket.send(getMsgQueueRequest({ value: 100 }));
         startQueueRequest = Date.now()
         queueSent = true;
@@ -93,7 +95,7 @@ function connectPlayer(playerId, queueDelay = 0) {
 
         console.log(`${playerId} received paired:`, data.value);
         pairedResponseTime.add(elapsed);
-
+        sleep(responseDelay)
         socket.send(getMsgReadyRoom({ value: true })); // simulate readiness
         pairedReceived = true;
       }
@@ -104,6 +106,7 @@ function connectPlayer(playerId, queueDelay = 0) {
         console.log(`${playerId}: did not receive paired in time.`);
       }
       socket.send(getMsgLeaveQueue());
+      socket.send(getMsgLeaveRoom());
       socket.close();
     }, 10000);
   });
@@ -111,9 +114,9 @@ function connectPlayer(playerId, queueDelay = 0) {
 
 // Separate player exec functions
 export function player1() {
-  connectPlayer("Player1", 0);
+  connectPlayer("Player1", 0.2);
 }
 
 export function player2() {
-  connectPlayer("Player2", 1); // Optional slight delay
+  connectPlayer("Player2", 0.2); // Optional slight delay
 }

@@ -10,6 +10,9 @@ export const getMsgLeaveQueue = () => {
 export const getMsgReadyRoom = ({ value }) => {
     return generateMessage({ command: "ready_queue", value });
 }
+export const getMsgLeaveRoom = () => {
+    return generateMessage({ command: "leave_room" });
+}
 
 // TODO: This need to be dynamic.
 export const getMsgMovePiece = ({ player_id, piece_id, from, to, is_capture, is_kinged }) => {
