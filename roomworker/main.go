@@ -205,7 +205,7 @@ func processRoomEnding() {
 			log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving player:%v\n", pid, err)
 			continue
 		}
-		//log.Printf("[RoomWorker-%d] - Processing the end of room: %+v\n", pid, playerWhoLeft)
+		log.Printf("[RoomWorker-%d] - processRoomEnding the end of room: %+v\n", pid, playerWhoLeft)
 		room, err := redisClient.GetRoomByID(playerWhoLeft.RoomID)
 		if err != nil {
 			log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving room:%v\n", pid, err)
@@ -218,8 +218,11 @@ func processRoomEnding() {
 		}
 		player2, err := redisClient.GetPlayer(player2ID)
 		if err != nil {
-			log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving opponent player:%v\n", pid, err)
-			continue
+			player2 = redisClient.GetDisconnectedInQueuePlayerData(player2ID)
+			if player2 == nil {
+				log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving opponent player:%v\n", pid, err)
+				continue
+			}
 		}
 		msg, err := messages.NewMessage("opponent_left_room", true)
 		if err != nil {
@@ -230,6 +233,7 @@ func processRoomEnding() {
 		addPlayerToQueue(player2, true, true)
 		playerWhoLeft.SetStatusOnline()
 		redisClient.UpdatePlayer(playerWhoLeft)
+		log.Printf("[RoomWorker-%d] - processRoomEnding sending room end message: %+v\n", pid, playerWhoLeft)
 		redisClient.PublishToRoomPubSub(room.ID, "room_end")
 		err = redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		if err != nil {

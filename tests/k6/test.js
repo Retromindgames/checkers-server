@@ -1,6 +1,6 @@
 import ws from 'k6/ws';
 import http from 'k6/http';
-import { check, sleep } from 'k6';
+import { check, fail, sleep } from 'k6';
 import { Trend } from 'k6/metrics';
 import {
   getUrlHttps,
@@ -30,21 +30,45 @@ export let options = {
   },
 };
 
-
-function connectPlayer(playerId, responseDelay = 0) {
+function runGamelaunch() {
   const url = getUrlHttps('http', 'gamelaunch');
-  let opened = false;
   let start = Date.now();
   const res = http.post(url, payloads.gamelaunch(), { headers });
   const elapsed = Date.now() - start; 
   gamelaunchResponseTime.add(elapsed);
-  check(res, { 'gamelaunch status 200': (r) => r.status === 200 });
-  const wsUrl = toWsUrl(JSON.parse(res.body).url);
+  console.log(`${__VU} Status: ${res.status}`);
+  console.log(`${__VU} Body: ${res.body}`);
 
+  let data;
+  try {
+    data = JSON.parse(res.body);
+  } catch (e) {
+    fail(`${__VU} Invalid JSON response: ${res.body}`);
+  }
+  console.log(`${__VU} - Parsed data:`, JSON.stringify(data));
+  console.log(`${__VU} - Data keys:`, Object.keys(data));
+
+  check(res, {
+    'status is 200': (r) => r.status === 200,
+  });
+  return data.url;
+}
+
+function runPlayerVU(responseDelay = 0) {
+
+  let opened = false;
+  let wsUrl = runGamelaunch() 
+  console.log(`${__VU} - Game launch finished`)
+  wsUrl = toWsUrl(wsUrl);
+  console.log(`${__VU} - Url transformed`)
+
+  let start = Date.now();
   ws.connect(wsUrl, null, function (socket) {
     let queueSent = false;
+    let roomTimerReceived = false;
+    let gameInfo = false;
+    let queueConfirmationReceived = false;
     let pairedReceived = false;
-    start = Date.now();
     let startQueueRequest;
     let startPairedTimer;
 
@@ -59,64 +83,69 @@ function connectPlayer(playerId, responseDelay = 0) {
       connectTime.add(elapsed)
       opened = true;
       check(true, { 'WebSocket opened': (v) => v === true });
-      console.log(`${playerId}: WebSocket opened`);
+      console.log(`${__VU} - WebSocket opened`);
     });
 
     socket.on('message', (msg) => {
       const data = JSON.parse(msg);
-      console.log(`${playerId} received:`, data);
+      console.log(`${__VU} - received:`, data);
 
       if (data.command === 'connected' && !queueSent) {
         const elapsed = Date.now() - start;
-        connectedMsgTime.add(elapsed); // record metric        
-        sleep(responseDelay); // Optional delay to control timing
+        connectedMsgTime.add(elapsed); // record metric 
+        check(true, { 'Connected message received': (v) => v === true });       
+        //sleep(responseDelay); // Optional delay to control timing
         socket.send(getMsgQueueRequest({ value: 100 }));
         startQueueRequest = Date.now()
         queueSent = true;
-        // TODO: fazer um check para termos recebido a connection.
-        //check(res, {
-        //  'ws connection status is 101': (r) => r && r.status === 101,
-        //});
       }
 
       if (data.command === 'queue_confirmation' && data.value) {
         const elapsed = Date.now() - startQueueRequest;
-        console.log(`Queue Confirmation message received after ${elapsed} ms`);
         queueConfirmationResponseTime.add(elapsed); // record metric
+        check(true, { 'Queue confirmation message received': (v) => v === true });       
+        //console.log(`${__VU} - Queue Confirmation message received after ${elapsed} ms`);
         startPairedTimer = Date.now();
-        // TODO: fazer um check para termos recebido a queue confirmation.
-        //check(res, {
-        //  'ws connection status is 101': (r) => r && r.status === 101,
-        //});
       }
 
       if (data.command === 'paired' && data.value) {
         const elapsed = Date.now() - startPairedTimer;
-
-        console.log(`${playerId} received paired:`, data.value);
         pairedResponseTime.add(elapsed);
-        sleep(responseDelay)
+        check(true, { 'Paired message received': (v) => v === true });       
+        console.log(`${__VU} - received paired:`, data.value);
+        //sleep(responseDelay)
         socket.send(getMsgReadyRoom({ value: true })); // simulate readiness
         pairedReceived = true;
       }
+
+      if (data.command === 'game_info' && !queueSent) {
+        check(true, { 'Game info message received': (v) => v === true });   
+        gameInfo = true    
+      }
+      if (data.command === 'room_timer' && !queueSent) {
+        check(true, { 'Room timer message received': (v) => v === true });   
+        roomTimerReceived = true;    
+      }
+
     });
 
     socket.setTimeout(() => {
       if (!pairedReceived) {
-        console.log(`${playerId}: did not receive paired in time.`);
+        check(false, { 'Paired message received': (v) => v === true });   
+      }
+      if (!gameInfo) {
+        check(false, { 'Game info message received': (v) => v === true });   
+      }
+      if (!roomTimerReceived) {
+        check(false, { 'Room timer message received': (v) => v === true });   
       }
       socket.send(getMsgLeaveQueue());
       socket.send(getMsgLeaveRoom());
       socket.close();
-    }, 10000);
+    }, 30000);
   });
 }
 
-// Separate player exec functions
 export function player1() {
-  connectPlayer("Player1", 0.2);
-}
-
-export function player2() {
-  connectPlayer("Player2", 0.2); // Optional slight delay
+  runPlayerVU(0.2);
 }
