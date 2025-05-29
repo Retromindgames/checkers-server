@@ -561,7 +561,7 @@ func handleReadyRoomNew(player *models.Player, proom *models.Room) {
 	redisClient.PublishPlayerEvent(player, string(msgP1))
 	redisClient.PublishPlayerEvent(player2, string(msgP2))
 
-	redisClient.PublishToRoomPubSub(proom.ID, "room_end")
+	redisClient.PublishToRoomPubSub(proom.ID, "game_start")
 
 	// Then we start a match
 	roomdata, _ := json.Marshal(proom)
