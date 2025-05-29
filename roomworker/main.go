@@ -460,7 +460,7 @@ func handleReadyRoom(player *models.Player) {
 	redisClient.PublishPlayerEvent(player, string(msgP1))
 	redisClient.PublishPlayerEvent(player2, string(msgP2))
 
-	redisClient.PublishToRoomPubSub(proom.ID, "room_end")
+	redisClient.PublishToRoomPubSub(proom.ID, "game_start")
 
 	// Then we start a match
 	roomdata, err := json.Marshal(proom)
@@ -907,6 +907,10 @@ func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room
 					handleEndRoom(rdb, room)
 					return
 
+				case msg.Payload == "game_start":
+					println("Timer canceled by message game_start")
+					return
+
 				case strings.HasPrefix(msg.Payload, "player_ready:"):
 					playerID := strings.TrimPrefix(msg.Payload, "player_ready:")
 					room.SetPlayerReady(playerID)
@@ -943,7 +947,6 @@ func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room
 				}
 
 			case <-ctx.Done():
-				handleEndRoom(rdb, room)
 				return
 			}
 		}
