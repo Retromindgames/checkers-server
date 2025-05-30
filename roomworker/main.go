@@ -58,7 +58,6 @@ func main() {
 	}()
 
 	go processReadyQueue()
-	go processRoomEnding()
 	go processQueue()
 	select {}
 }
@@ -170,62 +169,6 @@ func processReadyQueue() {
 			continue
 		}
 		log.Printf("Player is neither InRoomReady neither InRoom?!")
-	}
-}
-
-func processRoomEnding() {
-	for {
-		playerWhoLeft, err := redisClient.BLPop("leave_room", 0)
-		if err != nil {
-			log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving player:%v\n", pid, err)
-			continue
-		}
-		log.Printf("[RoomWorker-%d] - processRoomEnding the end of room: %+v\n", pid, playerWhoLeft)
-		room, err := redisClient.GetRoomByID(playerWhoLeft.RoomID)
-		if err != nil {
-			log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving room:%v\n", pid, err)
-			continue
-		}
-		player2ID, err := room.GetOpponentPlayerID(playerWhoLeft.ID)
-		if err != nil {
-			log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving opponent id:%v\n", pid, err)
-			continue
-		}
-
-		var opponentOffline = false
-		player2, err := redisClient.GetPlayer(player2ID)
-		if err != nil {
-			player2 = redisClient.GetDisconnectedInQueuePlayerData(player2ID)
-			log.Printf("[RoomWorker-%d] - processRoomEnding - retrieving opponent player from disconnect in queue list:%v\n", pid, err)
-			if player2 == nil {
-				log.Printf("[RoomWorker-%d] - processRoomEnding - Error retrieving opponent player:\n", pid)
-				continue
-			}
-			opponentOffline = true
-		}
-		msg, err := messages.NewMessage("opponent_left_room", true)
-		if err != nil {
-			log.Printf("[RoomWorker-%d] - processRoomEnding - Error generating message:%v\n", pid, err)
-			continue
-		}
-
-		if opponentOffline {
-			//redisClient.SaveDisconnectInQueuePlayerData(player2)
-		} else {
-			redisClient.PublishToPlayer(*player2, string(msg))
-		}
-		//addPlayerToQueue(player2, true, true)
-		playerWhoLeft.SetStatusOnline()
-		redisClient.UpdatePlayer(playerWhoLeft)
-		log.Printf("[RoomWorker-%d] - processRoomEnding sending room end message: %+v\n", pid, playerWhoLeft)
-		redisClient.PublishToRoomPubSub(room.ID, "room_end")
-		err = redisClient.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
-		if err != nil {
-			log.Printf("[RoomWorker-%d] - processRoomEnding - Error removing room: %v\n", pid, err)
-			continue
-		}
-		// redisClient.DecrementQueueCount(playerWhoLeft.SelectedBet) 		// we dont need to decrement it here, since the queue decrements
-		// log.Printf("[RoomWorker-%d] - End of room ending: %v\n", pid, err)
 	}
 }
 
@@ -467,23 +410,14 @@ func handleUnReadyRoomNew(player *models.Player, proom *models.Room) {
 }
 
 func handleEndRoom(rdb *redisdb.RedisClient, room *models.Room) {
-	// TODO: I really should have a unified method to get the player from redis, or stop saving it
-	// as a separate list? And stop deleting the player and set a TTL that gets updated when it is o
-	// with a websocket connection.
 	p1, _ := rdb.GetPlayer(room.Player1.ID)
-	//if p1 == nil {
-	//	p1 = rdb.GetDisconnectedInQueuePlayerData(room.Player1.ID)
-	//}
 	p2, _ := rdb.GetPlayer(room.Player2.ID)
-	//if p2 == nil {
-	//	p2 = rdb.GetDisconnectedInQueuePlayerData(room.Player2.ID)
-	//}
 
 	key := fmt.Sprintf("%t_%t", p1 != nil, p2 != nil)
 	switch key {
 	case "false_false":
 		// both nil, no players, we will just remove the room, and remove both players from possible offline lists.
-		log.Printf("[RoomWorker-%d] - handleEndRoom - false_false: %v\n", pid)
+		//log.Printf("[RoomWorker-%d] - handleEndRoom - false_false: %v\n", pid)
 		p1 = rdb.GetDisconnectedInQueuePlayerData(room.Player1.ID)
 		if p1 != nil {
 			if p1.Status == models.StatusInRoomReady {
@@ -508,7 +442,7 @@ func handleEndRoom(rdb *redisdb.RedisClient, room *models.Room) {
 
 	case "true_false":
 		// only p1, we will handle the removal of the P2, and requeue the p1.
-		log.Printf("[RoomWorker-%d] - handleEndRoom - false_true: %v\n", pid)
+		// log.Printf("[RoomWorker-%d] - handleEndRoom - false_true: %v\n", pid)
 		// Since this guy is offline, we will check if its state was in room ready.
 		msg, _ := messages.NewMessage("room_failed_ready_check", true)
 		p2 = rdb.GetDisconnectedInQueuePlayerData(room.Player2.ID)
@@ -532,10 +466,10 @@ func handleEndRoom(rdb *redisdb.RedisClient, room *models.Room) {
 			return
 		}
 		return
+
 	case "false_true":
 		// only p1, we will handle the removal of the P2, and requeue the p1.
-		log.Printf("[RoomWorker-%d] - handleEndRoom - false_true:\n", pid)
-		//rdb.DeleteDisconnectedInQueuePlayerData(room.Player2.ID)
+		//log.Printf("[RoomWorker-%d] - handleEndRoom - false_true:\n", pid)
 		msg, _ := messages.NewMessage("room_failed_ready_check", true)
 		// Since this guy is offline, we will check if its state was in room ready.
 		p1 = rdb.GetDisconnectedInQueuePlayerData(room.Player1.ID)
@@ -553,19 +487,16 @@ func handleEndRoom(rdb *redisdb.RedisClient, room *models.Room) {
 			rdb.PublishToPlayerID(p2.ID, string(msg))
 			rdb.UpdatePlayer(p2)
 		}
-
 		err := rdb.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 		if err != nil {
 			log.Printf("[RoomWorker-%d] - handleEndRoom - Error removing room:", pid)
 			return
 		}
 		return
+
 	case "true_true":
-		log.Printf("[RoomWorker-%d] - handleEndRoom - true_true:\n", pid)
 		// both, this means that the timer ran out...
-		// Now this can get a little tricky...
-		// Lets say our player has the status in room ready... This player should be added to the queue.
-		// p1.Status == models.StatusInRoomReady
+		//log.Printf("[RoomWorker-%d] - handleEndRoom - true_true:\n", pid)
 		msg, _ := messages.NewMessage("room_failed_ready_check", true)
 		if p1.Status == models.StatusInRoomReady {
 			addPlayerToQueue(p1, true, true)
@@ -618,10 +549,8 @@ func addPlayerToQueue(player *models.Player, incrementQueueCount, notify bool) {
 
 // Method to listen to room messages.
 //
-// Initially created to manage the room timer, but should be expanded to be used by a few
+// Initially created to manage the room timer, but was  expanded to be used by a few
 // other messages.
-// TODO: I should move some code from the other handlers to here... This seems like a better way to do it.
-// For now I guess we will just wait for the timer, or for a comunication to close the timer, if the rooms ends in any other way.
 func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room) {
 	pubsub := rdb.Client.Subscribe(ctx, "roompubsub:"+room.ID)
 	ch := pubsub.Channel()
@@ -637,17 +566,16 @@ func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room
 		for {
 			select {
 			case msg := <-ch:
-				println("Received:", msg.Payload)
-
+				//log.Println("Received:", msg.Payload)
 				// Main switch to route the channel specific messages.
 				switch {
 				case msg.Payload == "room_end":
-					println("Timer canceled by message room_end")
+					//log.Println("Timer canceled by message room_end")
 					handleEndRoom(rdb, room)
 					return
 
 				case msg.Payload == "game_start":
-					println("Timer canceled by message game_start")
+					//log.Println("Timer canceled by message game_start")
 					return
 
 				case strings.HasPrefix(msg.Payload, "leave_room:"):
@@ -669,7 +597,6 @@ func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room
 					} else {
 						addPlayerToQueue(opponentPlayer, true, true)
 					}
-					// Finally we remove the room.
 					err := rdb.RemoveRoom(redisdb.GenerateRoomRedisKeyById(room.ID))
 					if err != nil {
 						log.Printf("[RoomWorker-%d] - processRoomEnding - Error removing room: %v\n", pid, err)
@@ -688,11 +615,6 @@ func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room
 					player, _ := room.GetPlayer(playerID)
 					handleUnReadyRoomNew(player, room)
 
-				//case strings.HasPrefix(msg.Payload, "player_disconnected:"):
-				//playerID := strings.TrimPrefix(msg.Payload, "player_disconnected:")
-				//playerWhoDisconnected, _ := room.GetPlayer(playerID)
-				//playerWhoDisconnected.s
-
 				case strings.HasPrefix(msg.Payload, "player_reconnect:"):
 					playerID := strings.TrimPrefix(msg.Payload, "player_reconnect:")
 					opponent, _ := room.GetOpponentPlayer(playerID)
@@ -703,14 +625,14 @@ func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room
 
 			case <-ticker.C:
 				countdown--
-				if countdown == 29 || countdown == 10 || countdown == 3 {
+				if countdown == 27 || countdown == 10 || countdown == 3 {
 					timerMsg, _ := messages.NewMessage("room_timer", strconv.Itoa(countdown))
 					rdb.PublishToPlayerID(room.Player1.ID, string(timerMsg))
 					rdb.PublishToPlayerID(room.Player2.ID, string(timerMsg))
 				}
-				println("Countdown:", countdown)
+				//log.Println("Countdown:", countdown)
 				if countdown <= 0 {
-					println("Room timed out")
+					//log.Println("Room timed out")
 					handleEndRoom(rdb, room)
 					return
 				}
