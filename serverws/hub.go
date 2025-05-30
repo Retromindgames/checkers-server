@@ -81,7 +81,6 @@ func (h *Hub) run() {
 func (h *Hub) CloseConnection(client *Client) {
 	client.UpdatePlayerDataFromRedis()
 
-	//h.redis.UpdatePlayersInQueueSet(client.player.ID, models.StatusOffline)
 	// If our player is in queue, we add it to a special redis set to handle players in queue that were disconnected.
 	// Added here the status in room, i think it will share the same logic.
 	if client.player.Status == models.StatusInQueue || client.player.Status == models.StatusInRoom || client.player.Status == models.StatusInRoomReady {
@@ -91,6 +90,7 @@ func (h *Hub) CloseConnection(client *Client) {
 	if client.player.RoomID != "" || client.player.Status == models.StatusInRoom || client.player.Status == models.StatusInRoomReady {
 		// log.Printf("[Hub.Run] - Removed player is in a Room, sending notification to room worker!: %v\n", client.player)
 		//h.redis.RPush("leave_room", client.player)
+		//h.redis.PublishToRoomPubSub(client.player.RoomID, "leave_room:"+client.player.ID)
 	}
 	if client.player.GameID != "" || client.player.Status == models.StatusInGame {
 		log.Printf("[Hub.Run] - Removed player is in a Game, sending notification to Game worker!: %v\n", client.player)

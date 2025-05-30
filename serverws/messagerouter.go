@@ -139,20 +139,21 @@ func handleLeaveRoom(client *Client, redis *redisdb.RedisClient) {
 	msgBytes, _ := messages.GenerateGenericMessage("info", "Processing 'leave_room'")
 	client.send <- msgBytes
 	// we update our player to redis.
-	err := redis.UpdatePlayer(client.player)
-	if err != nil {
-		log.Printf("Error updagint player to Redis on HandleLeaveRoom: %v\n", err)
-		msg, _ := messages.GenerateGenericMessage("error", "error updating player.")
-		client.send <- msg
-		return
-	}
-	err = redis.RPush("leave_room", client.player)
-	if err != nil {
-		log.Printf("Error pushing player to Redis leave_room queue: %v\n", err)
-		msg, _ := messages.GenerateGenericMessage("error", "error leaving room.")
-		client.send <- msg
-		return
-	}
+	//err := redis.UpdatePlayer(client.player)
+	//if err != nil {
+	//	log.Printf("Error updagint player to Redis on HandleLeaveRoom: %v\n", err)
+	//	msg, _ := messages.GenerateGenericMessage("error", "error updating player.")
+	//	client.send <- msg
+	//	return
+	//}
+	redis.PublishToRoomPubSub(client.player.RoomID, "leave_room:"+client.player.ID)
+	//err := redis.RPush("leave_room", client.player)
+	//if err != nil {
+	//	log.Printf("Error pushing player to Redis leave_room queue: %v\n", err)
+	//	msg, _ := messages.GenerateGenericMessage("error", "error leaving room.")
+	//	client.send <- msg
+	//	return
+	//}
 }
 
 func handleLeaveGame(client *Client, redis *redisdb.RedisClient) {
