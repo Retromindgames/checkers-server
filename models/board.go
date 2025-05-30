@@ -384,9 +384,9 @@ func (b *Board) IsValidMoveKing(move Move) (bool, error) {
 			return false, fmt.Errorf("(IsValidMoveKing) - path blocked by own piece at %v", square)
 		}
 		// This looked sketchi.
-		//if enemySeen {
-		//	return false, fmt.Errorf("(IsValidMoveKing) - multiple captures not supported in one move")
-		//}
+		if enemySeen {
+			return false, fmt.Errorf("(IsValidMoveKing) - multiple captures not supported in one move")
+		}
 		enemySeen = true
 	}
 
