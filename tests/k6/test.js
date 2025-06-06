@@ -1,40 +1,79 @@
-import ws from 'k6/ws';
-import http from 'k6/http';
-import { check, fail, sleep } from 'k6';
-import { Trend } from 'k6/metrics';
+import ws from "k6/ws";
+import http from "k6/http";
+import { check, fail, sleep } from "k6";
+import { Trend } from "k6/metrics";
 import {
-  getUrlHttps,
+  getUrlHttp,
   toWsUrl,
   headers,
   options as customOptions,
-  payloads
-} from './test-config.js';
-import { getMsgQueueRequest, getMsgLeaveQueue, getMsgReadyRoom, getMsgLeaveRoom } from './helpers.js';
+  payloads,
+  getUrlHttps,
+} from "./test-config.js";
+import {
+  getMsgQueueRequest,
+  getMsgLeaveQueue,
+  getMsgReadyRoom,
+  getMsgLeaveRoom,
+  getMsgConcedeGame,
+  getMsgMovePiece,
+} from "./helpers.js";
 
-export let gamelaunchResponseTime = new Trend('http_gamelaunch_response_time', true);
-export let connectedMsgTime = new Trend('ws_connected_message_time', true);
-export let queueConfirmationResponseTime = new Trend('ws_queue_confirmation_response_message_time', true);
-export let pairedResponseTime = new Trend('ws_paired_response_message_time', true);
-export let connectTime = new Trend('ws_connect_time', true);
+import {
+  HandleConnection,
+  HandleQueueConfirmation,
+  HandlePaired,
+  HandleGameInfo,
+  HandleGameTimer,
+  HandleBalanceUpdate,
+  HandleOpponentReady,
+  HandleGameStart,
+  HandleTurnSwitch,
+  connectedMsgTime,
+  pairedResponseTime,
+  queueConfirmationResponseTime,
+  movementResponseTime,
+} from "./utils/commands.js";
+import { MAX_SLEEP, QUEUE_VALUE } from "./utils/constants.js";
+import { GameStates, Turns } from "./utils/gameState.js";
 
+export let gamelaunchResponseTime = new Trend(
+  "http_gamelaunch_response_time",
+  true
+);
+
+export let connectTime = new Trend("ws_opened_time", true);
 
 export let options = {
   insecureSkipTLSVerify: true,
   scenarios: {
     player1: {
-      executor: 'per-vu-iterations',
-      vus: 2,
-      iterations: 1,
-      exec: 'player1'
-    }
+      executor: "constant-vus",
+      vus: 200, // 10, 25, 50, 100, 200
+      duration: "30s",
+      exec: "player1",
+    },
   },
 };
 
+let queueSent = false;
+let gameTimerReceived = false;
+let gameStartReceived = false;
+let balanceUpdateReceived = false;
+let opponentReadyReceived = false;
+let gameInfo = false;
+let queueConfirmationReceived = false;
+let pairedReceived = false;
+var turnSwitchReceived = false;
+let startQueueRequest = Date.now();
+let startPairedTimer = Date.now();
+let startMovementTimer = Date.now();
+
 function runGamelaunch() {
-  const url = getUrlHttps('http', 'gamelaunch');
+  const url = getUrlHttp("http", "gamelaunch");
   let start = Date.now();
   const res = http.post(url, payloads.gamelaunch(), { headers });
-  const elapsed = Date.now() - start; 
+  const elapsed = Date.now() - start;
   gamelaunchResponseTime.add(elapsed);
   console.log(`${__VU} Status: ${res.status}`);
   console.log(`${__VU} Body: ${res.body}`);
@@ -49,103 +88,249 @@ function runGamelaunch() {
   console.log(`${__VU} - Data keys:`, Object.keys(data));
 
   check(res, {
-    'status is 200': (r) => r.status === 200,
+    "status is 200": (r) => r.status === 200,
   });
   return data.url;
 }
 
 function runPlayerVU(responseDelay = 0) {
-
   let opened = false;
-  let wsUrl = runGamelaunch() 
-  console.log(`${__VU} - Game launch finished`)
+  let turnNumber = 0;
+  let wsUrl = runGamelaunch();
+  if (!wsUrl) return;
+  var isWebsocketClosed = false;
+  var currentState = "OFFLINE";
+
+  var Board;
+
+  //sleep(MAX_SLEEP);
+  console.log(`${__VU} - Game launch finished`);
   wsUrl = toWsUrl(wsUrl);
-  console.log(`${__VU} - Url transformed`)
+  console.log(`${__VU} - Url transformed`);
 
+  //sleep(MAX_SLEEP);
   let start = Date.now();
-  ws.connect(wsUrl, null, function (socket) {
-    let queueSent = false;
-    let roomTimerReceived = false;
-    let gameInfo = false;
-    let queueConfirmationReceived = false;
-    let pairedReceived = false;
-    let startQueueRequest;
-    let startPairedTimer;
+  let playerId;
 
-    setTimeout(() => {
-      if (!opened) {
-        check(false, { 'WebSocket opened': (v) => v === true });
-      }
-    }, 3000); // 3s timeout
-    
-    socket.on('open', () => {
-      const elapsed = Date.now() - start; 
-      connectTime.add(elapsed)
+  ws.connect(wsUrl, null, function (socket) {
+    socket.on("open", () => {
+      const elapsed = Date.now() - start;
+      connectTime.add(elapsed);
       opened = true;
-      check(true, { 'WebSocket opened': (v) => v === true });
+      check(true, { "WebSocket opened": (v) => v === true });
       console.log(`${__VU} - WebSocket opened`);
+      currentState = GameStates[1];
+      //sleep(MAX_SLEEP);
     });
 
-    socket.on('message', (msg) => {
-      const data = JSON.parse(msg);
-      console.log(`${__VU} - received:`, data);
+    socket.on("ping", () => {
+      socket.ping();
+    });
+    socket.on("pong", () => {
+      socket.ping();
+    });
 
-      if (data.command === 'connected' && !queueSent) {
-        const elapsed = Date.now() - start;
-        connectedMsgTime.add(elapsed); // record metric 
-        check(true, { 'Connected message received': (v) => v === true });       
-        //sleep(responseDelay); // Optional delay to control timing
-        socket.send(getMsgQueueRequest({ value: 100 }));
-        startQueueRequest = Date.now()
-        queueSent = true;
+    socket.on("message", (msg) => {
+      const data = JSON.parse(msg);
+      if (data.command != "pong") console.log(`${__VU} - received:`, data);
+      if (data.command === "pong") {
+        // sleep(1);
+        socket.send(JSON.stringify({ command: "ping" }));
       }
 
-      if (data.command === 'queue_confirmation' && data.value) {
+      if (data.command === "connected" && !queueSent) {
+        const elapsed = Date.now() - start;
+        connectedMsgTime.add(elapsed); // record metric
+        HandleConnection();
+        //sleep(MAX_SLEEP);
+        playerId = data.value.player_id;
+        socket.setTimeout(() => {
+          startQueueRequest = Date.now();
+          socket.send(getMsgQueueRequest({ value: QUEUE_VALUE }));
+          queueSent = true;
+          socket.send(JSON.stringify({ command: "ping" }));
+          console.log(
+            `${__VU} - Sent: ${getMsgQueueRequest({ value: QUEUE_VALUE })}`
+          );
+        }, 500);
+      }
+
+      if (data.command === "queue_confirmation" && data.value) {
         const elapsed = Date.now() - startQueueRequest;
         queueConfirmationResponseTime.add(elapsed); // record metric
-        check(true, { 'Queue confirmation message received': (v) => v === true });       
-        //console.log(`${__VU} - Queue Confirmation message received after ${elapsed} ms`);
+        HandleQueueConfirmation();
+        currentState = GameStates[2];
         startPairedTimer = Date.now();
+      } else if (data.command === "queue_confirmation" && !data.value) {
+        // sleep(MAX_SLEEP);
+        socket.send(getMsgQueueRequest({ value: QUEUE_VALUE }));
+        console.log(
+          `${__VU} - Sent: ${getMsgQueueRequest({ value: QUEUE_VALUE })}`
+        );
       }
 
-      if (data.command === 'paired' && data.value) {
+      if (data.command === "paired") {
         const elapsed = Date.now() - startPairedTimer;
         pairedResponseTime.add(elapsed);
-        check(true, { 'Paired message received': (v) => v === true });       
-        console.log(`${__VU} - received paired:`, data.value);
-        //sleep(responseDelay)
-        socket.send(getMsgReadyRoom({ value: true })); // simulate readiness
+        HandlePaired();
         pairedReceived = true;
+
+        //sleep(MAX_SLEEP);
+        socket.setTimeout(() => {
+          socket.send(getMsgReadyRoom({ value: true })); // simulate readiness
+          console.log(`${__VU} - Sent: ${getMsgReadyRoom({ value: true })}`);
+        }, 500);
+        currentState = GameStates[3];
       }
 
-      if (data.command === 'game_info' && !queueSent) {
-        check(true, { 'Game info message received': (v) => v === true });   
-        gameInfo = true    
-      }
-      if (data.command === 'room_timer' && !queueSent) {
-        check(true, { 'Room timer message received': (v) => v === true });   
-        roomTimerReceived = true;    
+      /*    if (data.command === "game_info") {
+        HandleGameInfo(gameInfo);
+        //gameInfo = true;
+      } */
+
+      /*   if (data.command === "game_timer") {
+        HandleGameTimer(gameTimerReceived);
+      } */
+
+      if (data.command === "game_start") {
+        HandleGameStart(gameStartReceived, startMovementTimer);
+        gameStartReceived = true;
+        currentState = GameStates[4];
+        Board = data.value.Board;
+        socket.setTimeout(() => {
+          startMovementTimer = Date.now();
+          if (playerId === data.value.Board[Turns[turnNumber].from].player_id) {
+            socket.send(
+              getMsgMovePiece({
+                player_id: data.value.Board[Turns[turnNumber].from].player_id,
+                piece_id: data.value.Board[Turns[turnNumber].from].piece_id,
+                from: Turns[turnNumber].from,
+                to: Turns[turnNumber].to,
+                is_capture: false,
+                is_kinged: false,
+              })
+            );
+          }
+        }, 500);
       }
 
+      if (data.command === "balance_update") {
+        HandleBalanceUpdate();
+        balanceUpdateReceived = true;
+      }
+
+      if (data.command === "opponent_ready" && data.value.is_ready) {
+        HandleOpponentReady(opponentReadyReceived);
+        opponentReadyReceived = true;
+      }
+
+      if (data.command === "room_failed_ready_check") {
+        CleanUpAndClose(socket, opened, isWebsocketClosed);
+        fail("Failed to be ready in room");
+      }
+      if (data.command === "move_piece") {
+        socket.setTimeout(() => {
+          if (playerId !== data.value.player_id && turnNumber < Turns.length) {
+            startMovementTimer = Date.now();
+            socket.send(
+              getMsgMovePiece({
+                player_id: Board[Turns[turnNumber].from].player_id,
+                piece_id: Board[Turns[turnNumber].from].piece_id,
+                from: Turns[turnNumber].from,
+                to: Turns[turnNumber].to,
+                is_capture: false,
+                is_kinged: false,
+              })
+            );
+          }
+        }, 500);
+      }
+
+      if (data.command === "turn_switch") {
+        const elapsed = Date.now() - startMovementTimer;
+        movementResponseTime.add(elapsed, { Turn: turnNumber });
+        HandleTurnSwitch();
+        turnSwitchReceived = true;
+        turnNumber++;
+
+        if (turnNumber >= Turns.length) socket.close();
+      }
     });
 
-    socket.setTimeout(() => {
-      if (!pairedReceived) {
-        check(false, { 'Paired message received': (v) => v === true });   
-      }
-      if (!gameInfo) {
-        check(false, { 'Game info message received': (v) => v === true });   
-      }
-      if (!roomTimerReceived) {
-        check(false, { 'Room timer message received': (v) => v === true });   
-      }
-      socket.send(getMsgLeaveQueue());
-      socket.send(getMsgLeaveRoom());
+    socket.on("error", (msg) => {
       socket.close();
-    }, 30000);
+      console.log("[ERROR ON WEBSOCKET]: ", msg);
+    });
+
+    socket.on("close", () => {
+      console.log(`${__VU} - Closing socket connection`);
+      isWebsocketClosed = true;
+      CleanUpAndClose(socket, opened, isWebsocketClosed);
+    });
+    /*
+    socket.setTimeout(() => {
+      socket.close();
+    }, 5000); */
   });
 }
 
-export function player1() {
-  runPlayerVU(0.2);
+const CleanUpAndClose = (socket, opened, isWebsocketClosed) => {
+  if (!pairedReceived) {
+    check(false, { "Paired message not received": (v) => v === true });
+  }
+  /*   if (!gameInfo) {
+    check(false, { "Game info message not received": (v) => v === true });
+  } */
+  if (!gameStartReceived) {
+    check(false, { "Game start message not received": (v) => v === true });
+  }
+  if (!balanceUpdateReceived) {
+    check(false, {
+      "Balance Update message not received": (v) => v === true,
+    });
+  }
+  if (!opponentReadyReceived) {
+    check(false, {
+      "Opponent ready message not received": (v) => v === true,
+    });
+  }
+  if (!turnSwitchReceived) {
+    check(false, {
+      "Turn switch message not received": (v) => v === true,
+    });
+  }
+  if (!gameStartReceived)
+    check(false, { "Game Not Started": (v) => v === true });
+  if (!opened) {
+    check(false, { "WebSocket opened": (v) => v === true });
+  }
+  if (!isWebsocketClosed) {
+    socket.send(getMsgLeaveQueue());
+    socket.send(getMsgLeaveRoom());
+    socket.send(getMsgConcedeGame());
+  }
+};
+
+export function teardown(data) {
+  console.log(JSON.stringify(data));
 }
+
+export function player1() {
+  Reset();
+  runPlayerVU(1);
+}
+
+export const Reset = () => {
+  queueSent = false;
+  gameTimerReceived = false;
+  gameStartReceived = false;
+  balanceUpdateReceived = false;
+  opponentReadyReceived = false;
+  gameInfo = false;
+  queueConfirmationReceived = false;
+  pairedReceived = false;
+  turnSwitchReceived = false;
+  startQueueRequest = Date.now();
+  startPairedTimer = Date.now();
+  startMovementTimer = Date.now();
+};

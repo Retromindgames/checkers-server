@@ -1,180 +1,196 @@
 {
     "metrics": {
-        "ws_msgs_sent": {
-            "count": 8,
-            "rate": 0.24732121752030925
-        },
-        "http_req_waiting": {
-            "p(90)": 1949.92498,
-            "p(95)": 1979.84969,
-            "avg": 1710.5273,
-            "min": 1411.2802,
-            "med": 1710.5273,
-            "max": 2009.7744
-        },
-        "http_req_receiving": {
-            "p(95)": 0.641335,
-            "avg": 0.58045,
-            "min": 0.5128,
-            "med": 0.58045,
-            "max": 0.6481,
-            "p(90)": 0.63457
-        },
-        "http_gamelaunch_response_time": {
-            "max": 2145,
-            "p(90)": 2084.9,
-            "p(95)": 2114.95,
-            "avg": 1844.5,
-            "min": 1544,
-            "med": 1844.5
-        },
-        "http_req_connecting": {
-            "min": 45.3691,
-            "med": 48.05505,
-            "max": 50.741,
-            "p(90)": 50.20381,
-            "p(95)": 50.472405,
-            "avg": 48.05505
-        },
         "ws_queue_confirmation_response_message_time": {
-            "p(95)": 69.3,
-            "avg": 63,
-            "min": 56,
-            "med": 63,
-            "max": 70,
-            "p(90)": 68.6
-        },
-        "vus_max": {
-            "min": 2,
-            "max": 2,
-            "value": 2
-        },
-        "ws_connect_time": {
-            "med": 172,
-            "max": 186,
-            "p(90)": 183.2,
-            "p(95)": 184.6,
-            "avg": 172,
-            "min": 158
-        },
-        "http_req_tls_handshaking": {
-            "med": 60.72295,
-            "max": 64.5761,
-            "p(90)": 63.80547,
-            "p(95)": 64.19078499999999,
-            "avg": 60.72295,
-            "min": 56.8698
-        },
-        "ws_connected_message_time": {
-            "p(95)": 191.05,
-            "avg": 182.5,
-            "min": 173,
-            "med": 182.5,
-            "max": 192,
-            "p(90)": 190.1
-        },
-        "ws_paired_response_message_time": {
-            "p(95)": 567.8,
-            "avg": 305,
-            "min": 13,
-            "med": 305,
-            "max": 597,
-            "p(90)": 538.6
+            "med": 19,
+            "max": 239,
+            "p(90)": 79,
+            "p(95)": 114.54999999999995,
+            "avg": 32.1090395480226,
+            "min": 2
         },
         "iteration_duration": {
-            "avg": 32072.109450000004,
-            "min": 31797.6209,
-            "med": 32072.109450000004,
-            "max": 32346.598,
-            "p(90)": 32291.70029,
-            "p(95)": 32319.149145000003
+            "med": 3470.131009,
+            "max": 4894.60871,
+            "p(90)": 3815.2644920000002,
+            "p(95)": 3955.7461839999996,
+            "avg": 3498.5040399790414,
+            "min": 2703.41919
+        },
+        "ws_ping": {
+            "avg": 2.7357811281444926,
+            "min": 0.003798,
+            "med": 1.138674,
+            "max": 247.012999,
+            "p(90)": 8.8009247,
+            "p(95)": 12.228992349999999
+        },
+        "http_req_tls_handshaking": {
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0
+        },
+        "http_req_blocked": {
+            "avg": 0.45506427175141256,
+            "min": 0.003075,
+            "med": 0.006864,
+            "max": 31.223745,
+            "p(90)": 0.17265950000000024,
+            "p(95)": 1.1425441999999997
+        },
+        "ws_paired_response_message_time": {
+            "max": 1176,
+            "p(90)": 121,
+            "p(95)": 274.0999999999999,
+            "avg": 61.5135593220339,
+            "min": 0,
+            "med": 22
+        },
+        "vus_max": {
+            "value": 200,
+            "min": 200,
+            "max": 200
+        },
+        "http_req_connecting": {
+            "avg": 0.42494423333333337,
+            "min": 0,
+            "med": 0,
+            "max": 30.936287,
+            "p(90)": 0.09373940000000205,
+            "p(95)": 1.0172618499999992
+        },
+        "data_received": {
+            "count": 38271978,
+            "rate": 699608.9655603889
+        },
+        "ws_movement_response_message_time": {
+            "avg": 290.2038189533239,
+            "min": -434,
+            "med": 96,
+            "max": 2823,
+            "p(90)": 674,
+            "p(95)": 756
+        },
+        "http_req_duration": {
+            "min": 4.01204,
+            "med": 22.954012,
+            "max": 530.312675,
+            "p(90)": 124.94862140000018,
+            "p(95)": 326.4467459499999,
+            "avg": 56.31503562146891
         },
         "http_req_failed": {
             "passes": 0,
-            "fails": 2,
+            "fails": 1770,
             "value": 0
         },
-        "checks": {
-            "passes": 10,
-            "fails": 4,
-            "value": 0.7142857142857143
+        "ws_msgs_received": {
+            "count": 585254,
+            "rate": 10698.400420539534
         },
-        "http_reqs": {
-            "count": 2,
-            "rate": 0.06183030438007731
+        "ws_connected_message_time": {
+            "med": 36,
+            "max": 214,
+            "p(90)": 71,
+            "p(95)": 93,
+            "avg": 43.0271186440678,
+            "min": 6
         },
         "http_req_duration{expected_response:true}": {
-            "p(90)": 1951.80712,
-            "p(95)": 1981.60981,
-            "avg": 1713.3856,
-            "min": 1415.3587,
-            "med": 1713.3856,
-            "max": 2011.4125
+            "p(95)": 326.4467459499999,
+            "avg": 56.31503562146891,
+            "min": 4.01204,
+            "med": 22.954012,
+            "max": 530.312675,
+            "p(90)": 124.94862140000018
         },
-        "http_req_blocked": {
-            "min": 131.1945,
-            "med": 131.6948,
-            "max": 132.1951,
-            "p(90)": 132.09503999999998,
-            "p(95)": 132.14507,
-            "avg": 131.6948
+        "http_req_receiving": {
+            "avg": 0.10310623220338981,
+            "min": 0.020387,
+            "med": 0.05622,
+            "max": 13.974501,
+            "p(90)": 0.11149730000000002,
+            "p(95)": 0.18089085
         },
-        "http_req_sending": {
-            "med": 2.27785,
-            "max": 3.5657,
-            "p(90)": 3.3081300000000002,
-            "p(95)": 3.436915,
-            "avg": 2.27785,
-            "min": 0.99
+        "checks": {
+            "passes": 21230,
+            "fails": 0,
+            "value": 1
         },
-        "iterations": {
-            "count": 2,
-            "rate": 0.06183030438007731
-        },
-        "vus": {
-            "value": 1,
-            "min": 1,
-            "max": 2
-        },
-        "ws_session_duration": {
-            "min": 30165.8767,
-            "med": 30191.7697,
-            "max": 30217.6627,
-            "p(90)": 30212.4841,
-            "p(95)": 30215.0734,
-            "avg": 30191.7697
-        },
-        "data_sent": {
-            "count": 4558,
-            "rate": 140.9112636821962
-        },
-        "data_received": {
-            "count": 37725,
-            "rate": 1166.2741163692083
+        "ws_opened_time": {
+            "min": 3,
+            "med": 24,
+            "max": 78,
+            "p(90)": 40,
+            "p(95)": 46,
+            "avg": 25.71186440677966
         },
         "ws_connecting": {
-            "p(95)": 184.051125,
-            "avg": 171.67275,
-            "min": 157.919,
-            "med": 171.67275,
-            "max": 185.4265,
-            "p(90)": 182.67575
+            "med": 23.777976000000002,
+            "max": 77.730506,
+            "p(90)": 39.64959560000001,
+            "p(95)": 45.95435749999999,
+            "avg": 25.514058133333325,
+            "min": 2.694724
+        },
+        "http_req_waiting": {
+            "max": 530.048583,
+            "p(90)": 123.52746920000017,
+            "p(95)": 326.2910573999999,
+            "avg": 55.96280200000002,
+            "min": 3.885207,
+            "med": 22.824845500000002
+        },
+        "http_req_sending": {
+            "p(95)": 0.18928819999999996,
+            "avg": 0.24912738926553685,
+            "min": 0.009016,
+            "med": 0.024622,
+            "max": 30.274468,
+            "p(90)": 0.08846910000000004
+        },
+        "ws_session_duration": {
+            "avg": 3426.1819155939997,
+            "min": 2657.355931,
+            "med": 3419.7708540000003,
+            "max": 4417.649307,
+            "p(90)": 3714.029167,
+            "p(95)": 3823.4606865
+        },
+        "vus": {
+            "value": 4,
+            "min": 4,
+            "max": 200
         },
         "ws_sessions": {
-            "count": 2,
-            "rate": 0.06183030438007731
+            "count": 1770,
+            "rate": 32.35547086283046
         },
-        "http_req_duration": {
-            "avg": 1713.3856,
-            "min": 1415.3587,
-            "med": 1713.3856,
-            "max": 2011.4125,
-            "p(90)": 1951.80712,
-            "p(95)": 1981.60981
+        "http_reqs": {
+            "rate": 32.35547086283046,
+            "count": 1770
         },
-        "ws_msgs_received": {
-            "count": 85,
-            "rate": 2.6277879361532857
+        "http_gamelaunch_response_time": {
+            "min": 4,
+            "med": 23,
+            "max": 531,
+            "p(90)": 126.10000000000014,
+            "p(95)": 327.0999999999999,
+            "avg": 57.085875706214686
+        },
+        "data_sent": {
+            "count": 39773776,
+            "rate": 727061.7234309296
+        },
+        "iterations": {
+            "count": 1766,
+            "rate": 32.28235115466587
+        },
+        "ws_msgs_sent": {
+            "count": 565490,
+            "rate": 10337.115942498302
         }
     },
     "root_group": {
@@ -184,53 +200,67 @@
         "groups": {},
         "checks": {
                 "status is 200": {
-                    "passes": 2,
-                    "fails": 0,
                     "name": "status is 200",
                     "path": "::status is 200",
-                    "id": "6210a8cd14cd70477eba5c5e4cb3fb5f"
+                    "id": "6210a8cd14cd70477eba5c5e4cb3fb5f",
+                    "passes": 1770,
+                    "fails": 0
                 },
                 "WebSocket opened": {
-                    "name": "WebSocket opened",
-                    "path": "::WebSocket opened",
                     "id": "a80016246b17469d01badd29b27cce22",
-                    "passes": 2,
-                    "fails": 0
+                    "passes": 1770,
+                    "fails": 0,
+                    "name": "WebSocket opened",
+                    "path": "::WebSocket opened"
                 },
                 "Connected message received": {
                     "name": "Connected message received",
                     "path": "::Connected message received",
                     "id": "ae61dbbe57f31a9a764db06cf63cbfee",
-                    "passes": 2,
+                    "passes": 1770,
                     "fails": 0
                 },
                 "Queue confirmation message received": {
+                    "passes": 1770,
                     "fails": 0,
                     "name": "Queue confirmation message received",
                     "path": "::Queue confirmation message received",
-                    "id": "e8816eefd338f3add31b59760d1e4099",
-                    "passes": 2
+                    "id": "e8816eefd338f3add31b59760d1e4099"
                 },
                 "Paired message received": {
-                    "passes": 2,
-                    "fails": 0,
                     "name": "Paired message received",
                     "path": "::Paired message received",
-                    "id": "0a59cd527e0b1516ab1f7a8982de4126"
+                    "id": "0a59cd527e0b1516ab1f7a8982de4126",
+                    "passes": 1770,
+                    "fails": 0
                 },
-                "Game info message received": {
-                    "passes": 0,
-                    "fails": 2,
-                    "name": "Game info message received",
-                    "path": "::Game info message received",
-                    "id": "21e78454e4a908b94ba8cb58010c06e6"
+                "Opponent ready message received": {
+                    "name": "Opponent ready message received",
+                    "path": "::Opponent ready message received",
+                    "id": "a39197665287489ab2efe4a7389df97a",
+                    "passes": 1770,
+                    "fails": 0
                 },
-                "Room timer message received": {
-                    "passes": 0,
-                    "fails": 2,
-                    "name": "Room timer message received",
-                    "path": "::Room timer message received",
-                    "id": "f1af19c3749b0829e3dcdfad18324af8"
+                "Balance Update message received": {
+                    "name": "Balance Update message received",
+                    "path": "::Balance Update message received",
+                    "id": "e2ceac1c6d476cf919e6232dc016c738",
+                    "passes": 1770,
+                    "fails": 0
+                },
+                "Game start message received": {
+                    "id": "6219dd69e477f4bc73d8db73d26ca0cb",
+                    "passes": 1770,
+                    "fails": 0,
+                    "name": "Game start message received",
+                    "path": "::Game start message received"
+                },
+                "Turn switch message received": {
+                    "path": "::Turn switch message received",
+                    "id": "0be7be3ecd9e2795cb2631a4f860d1d1",
+                    "passes": 7070,
+                    "fails": 0,
+                    "name": "Turn switch message received"
                 }
             }
     }
