@@ -2,6 +2,7 @@ package redisdb
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -24,6 +25,18 @@ func NewRedisClient(addr string, username string, password string) (*RedisClient
 	// Set up Redis client options
 	options := &redis.Options{
 		Addr: addr,
+
+		DialTimeout:     5 * time.Second,
+		ReadTimeout:     3 * time.Second,
+		WriteTimeout:    3 * time.Second,
+		PoolTimeout:     30 * time.Second, // max time to wait for connection from pool
+		MinIdleConns:    10,               // keep some idle connections alive
+		MaxRetries:      3,
+		MinRetryBackoff: 100 * time.Millisecond,
+		MaxRetryBackoff: 500 * time.Millisecond,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12, // required by elastic cache.
+		},
 	}
 
 	// If there's a username, set it in the options
