@@ -31,6 +31,7 @@ func NewRedisClient(addr string, username string, password string, tlsConfig boo
 		WriteTimeout:    3 * time.Second,
 		PoolTimeout:     30 * time.Second,
 		MinIdleConns:    10,
+		PoolSize:        50,
 		MaxRetries:      3,
 		MinRetryBackoff: 100 * time.Millisecond,
 		MaxRetryBackoff: 500 * time.Millisecond,
