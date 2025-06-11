@@ -54,6 +54,7 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 			SessionId, Token, PlayerName, Currency, OperatorBaseUrl, CreatedAt, OperatorName, OperatorGameName, GameName
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
+	start := time.Now()
 
 	stmt, err := pc.DB.Prepare(query)
 	if err != nil {
@@ -72,6 +73,9 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 		session.OperatorIdentifier.OperatorGameName,
 		session.OperatorIdentifier.GameName,
 	)
+	duration := time.Since(start)
+	log.Printf("[Postgres metric] - SaveSession Insert took %v", duration)
+
 	if err != nil {
 		return fmt.Errorf("exec session insert: %w", err)
 	}
