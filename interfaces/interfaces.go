@@ -65,12 +65,7 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 				respondWithError(w, "Failed to generate session", err)
 				return
 			}
-			// TODO: Possivelmente isto tem de virar async.
-			err = pgs.SaveSession(*session)
-			if err != nil {
-				respondWithError(w, "Failed to save session", err)
-				return
-			}
+			go handleSaveSession(session, pgs)
 		}
 	}
 	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, session.ID, logInResponse.Data.Currency)
@@ -363,11 +358,8 @@ func (m *TestModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, re
 			respondWithError(w, "Failed to generate session", err)
 			return
 		}
-		err = pgs.SaveSession(*session)
-		if err != nil {
-			respondWithError(w, "Failed to save session", err)
-			return
-		}
+
+		go handleSaveSession(session, pgs)
 	}
 	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, session.ID, req.Currency)
 	if err != nil {
@@ -391,4 +383,11 @@ func (m *TestModule) HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.Red
 }
 func (m *TestModule) HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, winValue int64, gameID string) (int64, int64, error) {
 	return 199, 99, nil
+}
+
+func handleSaveSession(session *models.Session, pgs *postgrescli.PostgresCli) {
+	err := pgs.SaveSession(*session)
+	if err != nil {
+		return
+	}
 }
