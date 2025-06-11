@@ -44,6 +44,10 @@ func init() {
 }
 
 func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
+	go handleGameLaunchHandler(w, r)
+}
+
+func handleGameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.GameLaunchRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
