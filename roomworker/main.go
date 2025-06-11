@@ -57,9 +57,16 @@ func main() {
 		}
 	}()
 
-	go processReadyQueue()
-	go processQueue()
+	spawnWorkers(20, processReadyQueue)
+	spawnWorkers(1, processQueue) // At 1, because I'm scared it might not work properly...
+
 	select {}
+}
+
+func spawnWorkers(n int, workerFunc func()) {
+	for i := 0; i < n; i++ {
+		go workerFunc()
+	}
 }
 
 func processQueue() {
