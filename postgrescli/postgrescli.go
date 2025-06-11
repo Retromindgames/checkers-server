@@ -19,7 +19,7 @@ type PostgresCli struct {
 
 func NewPostgresCli(user, password, dbname, host, port string, ssl bool) (*PostgresCli, error) {
 	connStr := fmt.Sprintf(
-		"user=%s password=%s dbname=%s host=%s port=%s binary_parameters=no",
+		"user=%s password=%s dbname=%s host=%s port=%s binary_parameters=yes",
 		user, password, dbname, host, port)
 
 	if ssl {
