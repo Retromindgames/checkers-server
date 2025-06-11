@@ -172,3 +172,25 @@ func (r *RedisClient) GetSessionByOperatorPlayerCurrency(operator, playerName, c
 	sessionID = strings.TrimRight(sessionID, "}") // remove trailing }
 	return r.GetSessionByID(sessionID)
 }
+
+func (r *RedisClient) RefreshSessionTTL(session *models.Session, ttl time.Duration) error {
+	ctx := context.Background()
+
+	hashTag := fmt.Sprintf("{%s}", session.ID)
+	sessionKey := fmt.Sprintf("session:%s", hashTag)
+	tokenKey := fmt.Sprintf("session_token:%s", session.Token)
+	indexKey := fmt.Sprintf("session_index:{%s}:%s:%s:%s",
+		session.OperatorIdentifier.OperatorName,
+		session.OperatorIdentifier.OperatorName,
+		session.PlayerName,
+		session.Currency,
+	)
+
+	pipe := r.Client.TxPipeline()
+	pipe.Expire(ctx, sessionKey, ttl)
+	pipe.Expire(ctx, tokenKey, ttl)
+	pipe.Expire(ctx, indexKey, ttl)
+
+	_, err := pipe.Exec(ctx)
+	return err
+}

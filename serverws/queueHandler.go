@@ -64,6 +64,8 @@ func (qh *QueueHandler) Process() {
 	qh.addToRedisQueue()
 	qh.updateQueueCount()
 	qh.sendConfirmation()
+	session, _ := qh.RedisClient.GetSessionByID(qh.Client.player.ID)
+	qh.RedisClient.RefreshSessionTTL(session, 6)
 }
 
 func (qh *QueueHandler) cleanup() {
