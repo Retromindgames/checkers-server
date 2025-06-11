@@ -53,12 +53,19 @@ func main() {
 	}()
 
 	log.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
-	go processGameCreation()
-	go processGameMoves()
+	spawnWorkers(10, processGameCreation)
+	spawnWorkers(10, processGameMoves)
+
 	go processLeaveGame()
 	go processDisconnectFromGame()
 	go processReconnectFromGame()
 	select {}
+}
+
+func spawnWorkers(n int, workerFunc func()) {
+	for i := 0; i < n; i++ {
+		go workerFunc()
+	}
 }
 
 func processGameCreation() {
