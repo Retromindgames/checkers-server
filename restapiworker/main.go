@@ -44,7 +44,7 @@ func init() {
 }
 
 func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
-	go handleGameLaunchHandler(w, r)
+	handleGameLaunchHandler(w, r)
 }
 
 func handleGameLaunchHandler(w http.ResponseWriter, r *http.Request) {
@@ -168,4 +168,5 @@ func main() {
 
 	log.Printf("[API] - HTTP server starting on %d...", port)
 	log.Fatal(http.ListenAndServe(addrs, router))
+
 }
