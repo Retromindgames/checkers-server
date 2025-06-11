@@ -65,6 +65,7 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 				respondWithError(w, "Failed to generate session", err)
 				return
 			}
+			// TODO: Possivelmente isto tem de virar async.
 			err = pgs.SaveSession(*session)
 			if err != nil {
 				respondWithError(w, "Failed to save session", err)

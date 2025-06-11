@@ -62,15 +62,22 @@ func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//log.Printf("Received Game Launch Request: %+v", req)
-
-	operator, err := postgresClient.FetchOperator(req.OperatorName, req.GameID)
+	// 1ª Procurar no cache, o operator tem ttl definido.
+	operator, err := redisClient.GetOperator(req.OperatorName, req.GameID)
 	if err != nil {
-		log.Printf("[GameLaunchHandler] - error fetching the operator %v", err)
-		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
-			Success: false,
-			Message: fmt.Sprintf("Invalid operator / gameID: %v", err),
-		})
-		return
+		// se não encontrar no cache procurar no postgress.
+		log.Printf("[GameLaunchHandler] - error fetching operator from redis: %v", err)
+		operator, err = postgresClient.FetchOperator(req.OperatorName, req.GameID)
+		if err != nil {
+			log.Printf("[GameLaunchHandler] - error fetching the operator from sql: %v", err)
+			respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
+				Success: false,
+				Message: fmt.Sprintf("Invalid operator / gameID: %v", err),
+			})
+			return
+		}
+		// Se encontrar no postgress, guardar no cache.
+		redisClient.AddOperator(operator)
 	}
 
 	if !operator.Active {
