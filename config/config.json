@@ -3,7 +3,8 @@
     "addr": "redis:6379",
     "db": 0,
     "user": "default",
-    "password": ""
+    "password": "",
+    "tls": false  
   },
   "postgres": {
     "user": "sa",

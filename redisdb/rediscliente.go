@@ -21,7 +21,7 @@ type RedisClient struct {
 	mu            sync.Mutex
 }
 
-func NewRedisClient(addr string, username string, password string) (*RedisClient, error) {
+func NewRedisClient(addr string, username string, password string, tlsConfig bool) (*RedisClient, error) {
 	// Set up Redis client options
 	options := &redis.Options{
 		Addr: addr,
@@ -29,16 +29,18 @@ func NewRedisClient(addr string, username string, password string) (*RedisClient
 		DialTimeout:     5 * time.Second,
 		ReadTimeout:     3 * time.Second,
 		WriteTimeout:    3 * time.Second,
-		PoolTimeout:     30 * time.Second, // max time to wait for connection from pool
-		MinIdleConns:    10,               // keep some idle connections alive
+		PoolTimeout:     30 * time.Second,
+		MinIdleConns:    10,
 		MaxRetries:      3,
 		MinRetryBackoff: 100 * time.Millisecond,
 		MaxRetryBackoff: 500 * time.Millisecond,
-		TLSConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12, // required by elastic cache.
-		},
 	}
 
+	if tlsConfig {
+		options.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
 	// If there's a username, set it in the options
 	if username != "" {
 		options.Username = username

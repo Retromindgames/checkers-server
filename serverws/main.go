@@ -20,7 +20,7 @@ func main() {
 	})
 
 	flag.Parse()
-	hub := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password)
+	hub := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password, redisConfig.Tls)
 	defer hub.Close() // close Redis on exit
 
 	go hub.run()
