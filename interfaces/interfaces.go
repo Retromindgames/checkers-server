@@ -351,10 +351,6 @@ func (m *TestModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, re
 
 	session, err := checkExistingSession(req.Token, rc)
 	if err != nil || session == nil {
-		session, _ = checkPreviousPlayerSession(req.OperatorName, "TESTUSER", req.Currency, rc)
-		if session != nil {
-			rc.RemoveSession(session.ID) // If the session exists, from a previous token, we remove the session
-		}
 		session, err = generatePlayerSession( // then we generate a new session.
 			op,
 			req.Token,
