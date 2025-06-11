@@ -55,10 +55,13 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
 
-	log.Printf("Saving session: %+v\n", session)
+	stmt, err := pc.DB.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("prepare session insert: %w", err)
+	}
+	defer stmt.Close()
 
-	_, err := pc.DB.Exec(
-		query,
+	_, err = stmt.Exec(
 		session.ID,
 		session.Token,
 		session.PlayerName,
@@ -70,10 +73,8 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 		session.OperatorIdentifier.GameName,
 	)
 	if err != nil {
-		return fmt.Errorf("error inserting session: %w", err)
+		return fmt.Errorf("exec session insert: %w", err)
 	}
-
-	//log.Printf("Session saved with ID: %s\n", session.ID)
 	return nil
 }
 
@@ -82,12 +83,15 @@ func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 		INSERT INTO transactions (
 			TransactionID, SessionID, Type, Amount, Currency, Platform, Operator, Client, Game, Status, Description, RoundID, Timestamp
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-		RETURNING TransactionID
 	`
 
-	var transactionID string
-	err := pc.DB.QueryRow(
-		query,
+	stmt, err := pc.DB.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("prepare transaction insert: %w", err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
 		transaction.ID,
 		transaction.SessionID,
 		transaction.Type,
@@ -101,39 +105,36 @@ func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 		transaction.Description,
 		transaction.RoundID,
 		transaction.Timestamp,
-	).Scan(&transactionID)
-
+	)
 	if err != nil {
-		return fmt.Errorf("error inserting transaction: %w", err)
+		return fmt.Errorf("exec transaction insert: %w", err)
 	}
-
 	return nil
 }
 
-// SaveGame method to save a game to the database
 func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
-	// Convert moves to JSONB
 	movesJSON, err := json.Marshal(game.Moves)
 	if err != nil {
-		return fmt.Errorf("error marshalling moves: %w", err)
+		return fmt.Errorf("marshal moves: %w", err)
 	}
-
-	// Convert game_players to JSONB
 	playersJSON, err := json.Marshal(game.Players)
 	if err != nil {
-		return fmt.Errorf("error marshalling players: %w", err)
+		return fmt.Errorf("marshal players: %w", err)
 	}
 
-	// SQL query to insert the game data
 	query := `
 		INSERT INTO games (
 			ID, OperatorName, OperatorGameName, GameName, StartDate, EndDate, Moves, BetAmount, Winner, GamePlayers, WinFactor, NumMoves, GameOverReason
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-		RETURNING id
 	`
-	var gameID string
-	err = pc.DB.QueryRow(
-		query,
+
+	stmt, err := pc.DB.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("prepare game insert: %w", err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
 		game.ID,
 		game.OperatorIdentifier.OperatorName,
 		game.OperatorIdentifier.OperatorGameName,
@@ -147,13 +148,10 @@ func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
 		game.OperatorIdentifier.WinFactor,
 		len(game.Moves),
 		reason,
-	).Scan(&gameID)
-
+	)
 	if err != nil {
-		log.Printf("error inserting game: %v", err)
-		return fmt.Errorf("error inserting game: %w", err)
+		return fmt.Errorf("exec game insert: %w", err)
 	}
-	//log.Printf("Game saved with ID: %d\n", gameID)
 	return nil
 }
 
