@@ -65,6 +65,7 @@ func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 
 	operator, err := postgresClient.FetchOperator(req.OperatorName, req.GameID)
 	if err != nil {
+		log.Printf("[GameLaunchHandler] - error fetching the operator %v", err)
 		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
 			Success: false,
 			Message: fmt.Sprintf("Invalid operator / gameID: %v", err),
