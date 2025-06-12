@@ -24,8 +24,8 @@ function runGamelaunch() {
   const res = http.post(url, payloads.gamelaunch(), { headers });
   const elapsed = Date.now() - start; 
   gamelaunchResponseTime.add(elapsed);
-  console.log(`Status: ${res.status}`);
-  console.log(`Body: ${res.body}`);
+  //console.log(`Status: ${res.status}`);
+  //console.log(`Body: ${res.body}`);
 
   let data;
   try {
@@ -33,8 +33,8 @@ function runGamelaunch() {
   } catch (e) {
     fail(`Invalid JSON response: ${res.body}`);
   }
-  console.log('Parsed data:', JSON.stringify(data));
-  console.log('Data keys:', Object.keys(data));
+  //console.log('Parsed data:', JSON.stringify(data));
+  //console.log('Data keys:', Object.keys(data));
 
   check(res, {
     'status is 200': (r) => r.status === 200,
@@ -44,7 +44,7 @@ function runGamelaunch() {
 }
 
 function connectWebSocket(wsConUrl) {
-  console.log('Connecting to websocket');
+  //console.log('Connecting to websocket');
   const start = Date.now();
   let startQueueRequest;
 
@@ -52,16 +52,16 @@ function connectWebSocket(wsConUrl) {
     socket.on('open', () => {
       const elapsed = Date.now() - start; 
       connectTime.add(elapsed)
-      console.log('WebSocket connection opened');
+      //console.log('WebSocket connection opened');
     });
     
     socket.on('message', (msg) => {
-      console.log(`Received: ${msg}`);
+      //console.log(`Received: ${msg}`);
       const data = JSON.parse(msg);
 
       if (data.command === 'connected') {
         const elapsed = Date.now() - start;
-        console.log(`Connected message received after ${elapsed} ms`);
+        //console.log(`Connected message received after ${elapsed} ms`);
         connectedMsgTime.add(elapsed); // record metric
         socket.send(
           getMsgQueueRequest()
@@ -75,7 +75,7 @@ function connectWebSocket(wsConUrl) {
       
       if (data.command === 'queue_confirmation' && data.value) {
         const elapsed = Date.now() - startQueueRequest;
-        console.log(`Queue Confirmation message received after ${elapsed} ms`);
+        //console.log(`Queue Confirmation message received after ${elapsed} ms`);
         queueConfirmationResponseTime.add(elapsed); // record metric
          // TODO: fazer um check para termos recebido a queue confirmation.
         //check(res, {
@@ -87,7 +87,7 @@ function connectWebSocket(wsConUrl) {
       {
         const elapsed = Date.now() - startQueueRequest;
         const { value } = data;
-        console.log({value});
+        //console.log({value});
 
         pairedResponseTime.add(elapsed);
       }

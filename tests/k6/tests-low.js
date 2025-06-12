@@ -54,47 +54,7 @@ export let options = {
       maxDuration: "60s",
       startTime: "0s",
       exec: "player1",
-    },
-    playerBatch2: {
-      executor: "per-vu-iterations",
-      vus: 40,
-      iterations: 1,
-      startTime: "2s",
-      maxDuration: "60s",
-      exec: "player1",
-    },
-    playerBatch3: {
-      executor: "per-vu-iterations",
-      vus: 50,
-      iterations: 1,
-      startTime: "5s",
-      maxDuration: "60s",
-      exec: "player1",
-    },
-    playerBatch4: {
-      executor: "per-vu-iterations",
-      vus: 40,
-      iterations: 1,
-      startTime: "7s",
-      maxDuration: "60s",
-      exec: "player1",
-    },
-    playerBatch5: {
-      executor: "per-vu-iterations",
-      vus: 30,
-      iterations: 1,
-      startTime: "8s",
-      maxDuration: "60s",
-      exec: "player1",
-    },
-    playerBatch6: {
-      executor: "per-vu-iterations",
-      vus: 20,
-      iterations: 1,
-      startTime: "10s",
-      maxDuration: "60s",
-      exec: "player1",
-    },
+    }
   },
 };
 
@@ -195,7 +155,7 @@ function runPlayerVU(responseDelay = 0) {
           //console.log(
           //  `${__VU} - Sent: ${getMsgQueueRequest({ value: QUEUE_VALUE })}`
           //);
-        }, 80);
+        }, 20);
       }
 
       if (data.command === "queue_confirmation" && data.value) {
@@ -222,7 +182,7 @@ function runPlayerVU(responseDelay = 0) {
         socket.setTimeout(() => {
           socket.send(getMsgReadyRoom({ value: true })); // simulate readiness
           //console.log(`${__VU} - Sent: ${getMsgReadyRoom({ value: true })}`);
-        }, 80);
+        }, 20);
         currentState = GameStates[3];
       }
 
@@ -254,7 +214,7 @@ function runPlayerVU(responseDelay = 0) {
               })
             );
           }
-        }, 80);
+        }, 20);
       }
 
       if (data.command === "balance_update") {
@@ -286,7 +246,7 @@ function runPlayerVU(responseDelay = 0) {
               })
             );
           }
-        }, 80);
+        }, 20);
       }
 
       if (data.command === "turn_switch") {
