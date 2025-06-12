@@ -23,7 +23,7 @@ func init() {
 	config.LoadConfig()
 
 	redisConData := config.Cfg.Redis
-	client, err := redisdb.NewRedisClient(redisConData.Addr, redisConData.User, redisConData.Password)
+	client, err := redisdb.NewRedisClient(redisConData.Addr, redisConData.User, redisConData.Password, redisConData.Tls)
 	if err != nil {
 		log.Fatalf("[%s-Redis] Error initializing Redis client: %v\n", name, err)
 	}
@@ -44,6 +44,10 @@ func init() {
 }
 
 func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
+	handleGameLaunchHandler(w, r)
+}
+
+func handleGameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.GameLaunchRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
@@ -62,14 +66,22 @@ func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//log.Printf("Received Game Launch Request: %+v", req)
-
-	operator, err := postgresClient.FetchOperator(req.OperatorName, req.GameID)
+	// 1ª Procurar no cache, o operator tem ttl definido.
+	operator, err := redisClient.GetOperator(req.OperatorName, req.GameID)
 	if err != nil {
-		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
-			Success: false,
-			Message: fmt.Sprintf("Invalid operator / gameID: %v", err),
-		})
-		return
+		// se não encontrar no cache procurar no postgress.
+		log.Printf("[GameLaunchHandler] - error fetching operator from redis: %v", err)
+		operator, err = postgresClient.FetchOperator(req.OperatorName, req.GameID)
+		if err != nil {
+			log.Printf("[GameLaunchHandler] - error fetching the operator from sql: %v", err)
+			respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
+				Success: false,
+				Message: fmt.Sprintf("Invalid operator / gameID: %v", err),
+			})
+			return
+		}
+		// Se encontrar no postgress, guardar no cache.
+		redisClient.AddOperator(operator)
 	}
 
 	if !operator.Active {
@@ -93,6 +105,33 @@ func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 	module.HandleGameLaunch(w, r, req, *operator, redisClient, postgresClient)
 }
 
+func gameMovesHandler(w http.ResponseWriter, r *http.Request) {
+	var req models.GameMovesRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.GameID == "" {
+		respondWithJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"message": "Invalid or missing game_id",
+		})
+		return
+	}
+
+	log.Printf("Fetching moves for gameID: [%s]", req.GameID)
+	moves, err := postgresClient.FetchGameMoves(req.GameID)
+	if err != nil {
+		respondWithJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"success": false,
+			"message": "Failed to fetch moves :" + err.Error(),
+		})
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, map[string]interface{}{
+		"success": true,
+		"moves":   moves,
+	})
+}
+
 // Utility function to respond with JSON
 func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -102,6 +141,7 @@ func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
 
 func registerRoutes(r *mux.Router) {
 	r.HandleFunc("/api/gamelaunch", gameLaunchHandler).Methods("POST")
+	r.HandleFunc("/api/game/moves", gameMovesHandler).Methods("POST")
 
 	healthHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -115,6 +155,9 @@ func main() {
 		if redisClient != nil {
 			redisClient.CloseRedisClient()
 		}
+		if postgresClient != nil {
+			postgresClient.Close()
+		}
 	}()
 
 	router := mux.NewRouter()
@@ -125,4 +168,5 @@ func main() {
 
 	log.Printf("[API] - HTTP server starting on %d...", port)
 	log.Fatal(http.ListenAndServe(addrs, router))
+
 }

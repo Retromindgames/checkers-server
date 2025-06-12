@@ -20,14 +20,14 @@ func main() {
 	})
 
 	flag.Parse()
-	hub := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password)
+	hub := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password, redisConfig.Tls)
 	defer hub.Close() // close Redis on exit
 
 	go hub.run()
 	// we subscribe to our redis broadcast channel.
 	hub.SubscribeBroadcast()
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/ws/checkers", func(w http.ResponseWriter, r *http.Request) {
 		serveWs(hub, w, r)
 	})
 

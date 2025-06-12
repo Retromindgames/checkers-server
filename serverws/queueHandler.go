@@ -64,6 +64,8 @@ func (qh *QueueHandler) Process() {
 	qh.addToRedisQueue()
 	qh.updateQueueCount()
 	qh.sendConfirmation()
+	session, _ := qh.RedisClient.GetSessionByID(qh.Client.player.ID)
+	qh.RedisClient.RefreshSessionTTL(session, 6)
 }
 
 func (qh *QueueHandler) cleanup() {
@@ -123,7 +125,7 @@ func (qh *QueueHandler) parseBetValue() (float64, error) {
 func (qh *QueueHandler) updatePlayerState(betValue float64) {
 	qh.Client.player.SelectedBet = betValue
 	qh.Client.player.Status = models.StatusInQueue
-	qh.RedisClient.UpdatePlayersInQueueSet(qh.Client.player.ID, models.StatusInQueue)
+	//qh.RedisClient.UpdatePlayersInQueueSet(qh.Client.player.ID, models.StatusInQueue)
 	qh.RedisClient.UpdatePlayer(qh.Client.player)
 }
 

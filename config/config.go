@@ -31,6 +31,7 @@ type Config struct {
 		DB       int    `json:"db"`
 		User     string `json:"user,omitempty"`
 		Password string `json:"password,omitempty"`
+		Tls      bool   `json:"tls,omitempty"`
 	} `json:"redis"`
 	Postgres struct {
 		User     string `json:"user"`
@@ -90,6 +91,7 @@ func loadConfigFromEnv() {
 	Cfg.Redis.DB = 0
 	Cfg.Redis.User = os.Getenv("REDIS_USERNAME")
 	Cfg.Redis.Password = os.Getenv("REDIS_PASSWORD")
+	Cfg.Redis.Tls = true
 	//log.Println("[config.go] - Loaded Redis config from environment variables:")
 	//log.Printf("  Redis Address: %s\n", Cfg.Redis.Addr)
 	//log.Printf("  Redis DB: %d\n", Cfg.Redis.DB)

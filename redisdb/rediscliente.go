@@ -2,10 +2,10 @@ package redisdb
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
@@ -21,12 +21,27 @@ type RedisClient struct {
 	mu            sync.Mutex
 }
 
-func NewRedisClient(addr string, username string, password string) (*RedisClient, error) {
+func NewRedisClient(addr string, username string, password string, tlsConfig bool) (*RedisClient, error) {
 	// Set up Redis client options
 	options := &redis.Options{
 		Addr: addr,
+
+		DialTimeout:     5 * time.Second,
+		ReadTimeout:     3 * time.Second,
+		WriteTimeout:    3 * time.Second,
+		PoolTimeout:     30 * time.Second,
+		MinIdleConns:    10,
+		PoolSize:        50,
+		MaxRetries:      3,
+		MinRetryBackoff: 100 * time.Millisecond,
+		MaxRetryBackoff: 500 * time.Millisecond,
 	}
 
+	if tlsConfig {
+		options.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
 	// If there's a username, set it in the options
 	if username != "" {
 		options.Username = username
@@ -227,44 +242,4 @@ func (r *RedisClient) RemovePlayerFromQueue(queueName string, player *models.Pla
 	}
 
 	return nil
-}
-
-func (r *RedisClient) StartSessionCleanup(interval time.Duration) {
-	go func() {
-		ticker := time.NewTicker(interval)
-		defer ticker.Stop()
-
-		for range ticker.C {
-			r.cleanupExpiredSessions()
-		}
-	}()
-}
-
-func (r *RedisClient) cleanupExpiredSessions() {
-	ctx := context.Background()
-	iter := r.Client.Scan(ctx, 0, "session:*", 0).Iterator()
-
-	for iter.Next(ctx) {
-		sessionKey := iter.Val()
-		data, err := r.Client.HGet(ctx, sessionKey, "data").Result()
-		if err != nil {
-			log.Printf("[RedisClient] (Session) - Failed to fetch session data: %v\n", err)
-			continue
-		}
-		var session models.Session
-		if err := json.Unmarshal([]byte(data), &session); err != nil {
-			log.Printf("[RedisClient] (Session) - Failed to deserialize session: %v\n", err)
-			continue
-		}
-		if session.IsTokenExpired() {
-			parts := strings.Split(sessionKey, ":")
-			if len(parts) > 1 {
-				sessionID := parts[1]
-				r.RemoveSession(sessionID)
-			}
-		}
-	}
-	if err := iter.Err(); err != nil {
-		log.Printf("[RedisClient] (Session) - Error iterating Redis keys: %v\n", err)
-	}
 }

@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/Lavizord/checkers-server/models"
+	"github.com/google/uuid"
 
 	_ "github.com/lib/pq"
 )
@@ -16,7 +18,8 @@ type PostgresCli struct {
 }
 
 func NewPostgresCli(user, password, dbname, host, port string, ssl bool) (*PostgresCli, error) {
-	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s",
+	connStr := fmt.Sprintf(
+		"user=%s password=%s dbname=%s host=%s port=%s binary_parameters=yes",
 		user, password, dbname, host, port)
 
 	if ssl {
@@ -29,6 +32,10 @@ func NewPostgresCli(user, password, dbname, host, port string, ssl bool) (*Postg
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
+
+	db.SetConnMaxLifetime(time.Minute * 5)
+	db.SetMaxOpenConns(60)
+	db.SetMaxIdleConns(20)
 
 	if err = db.Ping(); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
@@ -47,9 +54,15 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 			SessionId, Token, PlayerName, Currency, OperatorBaseUrl, CreatedAt, OperatorName, OperatorGameName, GameName
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
+	start := time.Now()
 
-	_, err := pc.DB.Exec(
-		query,
+	stmt, err := pc.DB.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("prepare session insert: %w", err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
 		session.ID,
 		session.Token,
 		session.PlayerName,
@@ -60,11 +73,12 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 		session.OperatorIdentifier.OperatorGameName,
 		session.OperatorIdentifier.GameName,
 	)
-	if err != nil {
-		return fmt.Errorf("error inserting session: %w", err)
-	}
+	duration := time.Since(start)
+	log.Printf("[Postgres metric] - SaveSession Insert took %v", duration)
 
-	//log.Printf("Session saved with ID: %s\n", session.ID)
+	if err != nil {
+		return fmt.Errorf("exec session insert: %w", err)
+	}
 	return nil
 }
 
@@ -73,12 +87,15 @@ func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 		INSERT INTO transactions (
 			TransactionID, SessionID, Type, Amount, Currency, Platform, Operator, Client, Game, Status, Description, RoundID, Timestamp
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-		RETURNING TransactionID
 	`
 
-	var transactionID string
-	err := pc.DB.QueryRow(
-		query,
+	stmt, err := pc.DB.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("prepare transaction insert: %w", err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
 		transaction.ID,
 		transaction.SessionID,
 		transaction.Type,
@@ -92,39 +109,36 @@ func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 		transaction.Description,
 		transaction.RoundID,
 		transaction.Timestamp,
-	).Scan(&transactionID)
-
+	)
 	if err != nil {
-		return fmt.Errorf("error inserting transaction: %w", err)
+		return fmt.Errorf("exec transaction insert: %w", err)
 	}
-
 	return nil
 }
 
-// SaveGame method to save a game to the database
 func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
-	// Convert moves to JSONB
 	movesJSON, err := json.Marshal(game.Moves)
 	if err != nil {
-		return fmt.Errorf("error marshalling moves: %w", err)
+		return fmt.Errorf("marshal moves: %w", err)
 	}
-
-	// Convert game_players to JSONB
 	playersJSON, err := json.Marshal(game.Players)
 	if err != nil {
-		return fmt.Errorf("error marshalling players: %w", err)
+		return fmt.Errorf("marshal players: %w", err)
 	}
 
-	// SQL query to insert the game data
 	query := `
 		INSERT INTO games (
 			ID, OperatorName, OperatorGameName, GameName, StartDate, EndDate, Moves, BetAmount, Winner, GamePlayers, WinFactor, NumMoves, GameOverReason
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-		RETURNING id
 	`
-	var gameID string
-	err = pc.DB.QueryRow(
-		query,
+
+	stmt, err := pc.DB.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("prepare game insert: %w", err)
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(
 		game.ID,
 		game.OperatorIdentifier.OperatorName,
 		game.OperatorIdentifier.OperatorGameName,
@@ -138,14 +152,34 @@ func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
 		game.OperatorIdentifier.WinFactor,
 		len(game.Moves),
 		reason,
-	).Scan(&gameID)
-
+	)
 	if err != nil {
-		log.Printf("error inserting game: %v", err)
-		return fmt.Errorf("error inserting game: %w", err)
+		return fmt.Errorf("exec game insert: %w", err)
 	}
-	//log.Printf("Game saved with ID: %d\n", gameID)
 	return nil
+}
+
+func (pc *PostgresCli) FetchGameMoves(gameID string) ([]models.Move, error) {
+	query := `SELECT moves FROM games WHERE id = $1`
+	log.Printf("Fetching moves for gameID: %s", gameID) // not [%s]
+	parsedUUID, err := uuid.Parse(gameID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid UUID: %w", err)
+	}
+	log.Printf("Fetching moves for gameID: %s", gameID) // not [%s]
+
+	var movesJSON []byte
+	err = pc.DB.QueryRow(query, parsedUUID).Scan(&movesJSON)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching moves for game %s: %w", gameID, err)
+	}
+
+	var moves []models.Move
+	if err := json.Unmarshal(movesJSON, &moves); err != nil {
+		return nil, fmt.Errorf("error unmarshalling moves JSON: %w", err)
+	}
+
+	return moves, nil
 }
 
 // FetchOperator fetches an operator from the database using OperatorName and OperatorGameName

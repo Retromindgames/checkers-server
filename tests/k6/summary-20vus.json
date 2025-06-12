@@ -1,0 +1,267 @@
+{
+    "root_group": {
+        "checks": {
+            "status is 200": {
+                "fails": 5,
+                "name": "status is 200",
+                "path": "::status is 200",
+                "id": "6210a8cd14cd70477eba5c5e4cb3fb5f",
+                "passes": 15
+            },
+            "WebSocket opened": {
+                "name": "WebSocket opened",
+                "path": "::WebSocket opened",
+                "id": "a80016246b17469d01badd29b27cce22",
+                "passes": 15,
+                "fails": 0
+            },
+            "Connected message received": {
+                "name": "Connected message received",
+                "path": "::Connected message received",
+                "id": "ae61dbbe57f31a9a764db06cf63cbfee",
+                "passes": 15,
+                "fails": 0
+            },
+            "Queue confirmation message received": {
+                "path": "::Queue confirmation message received",
+                "id": "e8816eefd338f3add31b59760d1e4099",
+                "passes": 16,
+                "fails": 0,
+                "name": "Queue confirmation message received"
+            },
+            "Paired message received": {
+                "name": "Paired message received",
+                "path": "::Paired message received",
+                "id": "0a59cd527e0b1516ab1f7a8982de4126",
+                "passes": 15,
+                "fails": 0
+            },
+            "Opponent ready message received": {
+                "fails": 0,
+                "name": "Opponent ready message received",
+                "path": "::Opponent ready message received",
+                "id": "a39197665287489ab2efe4a7389df97a",
+                "passes": 14
+            },
+            "Balance Update message received": {
+                "fails": 0,
+                "name": "Balance Update message received",
+                "path": "::Balance Update message received",
+                "id": "e2ceac1c6d476cf919e6232dc016c738",
+                "passes": 14
+            },
+            "Game start message received": {
+                "name": "Game start message received",
+                "path": "::Game start message received",
+                "id": "6219dd69e477f4bc73d8db73d26ca0cb",
+                "passes": 14,
+                "fails": 0
+            },
+            "Turn switch message received": {
+                "passes": 56,
+                "fails": 0,
+                "name": "Turn switch message received",
+                "path": "::Turn switch message received",
+                "id": "0be7be3ecd9e2795cb2631a4f860d1d1"
+            }
+        },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {}
+    },
+    "metrics": {
+        "ws_msgs_received": {
+            "count": 2892,
+            "rate": 38.354462984263606
+        },
+        "ws_ping": {
+            "min": 37.6054,
+            "med": 40.4271,
+            "max": 86.3588,
+            "p(90)": 43.3718,
+            "p(95)": 45.0467,
+            "avg": 41.27752658416288
+        },
+        "http_req_sending": {
+            "avg": 0.170405,
+            "min": 0,
+            "med": 0,
+            "max": 0.7206,
+            "p(90)": 0.5375,
+            "p(95)": 0.5466550000000001
+        },
+        "http_reqs": {
+            "count": 20,
+            "rate": 0.26524524885382855
+        },
+        "ws_session_duration": {
+            "avg": 3591.6349357142863,
+            "min": 3493.9097,
+            "med": 3553.4827999999998,
+            "max": 3811.8127,
+            "p(90)": 3757.72915,
+            "p(95)": 3805.600195
+        },
+        "iteration_duration": {
+            "p(90)": 5148.3053199999995,
+            "p(95)": 5366.40914,
+            "avg": 4067.5762894736845,
+            "min": 1373.9308,
+            "med": 4939.1131,
+            "max": 5369.3192
+        },
+        "iterations": {
+            "count": 19,
+            "rate": 0.25198298641113714
+        },
+        "ws_queue_confirmation_response_message_time": {
+            "max": 30075,
+            "p(90)": 63.5,
+            "p(95)": 7568.25,
+            "avg": 1931.375,
+            "min": 49,
+            "med": 54.5
+        },
+        "http_req_connecting": {
+            "avg": 113.55460000000001,
+            "min": 112.8687,
+            "med": 113.3821,
+            "max": 114.8739,
+            "p(90)": 113.93777,
+            "p(95)": 114.38617
+        },
+        "ws_connected_message_time": {
+            "p(90)": 294.19999999999993,
+            "p(95)": 358.8,
+            "avg": 191.4,
+            "min": 140,
+            "med": 166,
+            "max": 363
+        },
+        "http_req_blocked": {
+            "avg": 271.807605,
+            "min": 269.4032,
+            "med": 270.92740000000003,
+            "max": 276.8927,
+            "p(90)": 275.97263000000004,
+            "p(95)": 276.8927
+        },
+        "http_gamelaunch_response_time": {
+            "max": 1837,
+            "p(90)": 1361.4000000000008,
+            "p(95)": 1824.65,
+            "avg": 1319.25,
+            "min": 986,
+            "med": 1296.5
+        },
+        "http_req_waiting": {
+            "avg": 1045.6266250000003,
+            "min": 715.3582,
+            "med": 1023.5064,
+            "max": 1563.1925,
+            "p(90)": 1082.7820500000007,
+            "p(95)": 1551.309805
+        },
+        "vus_max": {
+            "value": 20,
+            "min": 20,
+            "max": 20
+        },
+        "data_sent": {
+            "count": 1346741,
+            "rate": 17860.832584332697
+        },
+        "http_req_tls_handshaking": {
+            "p(95)": 109.77483,
+            "avg": 105.537045,
+            "min": 103.4786,
+            "med": 104.7022,
+            "max": 110.4594,
+            "p(90)": 109.50255
+        },
+        "ws_paired_response_message_time": {
+            "med": 37,
+            "max": 75,
+            "p(90)": 62.19999999999999,
+            "p(95)": 72.19999999999999,
+            "avg": 35.6,
+            "min": 7
+        },
+        "ws_movement_response_message_time": {
+            "p(90)": 614.5,
+            "p(95)": 619.5,
+            "avg": 265,
+            "min": 50,
+            "med": 62,
+            "max": 631
+        },
+        "vus": {
+            "min": 1,
+            "max": 20,
+            "value": 1
+        },
+        "checks": {
+            "passes": 174,
+            "fails": 5,
+            "value": 0.9720670391061452
+        },
+        "ws_opened_time": {
+            "p(90)": 250.19999999999996,
+            "p(95)": 301.6,
+            "avg": 167.33333333333334,
+            "min": 132,
+            "med": 145,
+            "max": 303
+        },
+        "data_received": {
+            "count": 921936,
+            "rate": 12226.957187365164
+        },
+        "http_req_receiving": {
+            "avg": 0.10311999999999999,
+            "min": 0,
+            "med": 0,
+            "max": 1.0312,
+            "p(90)": 0.10312000000000146,
+            "p(95)": 1.0312
+        },
+        "http_req_duration": {
+            "avg": 1045.90015,
+            "min": 715.3582,
+            "med": 1023.7751499999999,
+            "max": 1563.1925,
+            "p(90)": 1082.8358000000007,
+            "p(95)": 1551.82043
+        },
+        "ws_connecting": {
+            "avg": 166.95946,
+            "min": 131.2816,
+            "med": 144.7116,
+            "max": 302.2641,
+            "p(90)": 249.62411999999995,
+            "p(95)": 300.76449
+        },
+        "ws_sessions": {
+            "count": 15,
+            "rate": 0.1989339366403714
+        },
+        "http_req_duration{expected_response:true}": {
+            "avg": 1053.99902,
+            "min": 715.3582,
+            "med": 1024.0439,
+            "max": 1563.1925,
+            "p(90)": 1343.0502999999999,
+            "p(95)": 1554.8130800000001
+        },
+        "ws_msgs_sent": {
+            "count": 2725,
+            "rate": 36.13966515633414
+        },
+        "http_req_failed": {
+            "passes": 5,
+            "fails": 15,
+            "value": 0.25
+        }
+    }
+}
