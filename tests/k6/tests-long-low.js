@@ -44,15 +44,25 @@ export const gamelaunchResponseTime = new Trend(
 
 export const connectTime = new Trend("ws_opened_time", true);
 
+//export let options = {
+//  insecureSkipTLSVerify: true,
+//  scenarios: {
+//    playerBatch1: {
+//      executor: "constant-vus",
+//      vus: 10,
+//      duration: "10m",
+//      exec: "player1",
+//    }
+//  },
+//};
+
 export let options = {
   insecureSkipTLSVerify: true,
   scenarios: {
     playerBatch1: {
-      executor: "per-vu-iterations",
-      vus: 20,
-      iterations: 1,
-      maxDuration: "60s",
-      startTime: "0s",
+      executor: "constant-vus",
+      vus: 10,
+      duration: "72h",
       exec: "player1",
     }
   },
@@ -321,6 +331,7 @@ export function teardown(data) {
 export function player1() {
   Reset();
   runPlayerVU(1);
+  sleep(2*60)
 }
 
 export const Reset = () => {
