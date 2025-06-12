@@ -54,11 +54,11 @@ func main() {
 
 	log.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
 
-	spawnWorkers(20, processGameCreation)
-	spawnWorkers(20, processGameMoves)
-	spawnWorkers(20, processLeaveGame)
-	spawnWorkers(20, processDisconnectFromGame)
-	spawnWorkers(20, processReconnectFromGame)
+	spawnWorkers(1, processGameCreation)
+	spawnWorkers(4, processGameMoves)
+	spawnWorkers(1, processLeaveGame)
+	spawnWorkers(1, processDisconnectFromGame)
+	spawnWorkers(1, processReconnectFromGame)
 
 	select {}
 }
