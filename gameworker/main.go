@@ -497,7 +497,7 @@ func handleGameEnd(game *models.Game, reason string, winnerID string) {
 	} else {
 		log.Printf("[%s] - (Handle Game Over) - Removed game!: %v\n", name, err)
 	}
-	postgresClient.SaveGame(*game, reason)
+	go postgresClient.SaveGame(*game, reason)
 }
 
 func processGameEndForPlayer(winnerID string, game *models.Game, gamePlayer models.GamePlayer, reason string, winAmount int64, gameOverMsg []byte) {
@@ -544,7 +544,6 @@ func processGameEndForPlayer(winnerID string, game *models.Game, gamePlayer mode
 	redisClient.UpdatePlayer(player)
 	redisClient.PublishToGamePlayer(gamePlayer, string(gameOverMsg))
 	redisClient.PublishToGamePlayer(gamePlayer, string(balanceUpdateMsg))
-
 }
 
 func cleanUpGameDisconnectedPlayers(game models.Game) {
