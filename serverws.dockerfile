@@ -8,6 +8,7 @@ RUN apk add --no-cache git
 COPY go.mod go.sum /app/
 COPY messages /app/messages
 COPY models /app/models
+COPY logger /app/logger
 COPY interfaces /app/interfaces
 COPY walletrequests /app/walletrequests
 COPY config /app/config

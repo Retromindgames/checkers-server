@@ -7,6 +7,7 @@ WORKDIR /app/
 # Copy shared code
 COPY go.mod go.sum /app/
 COPY models /app/models
+COPY logger /app/logger
 COPY config /app/config
 COPY postgrescli /app/postgrescli
 
