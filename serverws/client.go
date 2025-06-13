@@ -123,6 +123,13 @@ func (c *Client) readPump() {
 		}
 		//log.Print(parsedmessage)
 
+		// we will check if the user session is stil valid.
+		_, err = c.hub.redis.GetSessionByID(c.player.ID)
+		if err != nil {
+			log.Printf("[Client] - session no longer exists, clossing player con with id: %v", c.player.ID)
+			break
+		}
+
 		// we will update out player object, if something is wrong with the update we will exit our loop.
 		err = c.UpdatePlayerDataFromRedis()
 		if err != nil {
