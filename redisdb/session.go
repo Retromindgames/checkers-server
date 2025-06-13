@@ -178,9 +178,9 @@ func (r *RedisClient) RefreshSessionTTL(session *models.Session, ttl time.Durati
 
 	hashTag := fmt.Sprintf("{%s}", session.ID)
 	sessionKey := fmt.Sprintf("session:%s", hashTag)
-	tokenKey := fmt.Sprintf("session_token:%s", session.Token)
-	indexKey := fmt.Sprintf("session_index:{%s}:%s:%s:%s",
-		session.OperatorIdentifier.OperatorName,
+	tokenKey := fmt.Sprintf("session_token:%s:%s", hashTag, session.Token)
+	indexKey := fmt.Sprintf("session_index:%s:%s:%s:%s",
+		hashTag,
 		session.OperatorIdentifier.OperatorName,
 		session.PlayerName,
 		session.Currency,

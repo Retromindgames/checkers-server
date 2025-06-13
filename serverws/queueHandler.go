@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/Lavizord/checkers-server/messages"
 	"github.com/Lavizord/checkers-server/models"
@@ -65,7 +66,8 @@ func (qh *QueueHandler) Process() {
 	qh.updateQueueCount()
 	qh.sendConfirmation()
 	session, _ := qh.RedisClient.GetSessionByID(qh.Client.player.ID)
-	qh.RedisClient.RefreshSessionTTL(session, 6)
+	ttl := 6 * time.Hour
+	qh.RedisClient.RefreshSessionTTL(session, ttl)
 }
 
 func (qh *QueueHandler) cleanup() {
