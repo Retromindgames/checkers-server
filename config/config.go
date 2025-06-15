@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-
-	"github.com/Lavizord/checkers-server/logger"
 )
 
 /*
@@ -57,17 +55,18 @@ type Config struct {
 
 // Global config instance
 var Cfg Config
-var lu *logger.MultiLogger
+
+//var lu *logger.MultiLogger
 
 func LoadConfig() {
 	if os.Getenv("PROD") != "" || os.Getenv("STAGING") != "" {
 		log.Println("[config.go] - Loading config from file and environment variables (production mode)")
-		lu.Info(logger.LogConsole, "LoadConfig", "config", "Loading config from file and environment variables (production mode)")
+		//lu.Info(logger.LogConsole, "LoadConfig", "config", "Loading config from file and environment variables (production mode)")
 		loadConfigFromFile() // we load it from file.
 		loadConfigFromEnv()  // then we override with vens, to make the transition smoother
 	} else {
 		log.Println("[config.go] - Loading config from file (development mode)")
-		lu.Info(logger.LogConsole, "LoadConfig", "config", "Loading config from file (development mode)")
+		//lu.Info(logger.LogConsole, "LoadConfig", "config", "Loading config from file (development mode)")
 		loadConfigFromFile()
 	}
 }
