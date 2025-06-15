@@ -44,6 +44,23 @@ export const gamelaunchResponseTime = new Trend(
 
 export const connectTime = new Trend("ws_opened_time", true);
 
+/*
+    Command to run in EC2 machine.
+        nohup k6 run --out json=results-long.json --summary-export=summary-long.json tests-long-low.js > k6.log 2>&1 &
+
+    to check progress:
+        tail -f k6.log
+
+    to stop:
+        ps aux | grep k6
+        kill <PID>
+
+    to check results while running:
+        tail -f results-long.json
+
+
+*/
+
 //export let options = {
 //  insecureSkipTLSVerify: true,
 //  scenarios: {
@@ -61,8 +78,8 @@ export let options = {
   scenarios: {
     playerBatch1: {
       executor: "constant-vus",
-      vus: 10,
-      duration: "72h",
+      vus: 20,
+      duration: "18h",
       exec: "player1",
     }
   },
