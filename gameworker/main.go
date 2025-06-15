@@ -27,7 +27,7 @@ func init() {
 	pid = os.Getpid()
 	config.LoadConfig()
 	redisConData := config.Cfg.Redis
-	lu = logger.NewLogger(redisClient.Client)
+	lu = logger.NewLogger(nil)
 	client, err := redisdb.NewRedisClient(redisConData.Addr, redisConData.User, redisConData.Password, redisConData.Tls)
 	if err != nil {
 		lu.Fatal(logger.LogConsole, "init", "redis", "error initializing Redis client:%v", err)
