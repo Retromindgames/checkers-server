@@ -27,10 +27,11 @@ func init() {
 	pid = os.Getpid()
 	config.LoadConfig()
 	redisConData := config.Cfg.Redis
-	lu = logger.NewLogger(nil)
+	//lu = logger.NewLogger(nil)
 	client, err := redisdb.NewRedisClient(redisConData.Addr, redisConData.User, redisConData.Password, redisConData.Tls)
 	if err != nil {
-		lu.Fatal(logger.LogConsole, "init", "redis", "error initializing Redis client:%v", err)
+		//lu.Fatal(logger.LogConsole, "init", "redis", "error initializing Redis client:%v", err)
+		log.Fatalf("error initalalizing redis client: %v", err)
 	}
 	redisClient = client
 	sqlcliente, err := postgrescli.NewPostgresCli(
@@ -42,11 +43,13 @@ func init() {
 		config.Cfg.Postgres.Ssl,
 	)
 	if err != nil {
-		lu.Fatal(logger.LogConsole, "init", "postgres", "[PostgreSQL] - error initializing Redis client:%v", err)
+		log.Fatalf("error initalalizing postgres client: %v", err)
+		//lu.Fatal(logger.LogConsole, "init", "postgres", "[PostgreSQL] - error initializing Redis client:%v", err)
 	}
-	lu.SetRedisClient(redisClient.Client)
+	//lu.SetRedisClient(redisClient.Client)
 	postgresClient = sqlcliente
-	lu.Info(logger.LogConsole, "init", "init", "Service initialized.")
+	//lu.Info(logger.LogConsole, "init", "init", "Service initialized.")
+	log.Print("initialized.")
 }
 
 func main() {
