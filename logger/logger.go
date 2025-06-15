@@ -8,10 +8,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/Lavizord/checkers-server/redisdb"
+	"github.com/redis/go-redis/v9"
 )
 
-func NewLogger(redisClient *redisdb.RedisClient) *MultiLogger {
+var Default *MultiLogger
+
+func NewLogger(redisClient *redis.Client) *MultiLogger {
 	var redisLogger *RedisLogger
 	if redisClient != nil {
 		redisLogger = &RedisLogger{RedisClient: redisClient, Key: "logs"}
@@ -41,7 +43,7 @@ type MultiLogger struct {
 	redis   *RedisLogger
 }
 
-func (m *MultiLogger) SetRedisClient(redisClient *redisdb.RedisClient) {
+func (m *MultiLogger) SetRedisClient(redisClient *redis.Client) {
 	if redisClient == nil {
 		m.redis = nil
 	} else {
@@ -93,7 +95,7 @@ func (c *ConsoleLogger) Fatal(id, identifier, f string, v ...any) {
 }
 
 type RedisLogger struct {
-	RedisClient *redisdb.RedisClient
+	RedisClient *redis.Client
 	Key         string
 }
 
@@ -117,10 +119,10 @@ func (r *RedisLogger) log(level, id, identifier, f string, v ...any) {
 	data, err := json.Marshal(entry)
 	if err != nil {
 		// fallback: push raw string if marshal fails
-		r.RedisClient.Client.RPush(context.Background(), r.Key, fmt.Sprintf("[%s] %s", level, msg))
+		r.RedisClient.RPush(context.Background(), r.Key, fmt.Sprintf("[%s] %s", level, msg))
 		return
 	}
-	r.RedisClient.Client.RPush(context.Background(), r.Key, data)
+	r.RedisClient.RPush(context.Background(), r.Key, data)
 }
 
 func (r *RedisLogger) Info(id, identifier, f string, v ...any) {

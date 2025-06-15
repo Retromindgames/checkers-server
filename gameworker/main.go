@@ -10,6 +10,7 @@ import (
 
 	"github.com/Lavizord/checkers-server/config"
 	"github.com/Lavizord/checkers-server/interfaces"
+	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/messages"
 	"github.com/Lavizord/checkers-server/models"
 	"github.com/Lavizord/checkers-server/postgrescli"
@@ -20,17 +21,18 @@ var pid int
 var redisClient *redisdb.RedisClient
 var postgresClient *postgrescli.PostgresCli
 var name = "GameWorker"
+var lu *logger.MultiLogger
 
 func init() {
 	pid = os.Getpid()
 	config.LoadConfig()
 	redisConData := config.Cfg.Redis
+	lu = logger.NewLogger(redisClient.Client)
 	client, err := redisdb.NewRedisClient(redisConData.Addr, redisConData.User, redisConData.Password, redisConData.Tls)
 	if err != nil {
-		log.Fatalf("[%s-Redis] Error initializing Redis client: %v\n", name, err)
+		lu.Fatal(logger.LogConsole, "init", "redis", "error initializing Redis client:%v", err)
 	}
 	redisClient = client
-
 	sqlcliente, err := postgrescli.NewPostgresCli(
 		config.Cfg.Postgres.User,
 		config.Cfg.Postgres.Password,
@@ -40,9 +42,11 @@ func init() {
 		config.Cfg.Postgres.Ssl,
 	)
 	if err != nil {
-		log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)
+		lu.Fatal(logger.LogConsole, "init", "postgres", "[PostgreSQL] - error initializing Redis client:%v", err)
 	}
+	lu.SetRedisClient(redisClient.Client)
 	postgresClient = sqlcliente
+	lu.Info(logger.LogConsole, "init", "init", "Service initialized.")
 }
 
 func main() {
