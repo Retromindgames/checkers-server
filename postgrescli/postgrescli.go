@@ -121,10 +121,12 @@ func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
 	movesJSON, err := json.Marshal(game.Moves)
 	if err != nil {
+		log.Printf("[PostgresCli] - error marsheling moves to save game: %v", err)
 		return fmt.Errorf("marshal moves: %w", err)
 	}
 	playersJSON, err := json.Marshal(game.Players)
 	if err != nil {
+		log.Printf("[PostgresCli] - error marsheling players to save game: %v", err)
 		return fmt.Errorf("marshal players: %w", err)
 	}
 
@@ -136,6 +138,7 @@ func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
 
 	stmt, err := pc.DB.Prepare(query)
 	if err != nil {
+		log.Printf("[PostgresCli] - error preparing game insert: %v", err)
 		return fmt.Errorf("prepare game insert: %w", err)
 	}
 	defer stmt.Close()
