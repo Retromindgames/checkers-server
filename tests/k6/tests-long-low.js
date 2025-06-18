@@ -1,7 +1,7 @@
 import ws from "k6/ws";
 import http from "k6/http";
 import { check, fail, sleep } from "k6";
-import { Trend } from "k6/metrics";
+import { Trend, Counter } from "k6/metrics";
 import {
   getUrlHttp,
   toWsUrl,
@@ -41,7 +41,12 @@ export const gamelaunchResponseTime = new Trend(
   "http_gamelaunch_response_time",
   true
 );
-
+export const wsErrors = new Counter("vu_ws_errors");
+export const vuIte = new Counter("vu_iterations");
+export const vuGamelaunch = new Counter("vu_gamelaunch");
+export const vuGamelaunchOk = new Counter("vu_gamelaunch_ok");
+export const vuWsConn = new Counter("vu_ws_conn");
+export const vuWsConnOk = new Counter("vu_ws_conn_ok");
 export const connectTime = new Trend("ws_opened_time", true);
 
 /*
@@ -57,34 +62,23 @@ export const connectTime = new Trend("ws_opened_time", true);
 
     to check results while running:
         tail -f results-long.json
-
-
 */
-
-//export let options = {
-//  insecureSkipTLSVerify: true,
-//  scenarios: {
-//    playerBatch1: {
-//      executor: "constant-vus",
-//      vus: 10,
-//      duration: "10m",
-//      exec: "player1",
-//    }
-//  },
-//};
 
 export let options = {
   insecureSkipTLSVerify: true,
   scenarios: {
     playerBatch1: {
-      executor: "constant-vus",
-      vus: 20,
-      duration: "18h",
+      executor: "ramping-vus",
+      startVUs: 0,
+      stages: [
+        { duration: "5m", target: 400 }, 
+        { duration: "10m", target: 1000 }, 
+        { duration: "1m", target: 0 },   // ramp down to 0
+      ],
       exec: "player1",
     }
   },
 };
-
 
 let queueSent = false;
 let gameTimerReceived = false;
@@ -100,13 +94,15 @@ let startPairedTimer = Date.now();
 let startMovementTimer = Date.now();
 
 function runGamelaunch() {
+  
+  vuGamelaunch.add(1)
+
   const url = getUrlHttps("http", "gamelaunch");
   let start = Date.now();
   const res = http.post(url, payloads.gamelaunch(), { headers });
   let elapsed = Date.now() - start;
   gamelaunchResponseTime.add(elapsed);
-  //console.log(`${__VU} Status: ${res.status}`);
-  //console.log(`${__VU} Body: ${res.body}`);
+  vuGamelaunchOk.add(1)
 
   let data;
   try {
@@ -114,9 +110,6 @@ function runGamelaunch() {
   } catch (e) {
     fail(`${__VU} Invalid JSON response: ${res.body}`);
   }
-  //console.log(`${__VU} - Parsed data:`, JSON.stringify(data));
-  //console.log(`${__VU} - Data keys:`, Object.keys(data));
-
   check(res, {
     "status is 200": (r) => r.status === 200,
   });
@@ -124,6 +117,7 @@ function runGamelaunch() {
 }
 
 function runPlayerVU(responseDelay = 0) {
+  vuIte.add(1) 
   let opened = false;
   let turnNumber = 0;
   let wsUrl = runGamelaunch();
@@ -133,24 +127,25 @@ function runPlayerVU(responseDelay = 0) {
 
   var Board;
 
-  //sleep(MAX_SLEEP);
-  //console.log(`${__VU} - Game launch finished`);
   wsUrl = toWsUrl(wsUrl);
-  //console.log(`${__VU} - Url transformed`);
 
-  //sleep(MAX_SLEEP);
   let start = Date.now();
   let playerId;
-
+  vuWsConn.add(1)
   ws.connect(wsUrl, null, function (socket) {
+    
     socket.on("open", () => {
       const elapsed = Date.now() - start;
       connectTime.add(elapsed);
+      vuWsConnOk.add(1)
       opened = true;
       check(true, { "WebSocket opened": (v) => v === true });
-      //console.log(`${__VU} - WebSocket opened`);
       currentState = GameStates[1];
-      //sleep(MAX_SLEEP);
+       (function pingLoop() {
+        if (isWebsocketClosed) return;
+        socket.send(JSON.stringify({ command: 'ping' }));
+        setTimeout(pingLoop, 1000);
+      })();
     });
 
     socket.on("ping", () => {
@@ -162,41 +157,31 @@ function runPlayerVU(responseDelay = 0) {
 
     socket.on("message", (msg) => {
       const data = JSON.parse(msg);
-      //if (data.command != "pong") console.log(`${__VU} - received:`, data);
       if (data.command === "pong") {
-        // sleep(1);
         socket.send(JSON.stringify({ command: "ping" }));
       }
 
       if (data.command === "connected" && !queueSent) {
         const elapsed = Date.now() - start;
-        connectedMsgTime.add(elapsed); // record metric
+        connectedMsgTime.add(elapsed); 
         HandleConnection();
-        //sleep(MAX_SLEEP);
         playerId = data.value.player_id;
         socket.setTimeout(() => {
-          startQueueRequest = Date.now();
           socket.send(getMsgQueueRequest({ value: QUEUE_VALUE }));
           queueSent = true;
+          startQueueRequest = Date.now();
           socket.send(JSON.stringify({ command: "ping" }));
-          //console.log(
-          //  `${__VU} - Sent: ${getMsgQueueRequest({ value: QUEUE_VALUE })}`
-          //);
         }, 150);
       }
 
       if (data.command === "queue_confirmation" && data.value) {
         const elapsed = Date.now() - startQueueRequest;
-        queueConfirmationResponseTime.add(elapsed); // record metric
+        queueConfirmationResponseTime.add(elapsed); 
         HandleQueueConfirmation();
         currentState = GameStates[2];
         startPairedTimer = Date.now();
       } else if (data.command === "queue_confirmation" && !data.value) {
-        // sleep(MAX_SLEEP);
         socket.send(getMsgQueueRequest({ value: QUEUE_VALUE }));
-        //console.log(
-        //  `${__VU} - Sent: ${getMsgQueueRequest({ value: QUEUE_VALUE })}`
-        //);
       }
 
       if (data.command === "paired") {
@@ -213,14 +198,6 @@ function runPlayerVU(responseDelay = 0) {
         currentState = GameStates[3];
       }
 
-      /*    if (data.command === "game_info") {
-        HandleGameInfo(gameInfo);
-        //gameInfo = true;
-      } */
-
-      /*   if (data.command === "game_timer") {
-        HandleGameTimer(gameTimerReceived);
-      } */
 
       if (data.command === "game_start") {
         HandleGameStart(gameStartReceived, startMovementTimer);
@@ -258,6 +235,7 @@ function runPlayerVU(responseDelay = 0) {
         CleanUpAndClose(socket, opened, isWebsocketClosed);
         fail("Failed to be ready in room");
       }
+      
       if (data.command === "move_piece") {
         socket.setTimeout(() => {
           if (playerId !== data.value.player_id && turnNumber < Turns.length) {
@@ -282,14 +260,20 @@ function runPlayerVU(responseDelay = 0) {
         HandleTurnSwitch();
         turnSwitchReceived = true;
         turnNumber++;
-
-        if (turnNumber >= Turns.length) socket.close();
+        let closingTimerSet = false;
+        if (turnNumber >= Turns.length && !closingTimerSet) {
+          closingTimerSet = true;
+          socket.setTimeout(() => {
+            socket.close();
+          }, 60000);
+        }
       }
     });
 
     socket.on("error", (msg) => {
       socket.close();
-      console.log("[ERROR ON WEBSOCKET]: ", msg);
+      wsErrors.add(1);
+      console.log(`${__VU} - [ERROR ON WEBSOCKET]: `, JSON.stringify(msg, null, 2));
     });
 
     socket.on("close", () => {
@@ -297,40 +281,46 @@ function runPlayerVU(responseDelay = 0) {
       isWebsocketClosed = true;
       CleanUpAndClose(socket, opened, isWebsocketClosed);
     });
-    /*
+    
     socket.setTimeout(() => {
       socket.close();
-    }, 5000); */
+    }, 180000); // 3mins after connection, hard timeout to close conn
   });
+
+  // fallback global timeout
+  //setTimeout(() => {
+  //  if (!isWebsocketClosed) {
+  //    console.log(`${__VU} - Fallback timeout triggered`);
+  //    // force cleanup logic if needed
+  //  }
+  //}, 200000); // global timeout as a safety net, must be bigger than previous one.
 }
 
 const CleanUpAndClose = (socket, opened, isWebsocketClosed) => {
   if (!pairedReceived) {
-    check(false, { "Paired message not received": (v) => v === true });
+    check(false, { "Paired message received": (v) => v === true });
   }
   /*   if (!gameInfo) {
     check(false, { "Game info message not received": (v) => v === true });
   } */
   if (!gameStartReceived) {
-    check(false, { "Game start message not received": (v) => v === true });
+    check(false, { "Game start message received": (v) => v === true });
   }
   if (!balanceUpdateReceived) {
     check(false, {
-      "Balance Update message not received": (v) => v === true,
+      "Balance Update message received": (v) => v === true,
     });
   }
   if (!opponentReadyReceived) {
     check(false, {
-      "Opponent ready message not received": (v) => v === true,
+      "Opponent ready message received": (v) => v === true,
     });
   }
   if (!turnSwitchReceived) {
     check(false, {
-      "Turn switch message not received": (v) => v === true,
+      "Turn switch message received": (v) => v === true,
     });
   }
-  if (!gameStartReceived)
-    check(false, { "Game Not Started": (v) => v === true });
   if (!opened) {
     check(false, { "WebSocket opened": (v) => v === true });
   }
@@ -341,14 +331,9 @@ const CleanUpAndClose = (socket, opened, isWebsocketClosed) => {
   }
 };
 
-export function teardown(data) {
-  //console.log(JSON.stringify(data));
-}
-
 export function player1() {
   Reset();
   runPlayerVU(1);
-  sleep(2*60)
 }
 
 export const Reset = () => {
