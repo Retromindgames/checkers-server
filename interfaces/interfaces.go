@@ -124,7 +124,7 @@ func checkPreviousPlayerSession(operator string, playerName string, currency str
 	//fmt.Printf("Checking previous Player session: %v, %v, %v.", operator, playerName, currency)
 	session, err := rc.GetSessionByOperatorPlayerCurrency(operator, playerName, currency)
 	if err == nil && session != nil {
-		fmt.Printf("Session found!: ID:%v", session.ID)
+		log.Printf("Session found!: ID:%v", session.ID)
 		return session, nil // Session exists
 	}
 	//fmt.Printf("Session not found.")
