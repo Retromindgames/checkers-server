@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/messages"
 	"github.com/Lavizord/checkers-server/models"
 	"github.com/Lavizord/checkers-server/redisdb"
@@ -46,7 +47,7 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
 		origin := r.Header.Get("Origin")
-		log.Println("WebSocket request Origin:", origin)
+		//log.Println("WebSocket request Origin:", origin)
 		return true
 		if prodVenv == "" {
 			return true
@@ -88,7 +89,7 @@ func (c *Client) CloseConnection() {
 // reads from this goroutine.
 func (c *Client) readPump() {
 	defer func() {
-		log.Println("[Client] - readPump defer")
+		logger.Default.Infof("[Client] - readPump defer for session: %v", c.player.ID)
 		c.cancel()
 		c.hub.unregister <- c
 		c.conn.Close()
@@ -100,8 +101,9 @@ func (c *Client) readPump() {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
+			logger.Default.Errorf("[Client] - readPump conn ReadMessage error for session: %v with err: %v", c.player.ID, err)
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
+				logger.Default.Errorf("[Client] - readPump socket with unexpected close for session: %v with err: %v", c.player.ID, err)
 			}
 			break
 		}
@@ -109,6 +111,7 @@ func (c *Client) readPump() {
 		// are the right ones or not, and transforms or message into the right type.
 		parsedmessage, err := messages.ParseMessage(message)
 		if err != nil {
+			logger.Default.Errorf("[Client] - readPump parse message for session: %v with err: %v", c.player.ID, err)
 			msg, _ := messages.GenerateGenericMessage("error", "Invalid message format."+err.Error())
 			c.send <- msg
 			continue
@@ -121,19 +124,18 @@ func (c *Client) readPump() {
 			c.send <- msgBytes
 			continue
 		}
-		//log.Print(parsedmessage)
 
 		// we will check if the user session is stil valid.
 		_, err = c.hub.redis.GetSessionByID(c.player.ID)
 		if err != nil {
-			log.Printf("[Client] - session no longer exists, clossing player con with id: %v", c.player.ID)
+			logger.Default.Errorf("[Client] - readPump - session no longer exists, clossing player con with session id: %v, with error: %v", c.player.ID, err)
 			break
 		}
 
 		// we will update out player object, if something is wrong with the update we will exit our loop.
 		err = c.UpdatePlayerDataFromRedis()
 		if err != nil {
-			log.Printf("error: %v", err)
+			logger.Default.Errorf("[Client] - readPump - failed to update player data from redis with session id: %v, with error: %v", c.player.ID, err)
 			break
 		}
 		go RouteMessages(parsedmessage, c, c.hub.redis)
@@ -148,7 +150,7 @@ func (c *Client) readPump() {
 func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
-		log.Println("[Client] - writePump defer")
+		logger.Default.Infof("[Client] - readPump defer for session: %v", c.player.ID)
 		c.cancel()
 		c.hub.unregister <- c
 		ticker.Stop()
@@ -160,34 +162,26 @@ func (c *Client) writePump() {
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
-				log.Println("[Clien] - writePump - the hub closed the channel.")
+				logger.Default.Infof("[Client] - writePump - the hub closed the channel for session: %v", c.player.ID)
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 			//log.Print(message)
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
-				log.Printf("[Client] - writePump - error getting message: %v", err)
+				logger.Default.Infof("[Client] - writePump - error getting message for session: %v, with err: %v", c.player.ID, err)
 				return
 			}
 			w.Write(message)
 
-			// Add queued chat messages to the current websocket message.
-			// Was commented out because it was causing the godot client to receive two jsons at once.
-			//n := len(c.send)
-			//for range n {
-			//	w.Write(newline)
-			//	w.Write(<-c.send)
-			//}
-
 			if err := w.Close(); err != nil {
-				log.Printf("[Client] - writePump - error getting message: %v", err)
+				logger.Default.Infof("[Client] - writePump - error closing writer for session: %v, with err: %v", c.player.ID, err)
 				return
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				log.Printf("[Client] - writePump - error writing ping message: %v", err)
+				logger.Default.Info("[Client] - writePump - error writing ping message for session: %v, with err: %v", c.player.ID, err)
 				return
 			}
 		}
@@ -209,6 +203,14 @@ func (c *Client) redisSubscribe(ready chan bool) {
 			if msg == nil {
 				return
 			}
+			if strings.HasPrefix(msg.Payload, "disconnect:") {
+				targetID := strings.TrimPrefix(msg.Payload, "disconnect:")
+				if targetID == c.player.ID {
+					logger.Default.Info("[Client] - redisSubscribe - received internal disconnected signal for session: %v, closing conn.", c.player.ID)
+					c.conn.Close() // or any cleanup logic
+					return
+				}
+			}
 			c.send <- []byte(msg.Payload)
 		case <-c.ctx.Done():
 			return
@@ -222,7 +224,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	// This makes a preliminar check to make sure the credentials are valid and the session exists.
 	ok, session, err := AuthValid(w, r, hub.redis)
 	if !ok {
-		log.Println("[Client] - auth failed:", err)
+		logger.Default.Warnf("[Client] - serveWs - auth failed with err: %v", err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -230,14 +232,14 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	// Now we will create our player, and check if there is any existing player with the same session.
 	player, wasdisconnectedInGame, wasDisconnectedInQueue, err := CreatePlayer(hub.redis, session)
 	if err != nil {
-		log.Println(err)
+		logger.Default.Errorf("[Client] - serveWs - error creating player for session: %v, with err: %v", session.ID, err)
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
 	}
 
 	balance, err := FetchWalletBallance(session, hub.redis)
 	if err != nil {
-		log.Println(err)
+		logger.Default.Errorf("[Client] - serveWs - error fetching wallet for session: %v, with err: %v", session.ID, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		hub.redis.RemovePlayer(player.ID)
 		return
@@ -245,7 +247,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		logger.Default.Errorf("[Client] - serveWs - error upgrading conn for session: %v, with err: %v", session.ID, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		hub.redis.RemovePlayer(player.ID)
 		return
@@ -271,7 +273,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 
 	msg, err := messages.GenerateConnectedMessage(*player, balance)
 	if err != nil {
-		log.Printf("Failed to generate connected message : %v", err)
+		logger.Default.Errorf("[Client] - serveWs - failled to generate connected message for session: %v, with err: %v", session.ID, err)
 		client.CloseConnection()
 		return
 	}
@@ -289,7 +291,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		if player.Status == models.StatusInQueue {
 			msg, err := messages.GenerateQueueConfirmationMessage(true)
 			if err != nil {
-				log.Printf("Failed to generate connected when wasDisconnectedInQueue : %v", err)
+				logger.Default.Errorf("[Client] - serveWs - failled to generate connected message when was DisconnectedInQueue for session: %v, with err: %v", session.ID, err)
 				client.CloseConnection()
 				return
 			}
@@ -305,7 +307,7 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 func (c *Client) UpdatePlayerDataFromRedis() error {
 	playerData, err := c.hub.redis.GetPlayer(string(c.player.ID))
 	if err != nil {
-		return fmt.Errorf("[Handlers] - Failed to update player data from redis!: Player: %s", c.player.ID)
+		return fmt.Errorf("[UpdatePlayerDataFromRedis] - Failed to update player data from redis!: Player: %s", c.player.ID)
 	}
 	c.player.Currency = playerData.Currency
 	c.player.Status = playerData.Status

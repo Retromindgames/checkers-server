@@ -21,17 +21,14 @@ var pid int
 var redisClient *redisdb.RedisClient
 var postgresClient *postgrescli.PostgresCli
 var name = "GameWorker"
-var lu *logger.MultiLogger
 
 func init() {
 	pid = os.Getpid()
 	config.LoadConfig()
 	redisConData := config.Cfg.Redis
-	//lu = logger.NewLogger(nil)
 	client, err := redisdb.NewRedisClient(redisConData.Addr, redisConData.User, redisConData.Password, redisConData.Tls)
 	if err != nil {
-		//lu.Fatal(logger.LogConsole, "init", "redis", "error initializing Redis client:%v", err)
-		log.Fatalf("error initalalizing redis client: %v", err)
+		logger.Default.Fatalf("error initalalizing redis client: %v", err)
 	}
 	redisClient = client
 	sqlcliente, err := postgrescli.NewPostgresCli(
@@ -43,13 +40,10 @@ func init() {
 		config.Cfg.Postgres.Ssl,
 	)
 	if err != nil {
-		log.Fatalf("error initalalizing postgres client: %v", err)
-		//lu.Fatal(logger.LogConsole, "init", "postgres", "[PostgreSQL] - error initializing Redis client:%v", err)
+		logger.Default.Fatalf("error initalalizing postgres client: %v", err)
 	}
-	//lu.SetRedisClient(redisClient.Client)
 	postgresClient = sqlcliente
-	//lu.Info(logger.LogConsole, "init", "init", "Service initialized.")
-	log.Print("initialized.")
+	logger.Default.Info("Initialized.")
 }
 
 func main() {
@@ -59,7 +53,7 @@ func main() {
 		}
 	}()
 
-	log.Printf("[%s-%d] - Waiting for Game messages...\n", name, pid)
+	logger.Default.Infof("Waiting for Game messages...")
 
 	go processGameCreation()
 	go processGameMoves()
@@ -80,31 +74,33 @@ func processGameCreation() {
 	for {
 		roomData, err := redisClient.BLPopGeneric("create_game", 0) // Block
 		if err != nil {
-			log.Printf("[%s-%d] - (Process Game Creation) - Error retrieving room data: %v\n", name, pid, err)
+			logger.Default.Errorf("(Process Game Creation) - error retrieving room data to create a game: %v", err)
 			continue
 		}
 
 		if len(roomData) < 2 {
-			log.Printf("[%s-%d] - (Process Game Creation) - Unexpected BLPop result: %+v\n", name, pid, roomData)
+			logger.Default.Errorf("(Process Game Creation) - Unexpected BLPop result: %v", roomData)
 			continue
 		}
-		//log.Printf("[%s-%d] - (Process Game Creation) - create game!: %+v\n", name, pid, roomData)
 
 		var room models.Room
 		err = json.Unmarshal([]byte(roomData[1]), &room) // Extract second element
 		if err != nil {
-			log.Printf("[%s-%d] - (Process Game Creation) - JSON Unmarshal Error: %v\n", name, pid, err)
+			logger.Default.Errorf("(Process Game Creation) - JSON Unmarshal Error: %v", err)
 			continue
 		}
 
 		player1, err := redisClient.GetPlayer(room.Player1.ID)
 		if err != nil {
 			player1 = redisClient.GetDisconnectedInQueuePlayerData(room.Player1.ID)
+			logger.Default.Infof("(Process Game Creation) player1 with id: %v retrieved from offline list:")
 		}
 		player2, err := redisClient.GetPlayer(room.Player2.ID)
 		if err != nil {
 			player2 = redisClient.GetDisconnectedInQueuePlayerData(room.Player2.ID)
+			logger.Default.Infof("(Process Game Creation) player2 with id: %v retrieved from offline list:")
 		}
+		logger.Default.Infof("(Process Game Creation) starting game for players with id: %v and : %v", player1.ID, player2.ID)
 		game := room.NewGame()
 		// we need to update our players with a game ID.
 		player1.GameID = game.ID
@@ -142,7 +138,7 @@ func processGameCreation() {
 			opponent, _ := game.GetGamePlayer(player1.ID)
 			redisClient.PublishToGamePlayer(*opponent, string(msg))
 		}
-
+		logger.Default.Infof("(Process Game Creation) game started for players with id: %v and : %v", player1.ID, player2.ID)
 		go startTimer(game) // Start turn timer
 	}
 }
@@ -151,36 +147,38 @@ func processGameMoves() {
 	for {
 		moveData, err := redisClient.BLPopGeneric("move_piece", 0) // Block
 		if err != nil {
-			log.Printf("[%s-%d] - (Process Game Moves) - Error retrieving move data: %v\n", name, pid, err)
+			logger.Default.Infof("(Process Game Moves) - Error retrieving move data: %v", err)
 			continue
 		}
-		//log.Printf("[%s-%d] - (Process Game Moves) - processing move DATA!: %+v\n", name, pid, moveData)
-
 		// We start by getting our move data, player, game and opponentPlayer.
 		var move models.Move
 		err = json.Unmarshal([]byte(moveData[1]), &move) // Extract second element
 		if err != nil {
-			log.Printf("[%s-%d] - (Process Game Moves) - JSON Unmarshal Error: %v\n", name, pid, err)
+			logger.Default.Infof("(Process Game Moves) - JSON Unmarshal Error: %v", err)
 			continue
 		}
 		player, err := redisClient.GetPlayer(move.PlayerID)
 		if err != nil {
-			log.Printf("[%s-%d] - (Process Game Moves) - Failed to get player!: %v\n", name, pid, err)
-			continue
+			player = redisClient.GetDisconnectedPlayerData(move.PlayerID)
+			if player == nil {
+				logger.Default.Errorf("(Process Game Moves) - failed to get data of player with id: %v", move.PlayerID)
+				continue
+			}
+			logger.Default.Warnf("(Process Game Moves) - player retrieved from disconnected list: %v", move.PlayerID)
 		}
 		game, err := redisClient.GetGame(player.GameID)
 		if err != nil {
-			log.Printf("[%s-%d] - (Process Game Moves) - Failed to get game!: %v\n", name, pid, err)
+			logger.Default.Errorf("(Process Game Moves) - failed to get game with id: %v, from player with id: %v", player.GameID, move.PlayerID)
 			continue
 		}
 		if game.CurrentPlayerID != move.PlayerID {
-			log.Printf("[%s-%d] - (Process Game Moves) - Incorrect current player to process move!: %v\n", name, pid, moveData)
+			logger.Default.Errorf("(Process Game Moves) - incorrect current player to process move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.PlayerID)
 			continue
 		}
 
 		piece := game.Board.GetPieceByID(move.PieceID)
 		if !validMove(game, move, piece) {
-			log.Printf("Invalid move detected")
+			logger.Default.Errorf("(Process Game Moves) - invalid move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.PlayerID)
 			boardState, _ := messages.GenerateGameBoardState(*game)
 			msginv, _ := messages.NewMessage("invalid_move", boardState)
 			redisClient.PublishToPlayer(*player, string(msginv))
@@ -188,7 +186,7 @@ func processGameMoves() {
 		}
 		// We move our piece.
 		if !game.MovePiece(move) {
-			log.Printf("[%s-%d] - (Process Game Moves) - Invalid Move!: %v\n", name, pid, moveData)
+			logger.Default.Errorf("(Process Game Moves) - invalid move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.PlayerID)
 			msginv, _ := messages.NewMessage("invalid_move", fmt.Sprintf("(Process Game Moves) - Invalid Move!: %v", moveData))
 			redisClient.PublishToPlayer(*player, string(msginv))
 			continue
@@ -202,7 +200,7 @@ func processGameMoves() {
 		// We send the message to the opponent player.
 		msg, err := messages.GenerateMoveMessage(move)
 		if err != nil {
-			log.Printf("[%s-%d] - (Process Game Moves) - Failed to generate message: %v\n", name, pid, string(msg))
+			logger.Default.Errorf("(Process Game Moves) - failed to generate move message: %+v, from game with id: %v, from player with id: %v", move, player.GameID, move.PlayerID)
 		}
 		//log.Printf("[%s-%d] - (Process Game Moves) - Message to publish: %v\n", name, pid, string(msg))
 		opponent, _ := game.GetOpponentGamePlayer(move.PlayerID)
@@ -214,23 +212,27 @@ func processGameMoves() {
 
 		// We check for game Over
 		if game.CheckGameOver() {
+			logger.Default.Infof("(Process Game Moves) - determined game is over, from game with id: %v, from player with id: %v", player.GameID, move.PlayerID)
 			handleGameEnd(game, "winner", move.PlayerID)
 			continue
 		}
 		// We check for a capture.
 		if !move.IsCapture {
+			logger.Default.Infof("(Process Game Moves) - move is not a capture changing turn, from game with id: %v, from player with id: %v", player.GameID, move.PlayerID)
 			handleTurnChange(game)
 			continue
 		}
 		if move.IsCapture && !game.Board.CanPieceCaptureNEW(move.To) {
+			logger.Default.Infof("(Process Game Moves) - move is capture and cant capture any more pieces, from game with id: %v, from player with id: %v", player.GameID, move.PlayerID)
 			handleTurnChange(game)
 			continue
 		}
 		if move.IsKinged {
+			logger.Default.Infof("(Process Game Moves) - move is kinged, handling turn change, from game with id: %v, from player with id: %v", player.GameID, move.PlayerID)
 			handleTurnChange(game)
 			continue
 		}
-		redisClient.UpdateGame(game) // we update our game at the end.
+		redisClient.UpdateGame(game) // we update our game at the end. I guess this probably never happens
 	}
 }
 
@@ -239,18 +241,18 @@ func processLeaveGame() {
 		// Block until there is a game over message
 		playerData, err := redisClient.BLPop("leave_game", 0)
 		if err != nil {
-			log.Printf("[%s-%d] - (Process Leave Game) - Error retrieving player data from leave game queue: %v\n", name, pid, err)
+			logger.Default.Errorf("(Process Leave Game) - Error retrieving player data from leave game queue: %v", err)
 			continue
 		}
-		//log.Printf("[%s-%d] - Processing the leave game: %+v\n", name, pid, playerData)
+		logger.Default.Infof("(Process Leave Game) - processing leave game for player: %v, from game with id", playerData.ID, playerData.GameID)
 		playerData, err = redisClient.GetPlayer(playerData.ID)
 		if err != nil {
-			log.Printf("[%s-%d] - (Process Leave Game) - Error re-fetching player data.: %v\n", name, pid, err)
+			logger.Default.Errorf("(Process Leave Game) - error fetching playerData: %v, from game with id", playerData.ID, playerData.GameID)
 			continue
 		}
 		game, err := redisClient.GetGame(playerData.GameID)
 		if err != nil {
-			log.Printf("[%s-%d] - Error retrieving Game:%v\n", name, pid, err)
+			logger.Default.Errorf("(Process Leave Game) - error retrieving game: %v, for player with id: %v", playerData.GameID, playerData.ID)
 			continue
 		}
 		winnrID, _ := game.GetOpponentPlayerID(playerData.ID)
@@ -261,19 +263,17 @@ func processLeaveGame() {
 func processDisconnectFromGame() {
 	for {
 		// Block until there is a game over message
-		// TODO: Update player date, its without a game.
 		playerData, err := redisClient.BLPop("disconnect_game", 0)
 		if err != nil {
-			log.Printf("[%s-%d] - (Process Disconnect Game) - Error retrieving player data from queue: %v\n", name, pid, err)
+			logger.Default.Errorf("(processDisconnectFromGame) - error retrieving data from disconnect_game queue: %v", err)
 			continue
 		}
-		//playerData, err = redisClient.GetPlayer(playerData.ID)	// We cant do the get player, because it was already removed...
-		//log.Printf("[%s-%d] - Processing the disconnect from game: %+v\n", name, pid, playerData)
 		game, err := redisClient.GetGame(playerData.GameID)
 		if err != nil {
-			log.Printf("[%s-%d] - Error retrieving Game:%v\n", name, pid, err)
+			logger.Default.Errorf("(processDisconnectFromGame) - error retrieving game with id: %v, from player: %v, with err: %v", playerData.GameID, playerData.ID, err)
 			continue
 		}
+		logger.Default.Infof("(processDisconnectFromGame) - processing disconnect from game game with id: %v, from player: %v", playerData.GameID, playerData.ID)
 		redisClient.SaveDisconnectSessionPlayerData(*playerData, *game)
 		gamePlayer, _ := game.GetGamePlayer(playerData.ID)
 		// Now we notify the other player that this happened
@@ -567,10 +567,13 @@ func cleanUpGameDisconnectedPlayers(game models.Game) {
 		redisClient.DeleteDisconnectedPlayerSession(p2SessionId)
 		redisClient.RemovePlayer(discPlayer2.ID)
 	}
-
 }
 
 func validMove(game *models.Game, move models.Move, piece *models.Piece) bool {
+	if piece == nil {
+		log.Println("Error: piece is nil")
+		return false
+	}
 	capturers := game.Board.PiecesThatCanCapture(game.CurrentPlayerID)
 	// If captures are available, and this piece can't capture, reject the move
 	if len(capturers) > 0 {
