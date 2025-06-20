@@ -20,6 +20,6 @@ func init() {
 	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder // human-readable time
 
 	rawLogger, _ := cfg.Build()
-	Default := rawLogger.WithOptions(zap.AddCaller()).Sugar()
+	Default = rawLogger.WithOptions(zap.AddCaller()).Sugar()
 	Default.Info("logger initialized")
 }
