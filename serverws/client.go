@@ -101,7 +101,7 @@ func (c *Client) readPump() {
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-			logger.Default.Errorf("[Client] - readPump conn ReadMessage error for session: %v with err: %v", c.player.ID, err)
+			logger.Default.Warnf("[Client] - readPump conn ReadMessage failed for session: %v with err: %v", c.player.ID, err)
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				logger.Default.Errorf("[Client] - readPump socket with unexpected close for session: %v with err: %v", c.player.ID, err)
 			}
@@ -169,19 +169,19 @@ func (c *Client) writePump() {
 			//log.Print(message)
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
-				logger.Default.Infof("[Client] - writePump - error getting message for session: %v, with err: %v", c.player.ID, err)
+				logger.Default.Warnf("[Client] - writePump - failed getting message for session: %v, with message: %v", c.player.ID, err)
 				return
 			}
 			w.Write(message)
 
 			if err := w.Close(); err != nil {
-				logger.Default.Infof("[Client] - writePump - error closing writer for session: %v, with err: %v", c.player.ID, err)
+				logger.Default.Warnf("[Client] - writePump - faileed closing writer for session: %v, with message: %v", c.player.ID, err)
 				return
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				logger.Default.Info("[Client] - writePump - error writing ping message for session: %v, with err: %v", c.player.ID, err)
+				logger.Default.Info("[Client] - writePump - failed writing ping message for session: %v, with message: %v", c.player.ID, err)
 				return
 			}
 		}

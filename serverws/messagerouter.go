@@ -140,7 +140,7 @@ func handleReadyQueue(msg *messages.Message[json.RawMessage], client *Client, re
 		client.send <- msgBytes
 		return
 	}
-	logger.Default.Infof("[wsapi] - handleReadyQueue - pushed ready queue for roomworker for session id: %v, error: %v", client.player.ID, err)
+	logger.Default.Infof("[wsapi] - handleReadyQueue - pushed ready queue for roomworker for session id: %v", client.player.ID)
 }
 
 func handleLeaveRoom(client *Client, redis *redisdb.RedisClient) {
