@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"log"
 	"net/http"
 
 	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/logger"
 )
 
 var addr = flag.String("addr", ":80", "http service address")
@@ -33,6 +33,6 @@ func main() {
 
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		logger.Default.Fatalf("ListenAndServe error: %v", err)
 	}
 }

@@ -155,7 +155,7 @@ function runPlayerVU(responseDelay = 0) {
           //console.log(
           //  `${__VU} - Sent: ${getMsgQueueRequest({ value: QUEUE_VALUE })}`
           //);
-        }, 20);
+        }, 150);
       }
 
       if (data.command === "queue_confirmation" && data.value) {
@@ -182,7 +182,7 @@ function runPlayerVU(responseDelay = 0) {
         socket.setTimeout(() => {
           socket.send(getMsgReadyRoom({ value: true })); // simulate readiness
           //console.log(`${__VU} - Sent: ${getMsgReadyRoom({ value: true })}`);
-        }, 20);
+        }, 150);
         currentState = GameStates[3];
       }
 
@@ -214,7 +214,7 @@ function runPlayerVU(responseDelay = 0) {
               })
             );
           }
-        }, 20);
+        }, 150);
       }
 
       if (data.command === "balance_update") {
@@ -246,7 +246,7 @@ function runPlayerVU(responseDelay = 0) {
               })
             );
           }
-        }, 20);
+        }, 150);
       }
 
       if (data.command === "turn_switch") {

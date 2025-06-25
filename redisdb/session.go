@@ -158,18 +158,37 @@ func (r *RedisClient) GetSessionByToken(token string) (*models.Session, error) {
 
 func (r *RedisClient) GetSessionByOperatorPlayerCurrency(operator, playerName, currency string) (*models.Session, error) {
 	ctx := context.Background()
-	pattern := fmt.Sprintf("session_index:{*}:%s:%s:%s", operator, playerName, currency)
-	keys, err := r.Client.Keys(ctx, pattern).Result()
-	if err != nil || len(keys) == 0 {
+	pattern := fmt.Sprintf("session_index:*:%s:%s:%s", operator, playerName, currency)
+
+	var cursor uint64
+	var sessionKey string
+	for {
+		keys, nextCursor, err := r.Client.Scan(ctx, cursor, pattern, 10).Result()
+		if err != nil {
+			return nil, fmt.Errorf("[RedisClient] - scan error: %v", err)
+		}
+		if len(keys) > 0 {
+			sessionKey = keys[0]
+			break
+		}
+		if nextCursor == 0 {
+			break
+		}
+		cursor = nextCursor
+	}
+
+	if sessionKey == "" {
 		return nil, fmt.Errorf("[RedisClient] - session not found for operator: %s, player: %s, currency: %s", operator, playerName, currency)
 	}
-	// Extract sessionID from key (inside `{}`)
-	var sessionID string
-	_, err = fmt.Sscanf(keys[0], "session_index:{%s}:"+operator+":"+playerName+":"+currency, &sessionID)
-	if err != nil {
-		return nil, fmt.Errorf("[RedisClient] - failed to extract session ID from index key: %v", err)
+
+	// Extract session ID from key: session_index:{sessionID}:...
+	start := strings.Index(sessionKey, "{")
+	end := strings.Index(sessionKey, "}")
+	if start == -1 || end == -1 || end <= start+1 {
+		return nil, fmt.Errorf("[RedisClient] - failed to extract session ID from key: %s", sessionKey)
 	}
-	sessionID = strings.TrimRight(sessionID, "}") // remove trailing }
+	sessionID := sessionKey[start+1 : end]
+
 	return r.GetSessionByID(sessionID)
 }
 
@@ -178,9 +197,9 @@ func (r *RedisClient) RefreshSessionTTL(session *models.Session, ttl time.Durati
 
 	hashTag := fmt.Sprintf("{%s}", session.ID)
 	sessionKey := fmt.Sprintf("session:%s", hashTag)
-	tokenKey := fmt.Sprintf("session_token:%s", session.Token)
-	indexKey := fmt.Sprintf("session_index:{%s}:%s:%s:%s",
-		session.OperatorIdentifier.OperatorName,
+	tokenKey := fmt.Sprintf("session_token:%s:%s", hashTag, session.Token)
+	indexKey := fmt.Sprintf("session_index:%s:%s:%s:%s",
+		hashTag,
 		session.OperatorIdentifier.OperatorName,
 		session.PlayerName,
 		session.Currency,

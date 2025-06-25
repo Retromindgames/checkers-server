@@ -10,7 +10,7 @@ export const options = {
   //},
 };
 
-export const baseUrl = "checkers-alb-1448726329.eu-central-1.elb.amazonaws.com";
+export const baseUrl = "staging-alb.retromindgames.pt";
 //export const baseUrl = "localhost";
 
 export const endpoints = {

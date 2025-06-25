@@ -54,7 +54,7 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 			SessionId, Token, PlayerName, Currency, OperatorBaseUrl, CreatedAt, OperatorName, OperatorGameName, GameName
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
-	start := time.Now()
+	//start := time.Now()
 
 	stmt, err := pc.DB.Prepare(query)
 	if err != nil {
@@ -73,10 +73,11 @@ func (pc *PostgresCli) SaveSession(session models.Session) error {
 		session.OperatorIdentifier.OperatorGameName,
 		session.OperatorIdentifier.GameName,
 	)
-	duration := time.Since(start)
-	log.Printf("[Postgres metric] - SaveSession Insert took %v", duration)
+	//duration := time.Since(start)
+	//log.Printf("[Postgres metric] - SaveSession Insert took %v", duration)
 
 	if err != nil {
+		log.Printf("[PostgresCli] - error saving session: %v", err)
 		return fmt.Errorf("exec session insert: %w", err)
 	}
 	return nil
@@ -111,6 +112,7 @@ func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 		transaction.Timestamp,
 	)
 	if err != nil {
+		log.Printf("[PostgresCli] - error saving transaction: %v", err)
 		return fmt.Errorf("exec transaction insert: %w", err)
 	}
 	return nil
@@ -119,10 +121,12 @@ func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
 	movesJSON, err := json.Marshal(game.Moves)
 	if err != nil {
+		log.Printf("[PostgresCli] - error marsheling moves to save game: %v", err)
 		return fmt.Errorf("marshal moves: %w", err)
 	}
 	playersJSON, err := json.Marshal(game.Players)
 	if err != nil {
+		log.Printf("[PostgresCli] - error marsheling players to save game: %v", err)
 		return fmt.Errorf("marshal players: %w", err)
 	}
 
@@ -134,6 +138,7 @@ func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
 
 	stmt, err := pc.DB.Prepare(query)
 	if err != nil {
+		log.Printf("[PostgresCli] - error preparing game insert: %v", err)
 		return fmt.Errorf("prepare game insert: %w", err)
 	}
 	defer stmt.Close()
@@ -145,15 +150,16 @@ func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
 		game.OperatorIdentifier.GameName,
 		game.StartTime,
 		game.EndTime,
-		movesJSON,
+		string(movesJSON),
 		game.BetValue,
 		game.Winner,
-		playersJSON,
+		string(playersJSON),
 		game.OperatorIdentifier.WinFactor,
 		len(game.Moves),
 		reason,
 	)
 	if err != nil {
+		log.Printf("[PostgresCli] - error saving game: %v", err)
 		return fmt.Errorf("exec game insert: %w", err)
 	}
 	return nil

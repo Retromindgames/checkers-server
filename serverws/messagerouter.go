@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
+	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/messages"
 
 	"github.com/Lavizord/checkers-server/models"
@@ -18,19 +18,24 @@ import (
 func RouteMessages(message *messages.Message[json.RawMessage], client *Client, redis *redisdb.RedisClient) {
 	switch message.Command {
 	case "queue":
+		logger.Default.Infof("[wsapi] - RouteMessages - received queue message, sending it to handleQueue for session id: %v", client.player.ID)
 		handleQueue(message, client, redis)
 		return
 
 	case "leave_queue":
+		logger.Default.Infof("[wsapi] - RouteMessages - received leave_queue message, sending it to handleLeaveQueue for session id: %v", client.player.ID)
 		handleLeaveQueue(client, redis)
 		return
 
 	case "ready_queue":
+		logger.Default.Infof("[wsapi] - RouteMessages - received ready_queue message, sending it to handleReadyQueue for session id: %v", client.player.ID)
 		handleReadyQueue(message, client, redis)
 		return
 
 	case "leave_room":
+		logger.Default.Infof("[wsapi] - RouteMessages - received leave_room message, sending it to handleLeaveRoom for session id: %v", client.player.ID)
 		if client.player.Status != models.StatusInRoom && client.player.Status != models.StatusInRoomReady {
+			logger.Default.Warnf("[wsapi] - RouteMessages - cant issue a leave room when not in a room for session id: %v", client.player.ID)
 			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a leave room when not in a Room.")
 			client.send <- msg
 			return
@@ -39,7 +44,9 @@ func RouteMessages(message *messages.Message[json.RawMessage], client *Client, r
 		return
 
 	case "leave_game":
+		logger.Default.Infof("[wsapi] - RouteMessages - received leave_game message, sending it to handleLeaveGame for session id: %v", client.player.ID)
 		if client.player.Status != models.StatusInGame {
+			logger.Default.Warnf("[wsapi] - RouteMessages - cant issue a leave game when not in a game for session id: %v", client.player.ID)
 			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a leave game when not in a game.")
 			client.send <- msg
 			return
@@ -48,7 +55,9 @@ func RouteMessages(message *messages.Message[json.RawMessage], client *Client, r
 		return
 
 	case "move_piece":
+		logger.Default.Infof("[wsapi] - RouteMessages - received move_piece message, sending it to handleMovePiece for session id: %v", client.player.ID)
 		if client.player.Status != models.StatusInGame {
+			logger.Default.Warnf("[wsapi] - RouteMessages - cant issue a move_piece when not in a Game for session id: %v", client.player.ID)
 			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a move when not in a Game.")
 			client.send <- msg
 			return
@@ -65,6 +74,7 @@ func handleQueue(msg *messages.Message[json.RawMessage], client *Client, redis *
 
 func handleLeaveQueue(client *Client, redis *redisdb.RedisClient) {
 	if client.player.UpdatePlayerStatus(models.StatusOnline) != nil {
+		logger.Default.Warnf("[wsapi] - handleLeaveQueue - invalid status transition to 'Online' for session id: %v", client.player.ID)
 		msg, _ := messages.GenerateGenericMessage("invalid", "Invalid status transition to 'Online'")
 		client.send <- msg
 		return
@@ -79,14 +89,15 @@ func handleLeaveQueue(client *Client, redis *redisdb.RedisClient) {
 		//client.send <- []byte("Error removing player to queue")
 		return
 	}
-	// we update out player status., send a confirmation message back to the player
+	// we update out player status, send a confirmation message back to the player
 	m, err := messages.GenerateQueueConfirmationMessage(false)
 	if err != nil {
 		msg, _ := messages.GenerateGenericMessage("error", "Error generating queue confirmation false:"+err.Error())
-		log.Println("Error generating queue confirmation false:", err)
+		logger.Default.Errorf("[wsapi] - handleLeaveQueue - Error generating queue confirmation false for session id: %v", client.player.ID)
 		client.send <- msg
 		return
 	}
+	logger.Default.Infof("[wsapi] - handleLeaveQueue - player status set to removed from queue, sending confirmation message for session id: %v", client.player.ID)
 	client.send <- m
 }
 
@@ -97,63 +108,51 @@ func handleReadyQueue(msg *messages.Message[json.RawMessage], client *Client, re
 	if value {
 		// update the player status to ready / awaiting opponent.
 		if client.player.UpdatePlayerStatus(models.StatusInRoomReady) != nil {
+			logger.Default.Errorf("[wsapi] - handleReadyQueue - Invalid status transition to 'ready_queue true for session id: %v", client.player.ID)
 			msg, _ := messages.GenerateGenericMessage("invalid", "Invalid status transition to 'ready_queue true'")
 			client.send <- msg
 			return
 		}
+		logger.Default.Infof("[wsapi] - handleReadyQueue - status transition to 'ready_queue true for session id: %v", client.player.ID)
 	} else {
 		// update the player status, to unready / waiting ready.
 		if client.player.UpdatePlayerStatus(models.StatusInRoom) != nil {
-			msg, _ := messages.GenerateGenericMessage("invalid", "Invalid status transition to 'ready_queue false'")
+			logger.Default.Errorf("[wsapi] - handleReadyQueue - Invalid status transition to 'ready_queue' false for session id: %v", client.player.ID)
+			msg, _ := messages.GenerateGenericMessage("invalid", "Invalid status transition to 'ready_queue' false'")
 			client.send <- msg
 			return
 		}
+		logger.Default.Infof("[wsapi] - handleReadyQueue - status transition to 'ready_queue' false for session id: %v", client.player.ID)
 	}
 	msgBytes, _ := messages.GenerateGenericMessage("info", "Processing 'ready_queue'")
 	client.send <- msgBytes
-	// we update our player to redis.
-	//redis.UpdatePlayersInQueueSet(client.player.ID, client.player.Status)
 	err := redis.UpdatePlayer(client.player)
 	if err != nil {
-		log.Printf("Error updating player to Redis: %v\n", err)
+		logger.Default.Error("[wsapi] - handleReadyQueue - error updating player to Redis for session id: %v, error: %v", client.player.ID, err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "Error Updating player: "+err.Error())
 		client.send <- msgBytes
 		return
 	}
 	err = redis.RPush("ready_queue", client.player) // now we tell roomworker to process this player ready.
 	if err != nil {
-		log.Printf("Error pushing player to Redis ready queue: %v\n", err)
+		logger.Default.Error("[wsapi] - handleReadyQueue - error pushing player to roomworker Redis ready queue for session id: %v, error: %v", client.player.ID, err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "Pushing player to queue: "+err.Error())
 		client.send <- msgBytes
 		return
 	}
+	logger.Default.Infof("[wsapi] - handleReadyQueue - pushed ready queue for roomworker for session id: %v", client.player.ID)
 }
 
 func handleLeaveRoom(client *Client, redis *redisdb.RedisClient) {
 	// update the player status
 	if client.player.UpdatePlayerStatus(models.StatusOnline) != nil {
+		logger.Default.Warnf("[wsapi] - handleLeaveRoom - status transition to 'online' for session id: %v", client.player.ID)
 		msgBytes, _ := messages.GenerateGenericMessage("invalid", "Invalid status transition to 'leave_room'")
 		client.send <- msgBytes
 		return
 	}
-	msgBytes, _ := messages.GenerateGenericMessage("info", "Processing 'leave_room'")
-	client.send <- msgBytes
-	// we update our player to redis.
-	//err := redis.UpdatePlayer(client.player)
-	//if err != nil {
-	//	log.Printf("Error updagint player to Redis on HandleLeaveRoom: %v\n", err)
-	//	msg, _ := messages.GenerateGenericMessage("error", "error updating player.")
-	//	client.send <- msg
-	//	return
-	//}
 	redis.PublishToRoomPubSub(client.player.RoomID, "leave_room:"+client.player.ID)
-	//err := redis.RPush("leave_room", client.player)
-	//if err != nil {
-	//	log.Printf("Error pushing player to Redis leave_room queue: %v\n", err)
-	//	msg, _ := messages.GenerateGenericMessage("error", "error leaving room.")
-	//	client.send <- msg
-	//	return
-	//}
+	logger.Default.Infof("[wsapi] - handleLeaveRoom - published to room pubsub for session id: %v", client.player.ID)
 }
 
 func handleLeaveGame(client *Client, redis *redisdb.RedisClient) {
@@ -161,24 +160,25 @@ func handleLeaveGame(client *Client, redis *redisdb.RedisClient) {
 	client.send <- msgBytes
 	err := redis.RPush("leave_game", client.player)
 	if err != nil {
-		log.Printf("Error pushing player to Redis leave_game queue: %v\n", err)
+		logger.Default.Error("[wsapi] - handleReadyQueue - error pushing player to Redis ready queue for session id: %v, error: %v", client.player.ID, err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "Error adding player to leave_game")
 		client.send <- msgBytes
 		return
 	}
+	logger.Default.Infof("[wsapi] - handleLeaveGame - leave_game message sent to gameworker for session id: %v", client.player.ID)
 }
 
 func handleMovePiece(message *messages.Message[json.RawMessage], client *Client, redis *redisdb.RedisClient) {
 	var move models.Move
 	err := json.Unmarshal([]byte(message.Value), &move)
 	if err != nil {
-		log.Printf("[Handlers] - Handle Move Piece - JSON Unmarshal Error: %v\n", err)
+		logger.Default.Errorf("[wsapi] - handleMovePiece - JSON Unmarshal Error for session id: %v", client.player.ID)
 		msg, _ := messages.GenerateGenericMessage("invalid", "Handle Move Piece - JSON Unmarshal Error.")
 		client.send <- msg
 		return
 	}
 	if move.PlayerID != client.player.ID {
-		log.Printf("[Handlers] - Handle Move Piece - move.PlayerID != player.ID\n")
+		logger.Default.Errorf("[wsapi] - handleMovePiece - move.PlayerID != player.ID for session id: %v", client.player.ID)
 		msg, _ := messages.GenerateGenericMessage("invalid", "Handle Move Piece - move.PlayerID != player.ID.")
 		client.send <- msg
 		return
@@ -186,9 +186,10 @@ func handleMovePiece(message *messages.Message[json.RawMessage], client *Client,
 	// movement message is sent to the game worker
 	err = redis.RPushGeneric("move_piece", message.Value)
 	if err != nil {
-		log.Printf("Error pushing move to Redis handleMovePiece queue: %v\n", err)
+		logger.Default.Errorf("[wsapi] - handleMovePiece - error pushing move to redis for session id: %v, err: %v", client.player.ID, err)
 		msg, _ := messages.GenerateGenericMessage("error", "error pushing move to gameworker.")
 		client.send <- msg
 		return
 	}
+	logger.Default.Infof("[wsapi] - handleMovePiece - sent move_piece to gameworker for session id: %v", client.player.ID)
 }

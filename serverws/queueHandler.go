@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"time"
 
+	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/messages"
 	"github.com/Lavizord/checkers-server/models"
 	"github.com/Lavizord/checkers-server/redisdb"
@@ -36,14 +37,14 @@ func (qh *QueueHandler) Process() {
 
 	if !qh.validateStatusTransition() {
 		qh.initialValidationsFailed = true
-		log.Print("QueueHandler process invalid status transition.")
+		logger.Default.Errorf("Invalid status transition to queue, for session id: %v", qh.Client.player.ID)
 		return
 	}
 
 	betValue, err := qh.parseBetValue()
 	if err != nil {
 		qh.initialValidationsFailed = true
-		log.Print("QueueHandler failed to parse bet.")
+		logger.Default.Errorf("QueueHandler failed to parse bet, for session id: %v, with err: %v", qh.Client.player.ID, err)
 		return
 	}
 
@@ -56,16 +57,17 @@ func (qh *QueueHandler) Process() {
 	}
 	if !found {
 		qh.initialValidationsFailed = true
-		log.Print("Bet is not valid for the configured ValidBetAmounts")
+		logger.Default.Errorf("Invalid bet for session id: %v, with bet value: %v", qh.Client.player.ID, betValue)
 		return
 	}
-
+	logger.Default.Infof("Valid bet for session id: %v", qh.Client.player.ID)
 	qh.updatePlayerState(betValue)
 	qh.addToRedisQueue()
 	qh.updateQueueCount()
 	qh.sendConfirmation()
 	session, _ := qh.RedisClient.GetSessionByID(qh.Client.player.ID)
-	qh.RedisClient.RefreshSessionTTL(session, 6)
+	ttl := 6 * time.Hour
+	qh.RedisClient.RefreshSessionTTL(session, ttl)
 }
 
 func (qh *QueueHandler) cleanup() {
@@ -114,7 +116,6 @@ func (qh *QueueHandler) parseBetValue() (float64, error) {
 	var betValue float64
 	err := json.Unmarshal(qh.Msg.Value, &betValue)
 	if err != nil {
-		log.Printf("Error determining player bet value: %v\n", err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "Error determining player bet value")
 		qh.Client.send <- msgBytes
 		return 0, err
@@ -125,7 +126,6 @@ func (qh *QueueHandler) parseBetValue() (float64, error) {
 func (qh *QueueHandler) updatePlayerState(betValue float64) {
 	qh.Client.player.SelectedBet = betValue
 	qh.Client.player.Status = models.StatusInQueue
-	//qh.RedisClient.UpdatePlayersInQueueSet(qh.Client.player.ID, models.StatusInQueue)
 	qh.RedisClient.UpdatePlayer(qh.Client.player)
 }
 
@@ -133,7 +133,6 @@ func (qh *QueueHandler) addToRedisQueue() error {
 	queueName := fmt.Sprintf("queue:%f", qh.Client.player.SelectedBet)
 	err := qh.RedisClient.RPush(queueName, qh.Client.player)
 	if err != nil {
-		log.Printf("Error pushing player to Redis queue: %v\n", err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "error adding player to queue")
 		qh.Client.send <- msgBytes
 		return err
@@ -157,7 +156,6 @@ func (qh *QueueHandler) updateQueueCount() {
 func (qh *QueueHandler) sendConfirmation() {
 	m, err := messages.GenerateQueueConfirmationMessage(true)
 	if err != nil {
-		fmt.Println("Error generating queue confirmation:", err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "error generating confirmation")
 		qh.Client.send <- msgBytes
 		return

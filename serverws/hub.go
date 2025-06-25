@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
 
+	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/models"
 	"github.com/Lavizord/checkers-server/redisdb"
 	"github.com/redis/go-redis/v9"
@@ -35,7 +35,7 @@ type Hub struct {
 func newHub(addr string, username string, password string, redistls bool) *Hub {
 	redisclient, err := redisdb.NewRedisClient(addr, username, password, redistls)
 	if err != nil {
-		log.Fatalf("[Redis] Error initializing Redis client: %v", err)
+		logger.Default.Fatalf("[Redis] Error initializing Redis client: %v", err)
 	}
 	return &Hub{
 		broadcast:  make(chan []byte),
@@ -60,7 +60,7 @@ func (h *Hub) run() {
 			h.clients[client] = true
 
 		case client := <-h.unregister:
-			log.Println("[HUB.Run] - Unregister")
+			logger.Default.Infof("[HUB.Run] - Unregister signal for session: %v", client.player.ID)
 			if _, ok := h.clients[client]; ok {
 				h.CloseConnection(client)
 			}
@@ -79,12 +79,13 @@ func (h *Hub) run() {
 }
 
 func (h *Hub) CloseConnection(client *Client) {
+	logger.Default.Infof("[HUB.CloseConnection] - closing connection for session: %v", client.player.ID)
 	client.UpdatePlayerDataFromRedis()
 
 	// If our player is in queue, we add it to a special redis set to handle players in queue that were disconnected.
 	// Added here the status in room, i think it will share the same logic.
 	if client.player.Status == models.StatusInQueue || client.player.Status == models.StatusInRoom || client.player.Status == models.StatusInRoomReady {
-		log.Printf("[Hub.Run] - Removed player is in a Room, saving player to in queue disconnect!: %v\n", client.player)
+		logger.Default.Infof("[HUB.CloseConnection] - Removed player is in a Room, saving player to in queue disconnect with session: %v", client.player.ID)
 		h.redis.SaveDisconnectInQueuePlayerData(client.player)
 	}
 	if client.player.RoomID != "" || client.player.Status == models.StatusInRoom || client.player.Status == models.StatusInRoomReady {
@@ -93,7 +94,7 @@ func (h *Hub) CloseConnection(client *Client) {
 		//h.redis.PublishToRoomPubSub(client.player.RoomID, "leave_room:"+client.player.ID)
 	}
 	if client.player.GameID != "" || client.player.Status == models.StatusInGame {
-		log.Printf("[Hub.Run] - Removed player is in a Game, sending notification to Game worker!: %v\n", client.player)
+		logger.Default.Infof("[Hub.CloseConnection] - Removed player is in a Game, sending notification to Game worker for session: %v", client.player.ID)
 		h.redis.RPush("disconnect_game", client.player)
 	}
 	h.redis.RemovePlayer(client.player.ID)
