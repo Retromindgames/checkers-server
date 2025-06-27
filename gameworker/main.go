@@ -186,8 +186,9 @@ func processGameMoves() {
 		}
 		// We move our piece.
 		if !game.MovePiece(move) {
-			logger.Default.Errorf("(Process Game Moves) - invalid move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.PlayerID)
-			msginv, _ := messages.NewMessage("invalid_move", fmt.Sprintf("(Process Game Moves) - Invalid Move!: %v", moveData))
+			logger.Default.Errorf("(Process Game Moves) - invalid move, board missmatch: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.PlayerID)
+			boardState, _ := messages.GenerateGameBoardState(*game)
+			msginv, _ := messages.NewMessage("invalid_move", boardState)
 			redisClient.PublishToPlayer(*player, string(msginv))
 			continue
 		}
