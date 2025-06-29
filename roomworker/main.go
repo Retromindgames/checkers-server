@@ -138,7 +138,7 @@ func processQueueForBet(bet float64) {
 			(player1Details.Name == player2Details.Name &&
 				player1Details.OperatorIdentifier.OperatorName == player2Details.OperatorIdentifier.OperatorName &&
 				player1Details.Currency == player2Details.Currency) {
-			log.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
+			log.Printf("[RoomWorker-%d] - same player detected, player2 removed from queue: %v\n", pid, queueName)
 			redisClient.RPush(queueName, player1)
 			redisClient.DecrementQueueCount(bet)
 			continue
