@@ -134,7 +134,10 @@ func processQueueForBet(bet float64) {
 			log.Printf("[RoomWorker-%v] -Player 2 details retrieved from offline queue list.", pid)
 		}
 
-		if player1Details.ID == player2Details.ID {
+		if player1Details.ID == player2Details.ID ||
+			(player1Details.Name == player2Details.Name &&
+				player1Details.OperatorIdentifier.OperatorName == player2Details.OperatorIdentifier.OperatorName &&
+				player1Details.Currency == player2Details.Currency) {
 			log.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
 			redisClient.RPush(queueName, player1)
 			redisClient.DecrementQueueCount(bet)
