@@ -120,7 +120,7 @@ func processQueueForBet(bet float64) {
 		// Try fetching the second player with a timeout
 		player2, err := redisClient.BLPop(queueName, config.Cfg.Services["roomworker"].Timer)
 		if err != nil {
-			logger.Default.Infof("No second player found in queue: %s, re-queueing player 1 with id: %v", player2.ID, queueName)
+			logger.Default.Infof("No second player found in queue: %s, re-queueing player 1 with id: %v", player1.ID, queueName)
 			// Since we failed to get the player2, we will requeue the player1.
 			time.Sleep(time.Second * 1)
 			redisClient.RPush(queueName, player1)
