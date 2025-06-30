@@ -534,6 +534,7 @@ func processGameEndForPlayer(winnerID string, game *models.Game, gamePlayer mode
 			// We then generate the balance update message and send it over to the game Player. The player can be offline, but I guess the message just wont get delivered.
 			// I could try to fetch the player from redis...? Is it worth it?... I fetch the player down the line...
 			balanceUpdateMsg, _ = messages.NewMessage("balance_update", float64(newBalance)/100)
+			redisClient.PublishToGamePlayer(gamePlayer, string(balanceUpdateMsg))
 		}
 	}
 
@@ -551,7 +552,6 @@ func processGameEndForPlayer(winnerID string, game *models.Game, gamePlayer mode
 	player.UpdatePlayerStatus(models.StatusOnline)
 	redisClient.UpdatePlayer(player)
 	redisClient.PublishToGamePlayer(gamePlayer, string(gameOverMsg))
-	redisClient.PublishToGamePlayer(gamePlayer, string(balanceUpdateMsg))
 }
 
 func cleanUpGameDisconnectedPlayers(game models.Game) {
