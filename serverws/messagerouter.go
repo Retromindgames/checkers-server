@@ -58,7 +58,7 @@ func RouteMessages(message *messages.Message[json.RawMessage], client *Client, r
 		logger.Default.Infof("[wsapi] - RouteMessages - received move_piece message, sending it to handleMovePiece for session id: %v", client.player.ID)
 		if client.player.Status != models.StatusInGame {
 			logger.Default.Warnf("[wsapi] - RouteMessages - cant issue a move_piece when not in a Game for session id: %v", client.player.ID)
-			msg, _ := messages.GenerateGenericMessage("invalid", "Can't issue a move when not in a Game.")
+			msg, _ := messages.GenerateGenericMessage("invalid_state_goto_menu", "Can't issue a move when not in a Game.") // This tells FE to go back to main menu.
 			client.send <- msg
 			return
 		}
