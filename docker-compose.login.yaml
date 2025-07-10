@@ -8,7 +8,7 @@ services:
       - "443:443"  # HTTPS
     volumes:
       - /home/ec2-user/ssl-gg:/etc/nginx/ssl:ro
-      - ./nginx-staging.conf:/etc/nginx/nginx.conf
+      - ./nginx-login.conf:/etc/nginx/nginx.conf
     networks:
       - app-network
       
