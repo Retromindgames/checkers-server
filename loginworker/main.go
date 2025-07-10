@@ -250,7 +250,10 @@ func main() {
 		AllowedOrigins: []string{
 			"http://localhost:5173", // For local dev (frontend)
 			"https://play.retromindgames.pt",
-			"https://play.retromindgames.pt",
+			"https://data.retromindgames.pt",
+			"https://staging.retromindgames.pt",
+			"https://staging-alb.retromindgames.pt",
+			"https://portal.retromindgames.pt",
 		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},

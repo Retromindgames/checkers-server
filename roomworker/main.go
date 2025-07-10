@@ -182,6 +182,7 @@ func processReadyQueue() {
 		}
 		log.Printf("[RoomWorker-%d] - processing ready room!: %+v\n", pid, playerData)
 		// Aqui ou damos handle do ready queue ou handle do unreadyqueue
+		// TODO: We should validate if the player is valid for a ready_queue?
 		if playerData.Status == models.StatusInRoomReady {
 			redisClient.PublishToRoomPubSub(playerData.RoomID, "player_ready:"+playerData.ID)
 			//handleReadyRoom(playerData)

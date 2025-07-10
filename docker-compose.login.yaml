@@ -1,0 +1,47 @@
+
+services:
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - "80:80"    # HTTP
+      - "443:443"  # HTTPS
+    volumes:
+      - /home/ec2-user/ssl-gg:/etc/nginx/ssl:ro
+      - ./nginx-staging.conf:/etc/nginx/nginx.conf
+    networks:
+      - app-network
+      
+  loginworker:
+    container_name: loginworker
+    build:
+      context: .
+      dockerfile: loginworker.dockerfile
+    expose:
+      - "8081"  # Expose port 8081 internally
+    networks:
+      - app-network
+    depends_on:
+      - postgres
+    
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: sa
+      POSTGRES_PASSWORD: checkersdb
+      POSTGRES_DB: checkers
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
