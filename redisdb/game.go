@@ -126,7 +126,7 @@ func (r *RedisClient) SaveDisconnectInQueuePlayerData(playerData *models.Player)
 		return
 	}
 	key := fmt.Sprintf("players_disc_in_queue:%s", playerData.SessionID)
-	err = r.Client.Set(context.Background(), key, playerJSON, 0).Err()
+	err = r.Client.Set(context.Background(), key, playerJSON, 120*time.Minute).Err()
 	if err != nil {
 		log.Println("Error saving player disconnect in queue to Redis:", err)
 		return

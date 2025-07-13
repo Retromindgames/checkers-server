@@ -13,6 +13,7 @@ import (
 
 	"github.com/Lavizord/checkers-server/config"
 	"github.com/Lavizord/checkers-server/interfaces"
+	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/messages"
 	"github.com/Lavizord/checkers-server/models"
 	"github.com/Lavizord/checkers-server/postgrescli"
@@ -30,7 +31,7 @@ func init() {
 	redisConData := config.Cfg.Redis
 	client, err := redisdb.NewRedisClient(redisConData.Addr, redisConData.User, redisConData.Password, redisConData.Tls)
 	if err != nil {
-		log.Fatalf("[Redis] Error initializing Redis client: %v\n", err)
+		logger.Default.Fatalf("Error initializing Redis client: %v", err)
 	}
 	redisClient = client
 
@@ -43,13 +44,13 @@ func init() {
 		config.Cfg.Postgres.Ssl,
 	)
 	if err != nil {
-		log.Fatalf("[%s-PostgreSQL] Error initializing POSTGRES client: %v\n", name, err)
+		logger.Default.Fatalf("Error initializing POSTGRES client: %v", err)
 	}
 	postgresClient = sqlcliente
 }
 
 func main() {
-	log.Printf("[RoomWorker-%d] - Waiting for room messages...\n", pid)
+	logger.Default.Info("Waiting for room messages...")
 
 	defer func() {
 		if redisClient != nil {
@@ -84,7 +85,7 @@ func processQueueForBet(bet float64) {
 		// Block indefinitely for player1 (this goroutine is dedicated to this queue)
 		player1, err := redisClient.BLPop(queueName, 0)
 		if err != nil {
-			log.Printf("[RoomWorker-%d] - Error retrieving player 1 from %s: %v\n", pid, queueName, err)
+			logger.Default.Errorf("error retrieving player 1 from %s: %v", queueName, err)
 			continue
 		}
 		var p1disc, p2disc bool
@@ -95,17 +96,23 @@ func processQueueForBet(bet float64) {
 			// We will make a check if the player is one of the disconnected players.
 			player1Details = redisClient.GetDisconnectedInQueuePlayerData(player1.ID)
 			if player1Details == nil {
-				log.Printf("[RoomWorker-%v] - Error retrieving player 1 details, player removed from queue: %v\n", pid, err)
+				logger.Default.Warnf("error retrieving player 1 details from online and offline list, with id: %v, player removed from queue, with error: %v", player1.ID, err)
 				redisClient.DecrementQueueCount(bet)
 				continue
 			}
+			if time.Now().Unix()-player1Details.DisconnectedAt > 3600 { // Note: the TTL of the playerDisconneceted is 2h, this is 1h.
+				logger.Default.Infof("player was disconnected for longer than 3600 minutes, discarding player from queue, with id: %v", player1Details.ID)
+				redisClient.DecrementQueueCount(bet)
+				redisClient.DeleteDisconnectedInQueuePlayerData(player1.ID)
+				continue
+			}
 			p1disc = true
-			log.Printf("[RoomWorker-%v] -Player 1 details retrieved from offline queue list.", pid)
+			logger.Default.Infof("player 1 details with id: %v, retrieved from offline queue list.", player1.ID)
 		}
 
 		// We check to see if the player is eligible to be processed.
 		if !player1Details.IsEligibleForQueue(bet) {
-			log.Printf("[RoomWorker] - player1 with status %v not eligible to be processed by the queue, player removed from queue: %v\n", player1Details.Status, queueName)
+			logger.Default.Warnf("player1 with id: %v, and with status %v not eligible to be processed by the queue, player removed from queue: %v", player1Details.ID, player1Details.Status, queueName)
 			redisClient.DecrementQueueCount(bet)
 			continue
 		}
@@ -113,7 +120,7 @@ func processQueueForBet(bet float64) {
 		// Try fetching the second player with a timeout
 		player2, err := redisClient.BLPop(queueName, config.Cfg.Services["roomworker"].Timer)
 		if err != nil {
-			log.Printf("[RoomWorker-%d] - No second player found in %s, re-queueing player 1.\n", pid, queueName)
+			logger.Default.Infof("No second player found in queue: %s, re-queueing player 1 with id: %v", player1.ID, queueName)
 			// Since we failed to get the player2, we will requeue the player1.
 			time.Sleep(time.Second * 1)
 			redisClient.RPush(queueName, player1)
@@ -126,16 +133,26 @@ func processQueueForBet(bet float64) {
 			// We will make a check if the player is one of the disconnected players.
 			player2Details = redisClient.GetDisconnectedInQueuePlayerData(player2.ID)
 			if player2Details == nil {
-				log.Printf("[RoomWorker-%v] - Error retrieving player 2 details, player removed from queue: %v\n", pid, err)
+				logger.Default.Warnf("error retrieving player 2 details from online and offline list, with id: %v, player 2 removed from queue, with error: %v", player2.ID, err)
 				redisClient.DecrementQueueCount(bet)
 				continue
 			}
+			if time.Now().Unix()-player2Details.DisconnectedAt > 3600 { // Note: the TTL of the playerDisconneceted is 2h, this is 1h.
+				logger.Default.Infof("player 2 was disconnected for longer than 3600 minutes, discarding player from queue, with id: %v", player2Details.ID)
+				redisClient.DecrementQueueCount(bet)
+				redisClient.DeleteDisconnectedInQueuePlayerData(player2.ID)
+				continue
+			}
 			p2disc = true
-			log.Printf("[RoomWorker-%v] -Player 2 details retrieved from offline queue list.", pid)
+			logger.Default.Infof("player 2 details with id: %v, retrieved from offline queue list.", player2.ID)
+
 		}
 
-		if player1Details.ID == player2Details.ID {
-			log.Printf("[RoomWorker-%d] - player1Details.ID == player2Details.ID, player2 removed from queue: %v\n", pid, queueName)
+		if player1Details.ID == player2Details.ID ||
+			(player1Details.Name == player2Details.Name &&
+				player1Details.OperatorIdentifier.OperatorName == player2Details.OperatorIdentifier.OperatorName &&
+				player1Details.Currency == player2Details.Currency) {
+			logger.Default.Infof("same player detected with id: %v, player2 removed from queue: %v, retrieved from offline queue list.", player2.ID, queueName)
 			redisClient.RPush(queueName, player1)
 			redisClient.DecrementQueueCount(bet)
 			continue
@@ -144,7 +161,7 @@ func processQueueForBet(bet float64) {
 		// Before we handle the paired, we will do a final check to make sure the players2 is still online / valid.
 		if !player2Details.IsEligibleForQueue(bet) {
 			// If it is not valid, we will add player 1 back to the queue.
-			log.Printf("[RoomWorker-%d] - player2 not eligible to be processed by the queue, player removed from queue: %v\n", pid, queueName)
+			logger.Default.Warnf("player2 with id: %v, and with status %v not eligible to be processed by the queue, player removed from queue: %v", player2Details.ID, player2Details.Status, queueName)
 			redisClient.RPush(queueName, player1)
 			redisClient.DecrementQueueCount(bet)
 			continue
