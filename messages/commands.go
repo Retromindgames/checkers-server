@@ -21,7 +21,7 @@ var validCommands = map[string]CommandInfo{
 	"ping":        {Type: ClientCommand},
 	"pong":        {Type: ServerCommand},
 	"join_room":   {Type: ClientCommand}, // DEPRECATED
-	"create_room": {Type: ClientCommand}, // DEPRECATED
+	"create_room": {Type: ClientCommand},
 
 	"move_piece":   {Type: ClientCommand}, // This is issued by the cliente to trigger the movement of a piece.
 	"invalid_move": {Type: ServerCommand}, // This is issued by the cliente to trigger the movement of a piece.

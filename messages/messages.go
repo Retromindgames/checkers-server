@@ -114,10 +114,15 @@ func ParseMessage(msgBytes []byte) (*Message[json.RawMessage], error) {
 		return nil, fmt.Errorf("[Message Parser] invalid command: %s", msg.Command)
 	}
 
-	// This switch is just to make sure we propperly serialize our value.
 	switch msg.Command {
-	case "create_room", "join_room":
+	case "create_room":
 		var value float64
+		if err := json.Unmarshal(msg.Value, &value); err != nil {
+			return nil, fmt.Errorf("[Message Parser] invalid value format for %s: %w", msg.Command, err)
+		}
+
+	case "join_room":
+		var value string
 		if err := json.Unmarshal(msg.Value, &value); err != nil {
 			return nil, fmt.Errorf("[Message Parser] invalid value format for %s: %w", msg.Command, err)
 		}

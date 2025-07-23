@@ -22,6 +22,17 @@ func RouteMessages(message *messages.Message[json.RawMessage], client *Client, r
 		handleQueue(message, client, redis)
 		return
 
+	case "create_room":
+		logger.Default.Infof("[wsapi] - RouteMessages - received create_room message, sending it to handleQueue for session id: %v", client.player.ID)
+		if client.player.Status != models.StatusOnline || client.player.RoomID != "" || client.player.GameID != "" {
+			logger.Default.Warnf("[wsapi] - RouteMessages -session with id: %v, cant issue a create_room on status : %v", client.player.ID, client.player.Status)
+			msg, _ := messages.GenerateGenericMessage("invalid", fmt.Sprintf("Can't issue a create_room when in status: %v.", client.player.Status))
+			client.send <- msg
+			return
+		}
+		handleCreateRoom(message, client, redis)
+		return
+
 	case "leave_queue":
 		logger.Default.Infof("[wsapi] - RouteMessages - received leave_queue message, sending it to handleLeaveQueue for session id: %v", client.player.ID)
 		handleLeaveQueue(client, redis)
@@ -192,4 +203,41 @@ func handleMovePiece(message *messages.Message[json.RawMessage], client *Client,
 		return
 	}
 	logger.Default.Infof("[wsapi] - handleMovePiece - sent move_piece to gameworker for session id: %v", client.player.ID)
+}
+
+func handleCreateRoom(message *messages.Message[json.RawMessage], client *Client, redis *redisdb.RedisClient) {
+	// We will update the player status and send the notification to the roomworker to create the room.
+
+	var bet float64
+	err := json.Unmarshal([]byte(message.Value), &bet)
+	if err != nil {
+		logger.Default.Errorf("[wsapi] - handleCreateRoom - JSON Unmarshal Error for session id: %v, received invalid bet format.", client.player.ID)
+		msg, _ := messages.GenerateGenericMessage("error", "Failed to parse bet value data from command.")
+		client.send <- msg
+		return
+	}
+	if !IsValidBet(bet) {
+		logger.Default.Errorf("Invalid bet for session id: %v, with bet value: %v", client.player.ID, bet)
+		msg, _ := messages.GenerateGenericMessage("error", "invalid bet value.")
+		client.send <- msg
+	}
+
+	client.player.SelectedBet = bet
+	err = client.player.UpdatePlayerStatus(models.StatusInRoom)
+	if err != nil {
+		logger.Default.Errorf("Falied to update player status for session id: %v, with bet value: %v, and error: %v", client.player.ID, bet, err.Error())
+		msg, _ := messages.GenerateGenericMessage("error", "Handle Create room - Failed to update player status.")
+		client.send <- msg
+	}
+	redis.UpdatePlayer(client.player)
+
+	// create room message is sent to the room worker
+	err = redis.RPush("create_room", client.player)
+	if err != nil {
+		logger.Default.Errorf("Handle Create room - error pushing create_room to redis for session id: %v, err: %v", client.player.ID, err)
+		msg, _ := messages.GenerateGenericMessage("error", "error pushing create_room to roomworker.")
+		client.send <- msg
+		return
+	}
+	logger.Default.Infof("Handle Create room - sent create_room to roomworker for session id: %v", client.player.ID)
 }

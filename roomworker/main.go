@@ -60,7 +60,7 @@ func main() {
 
 	go processReadyQueue()
 	go processQueue()
-
+	go processCreateRoom()
 	select {}
 }
 
@@ -196,6 +196,43 @@ func processReadyQueue() {
 	}
 }
 
+func processCreateRoom() {
+	for {
+		playerData, err := redisClient.BLPop("create_room", 0) // Block
+		if err != nil {
+			log.Printf("[RoomWorker-%d] - Error retrieving create_room message:%v\n", pid, err)
+			continue
+		}
+		log.Printf("[RoomWorker-%d] - processing create_room!: %+v\n", pid, playerData)
+
+		player, err := redisClient.GetPlayer(playerData.ID)
+		if err != nil {
+			log.Printf("[RoomWorker-%d] - Error retrieving player from redis:%v\n", pid, err)
+			continue
+		}
+		// we start by creating the room.
+		room := &models.Room{
+			ID:                 models.GenerateUUID(),
+			Player1:            player,
+			Player2:            nil,
+			StartDate:          time.Now(),
+			Currency:           player.Currency,
+			BetValue:           player.SelectedBet,
+			OperatorIdentifier: player.OperatorIdentifier,
+		}
+		player.RoomID = room.ID
+		player.GameID = ""
+		// 1. Next we save it to redis, as well as the player.
+		redisClient.AddRoom(room)
+		redisClient.UpdatePlayer(player)
+
+		// 2. we should also start a room pubsub object. 		// TODO: This should be changed, to use something specific.
+		listenRoom(context.Background(), redisClient, room, 360)
+		// 3. then we need to send some message to the player. // TODO: Send the message.
+
+	}
+}
+
 func handleQueuePaired(player1, player2 *models.Player, p1disc, p2disc bool) {
 	room := &models.Room{
 		ID:                 models.GenerateUUID(),
@@ -288,7 +325,7 @@ func handleQueuePaired(player1, player2 *models.Player, p1disc, p2disc bool) {
 	}
 
 	// This will start a pubsub tied to a timer.
-	listenRoom(context.Background(), redisClient, room)
+	listenRoom(context.Background(), redisClient, room, 30)
 
 	cleanup = false
 	redisClient.DecrementQueueCount(player1.SelectedBet)
@@ -575,14 +612,14 @@ func addPlayerToQueue(player *models.Player, incrementQueueCount, notify bool) {
 //
 // Initially created to manage the room timer, but was  expanded to be used by a few
 // other messages.
-func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room) {
+func listenRoom(ctx context.Context, rdb *redisdb.RedisClient, room *models.Room, seconds int) {
 	pubsub := rdb.Client.Subscribe(ctx, "roompubsub:"+room.ID)
 	ch := pubsub.Channel()
 
 	go func() {
 		defer pubsub.Close()
 
-		countdown := 30
+		countdown := seconds
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 

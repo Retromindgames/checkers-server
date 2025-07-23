@@ -48,14 +48,7 @@ func (qh *QueueHandler) Process() {
 		return
 	}
 
-	found := false
-	for _, v := range models.DamasValidBetAmounts {
-		if v == betValue {
-			found = true
-			break
-		}
-	}
-	if !found {
+	if !IsValidBet(betValue) {
 		qh.initialValidationsFailed = true
 		logger.Default.Errorf("Invalid bet for session id: %v, with bet value: %v", qh.Client.player.ID, betValue)
 		return
