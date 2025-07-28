@@ -1,0 +1,151 @@
+services:
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx-local.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - wsapi
+      - restapi
+    networks:
+      - app-network
+
+  wsapi:
+    container_name: wsapi
+    build:
+      context: .
+      dockerfile: serverws.dockerfile
+    expose:
+      - "80"
+    environment:
+      - CONFIG_PATH=/root/config/config.json
+    depends_on:
+      - redis-cluster-creator
+    networks:
+      - app-network
+
+  restapi:
+    container_name: restapiworker
+    build:
+      context: .
+      dockerfile: restapiworker.dockerfile
+    expose:
+      - "80"
+    networks:
+      - app-network
+    depends_on:
+      - redis-node-1
+      - postgres
+
+  loginworker:
+    container_name: loginworker
+    build:
+      context: .
+      dockerfile: loginworker.dockerfile
+    expose:
+      - "8081"
+    networks:
+      - app-network
+    depends_on:
+      - postgres
+
+  roomworker:
+    container_name: roomworker
+    build:
+      context: .
+      dockerfile: roomworker.dockerfile
+    depends_on:
+      - redis-node-1
+    networks:
+      - app-network
+
+  broadcastworker:
+    container_name: broadcastworker
+    build:
+      context: .
+      dockerfile: broadcastworker.dockerfile
+    depends_on:
+      - redis-node-1
+    networks:
+      - app-network
+
+  gameworker:
+    container_name: gameworker
+    build:
+      context: .
+      dockerfile: gameworker.dockerfile
+    depends_on:
+      - redis-node-1
+    networks:
+      - app-network
+
+  # Redis cluster nodes 3 nodes)
+  redis-node-1:
+    image: redis:7.2.3
+    command: ["redis-server", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--cluster-node-timeout", "5000", "--appendonly", "yes", ]
+    volumes:
+      - ./redis.sh:/tmp/redis.sh
+    ports:
+      - "7001:7001"
+      - "17001:17001"  # 7001+10000 for cluster bus
+    networks:
+      - app-network
+
+  redis-node-2:
+    image: redis:7.2.3
+    command: ["/tmp/redis.sh", "7002"]
+    volumes:
+      - ./redis.sh:/tmp/redis.sh
+    ports:
+      - "7002:7002"
+      - "17002:17002"  # 7001+10000 for cluster bus
+    networks:
+      - app-network
+  
+  redis-node-3:
+    image: redis:7.2.3
+    command: ["/tmp/redis.sh", "7003"]
+    volumes:
+      - ./redis.sh:/tmp/redis.sh
+    ports:
+      - "7003:7003"
+      - "17003:17003"  # 7001+10000 for cluster bus
+    networks:
+      - app-network
+
+  redis-cluster-creator:
+    image: redis:7.2.3
+    depends_on:
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+    command: >
+      sh -c "sleep 5 && redis-cli -a SUPER_SECRET_PASSWORD --cluster create redis-node-1:7001 redis-node-2:7002 redis-node-3:7003 --cluster-replicas 0 --cluster-yes"
+
+
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: sa
+      POSTGRES_PASSWORD: checkersdb
+      POSTGRES_DB: checkers
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

@@ -217,3 +217,42 @@ func (pc *PostgresCli) FetchOperator(operatorName, operatorGameName string) (*mo
 
 	return &operator, nil
 }
+
+func (pc *PostgresCli) FetchAllOperators() ([]models.Operator, error) {
+	query := `
+		SELECT ID, OperatorName, OperatorGameName, GameName, Active, GameBaseUrl, OperatorWalletBaseUrl, WinFactor
+		FROM operators
+		WHERE active = true
+	`
+
+	rows, err := pc.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("error querying operators: %w", err)
+	}
+	defer rows.Close()
+
+	var operators []models.Operator
+	for rows.Next() {
+		var operator models.Operator
+		err := rows.Scan(
+			&operator.ID,
+			&operator.OperatorName,
+			&operator.OperatorGameName,
+			&operator.GameName,
+			&operator.Active,
+			&operator.GameBaseUrl,
+			&operator.OperatorWalletBaseUrl,
+			&operator.WinFactor,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning operator: %w", err)
+		}
+		operators = append(operators, operator)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	return operators, nil
+}

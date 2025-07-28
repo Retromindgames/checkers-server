@@ -57,9 +57,19 @@ func main() {
 			redisClient.CloseRedisClient()
 		}
 	}()
+	operators, err := redisClient.GetAllOperators()
+	if err != nil {
+		logger.Default.Warnf("failed to fetch operators from redis")
+		operators, err := postgresClient.FetchAllOperators()
+		if err != nil || len(operators) == 0 {
+			logger.Default.Fatalf("failed to fetch operators from db")
+			return
+		}
+	}
+	logger.Default.Infof("number of operators loaded: %v", len(operators))
 
+	go processQueue(operators)
 	go processReadyQueue()
-	go processQueue()
 
 	select {}
 }
@@ -70,17 +80,31 @@ func spawnWorkers(n int, workerFunc func()) {
 	}
 }
 
-func processQueue() {
-	// Launch a goroutine for each bet queue
-	for _, bet := range models.DamasValidBetAmounts {
-		go processQueueForBet(bet)
+func processQueue(operators []models.Operator) {
+	logger.Default.Info("starting queues for operators.")
+
+	for i, operator := range operators {
+		logger.Default.Info("loop process queue: %v", i)
+		// Pass operator to goroutine
+		go processQueueForOperator(operator)
 	}
-	// Block forever or wait on a channel (to prevent the main goroutine from exiting)
+	logger.Default.Info("finished starting queues for operators.")
+
+	// Prevent main goroutine from exiting
 	select {}
 }
 
-func processQueueForBet(bet float64) {
-	queueName := fmt.Sprintf("queue:%f", bet)
+func processQueueForOperator(operator models.Operator) {
+	// Example processing logic per operator
+	logger.Default.Info("starting queues for operator: %v", operator.OperatorName)
+	for _, bet := range models.DamasValidBetAmounts {
+		go processQueueForBet(bet, operator.OperatorGameName)
+	}
+}
+
+func processQueueForBet(bet float64, operatorPlatform string) {
+	queueName := fmt.Sprintf("queue:%s:%f", operatorPlatform, bet)
+	logger.Default.Infof("starting queue process for: %v", queueName)
 	for {
 		// Block indefinitely for player1 (this goroutine is dedicated to this queue)
 		player1, err := redisClient.BLPop(queueName, 0)

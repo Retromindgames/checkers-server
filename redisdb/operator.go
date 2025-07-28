@@ -44,3 +44,43 @@ func (r *RedisClient) GetOperator(operatorName, operatorGameName string) (*model
 
 	return &operator, nil
 }
+
+func (r *RedisClient) GetAllOperators() ([]models.Operator, error) {
+	var operators []models.Operator
+	ctx := context.Background()
+
+	err := r.ClusterClient.ForEachMaster(ctx, func(ctx context.Context, client *redis.Client) error {
+		var cursor uint64
+		for {
+			keys, nextCursor, err := client.Scan(ctx, cursor, "operator:*", 100).Result()
+			if err != nil {
+				return fmt.Errorf("redis SCAN failed: %w", err)
+			}
+
+			for _, key := range keys {
+				val, err := client.Get(ctx, key).Result()
+				if err != nil {
+					return fmt.Errorf("redis GET failed for key %s: %w", key, err)
+				}
+
+				var operator models.Operator
+				if err := json.Unmarshal([]byte(val), &operator); err != nil {
+					return fmt.Errorf("failed to unmarshal operator for key %s: %w", key, err)
+				}
+				operators = append(operators, operator)
+			}
+
+			if nextCursor == 0 {
+				break
+			}
+			cursor = nextCursor
+		}
+		return fmt.Errorf("no operators found in redis.")
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return operators, nil
+}

@@ -16,6 +16,7 @@ import (
 
 type RedisClient struct {
 	Client        *redis.Client
+	ClusterClient *redis.ClusterClient // Aparently, aws has a cluster client, and this should be used.
 	Ctx           context.Context
 	Subscriptions map[string]*redis.PubSub // Stores active subscriptions per channel
 	mu            sync.Mutex
@@ -36,24 +37,43 @@ func NewRedisClient(addr string, username string, password string, tlsConfig boo
 		MinRetryBackoff: 100 * time.Millisecond,
 		MaxRetryBackoff: 500 * time.Millisecond,
 	}
+	clusterOptions := &redis.ClusterOptions{
+		Addrs: []string{addr},
 
+		DialTimeout:     5 * time.Second,
+		ReadTimeout:     3 * time.Second,
+		WriteTimeout:    3 * time.Second,
+		PoolTimeout:     30 * time.Second,
+		MinIdleConns:    10,
+		PoolSize:        50,
+		MaxRetries:      3,
+		MinRetryBackoff: 100 * time.Millisecond,
+		MaxRetryBackoff: 500 * time.Millisecond,
+	}
 	if tlsConfig {
 		options.TLSConfig = &tls.Config{
 			MinVersion: tls.VersionTLS12,
 		}
+		clusterOptions.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
 	}
+
 	// If there's a username, set it in the options
 	if username != "" {
 		options.Username = username
+		clusterOptions.Username = username
 	}
 
 	// If there's a password, set it in the options
 	if password != "" {
 		options.Password = password
+		clusterOptions.Password = password
 	}
 
 	// Create the Redis client
 	client := redis.NewClient(options)
+	clusterClient := redis.NewClusterClient(clusterOptions)
 
 	// Check the connection
 	ctx := context.Background()
@@ -63,6 +83,7 @@ func NewRedisClient(addr string, username string, password string, tlsConfig boo
 	}
 
 	return &RedisClient{
+		ClusterClient: clusterClient,
 		Client:        client,
 		Subscriptions: make(map[string]*redis.PubSub),
 	}, nil
@@ -93,7 +114,7 @@ func (r *RedisClient) RPushGeneric(queue string, data []byte) error {
 
 // BLPop - Retrieve a player from Redis queue
 func (r *RedisClient) BLPop(queue string, timeoutSecond int) (*models.Player, error) {
-	result, err := r.Client.BLPop(context.Background(), time.Duration(timeoutSecond)*time.Second, queue).Result()
+	result, err := r.ClusterClient.BLPop(context.Background(), time.Duration(timeoutSecond)*time.Second, queue).Result()
 	if err != nil {
 		return nil, err
 	}
