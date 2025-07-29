@@ -1,6 +1,7 @@
 package postgrescli
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -8,13 +9,15 @@ import (
 	"time"
 
 	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/postgrescli/ent"
 	"github.com/google/uuid"
 
 	_ "github.com/lib/pq"
 )
 
 type PostgresCli struct {
-	DB *sql.DB
+	DB     *sql.DB
+	EntCli *ent.Client
 }
 
 func NewPostgresCli(user, password, dbname, host, port string, ssl bool) (*PostgresCli, error) {
@@ -41,7 +44,21 @@ func NewPostgresCli(user, password, dbname, host, port string, ssl bool) (*Postg
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	return &PostgresCli{DB: db}, nil
+	// Ent client
+	entClient, err := ent.Open("postgres", connStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open ent client: %w", err)
+	}
+
+	// Auto-create schema (optional, remove in production if using migrations)
+	if err := entClient.Schema.Create(context.Background()); err != nil {
+		return nil, fmt.Errorf("failed to run ent schema migration: %w", err)
+	}
+
+	return &PostgresCli{
+		DB:     db,
+		EntCli: entClient,
+	}, nil
 }
 
 func (pc *PostgresCli) Close() {
