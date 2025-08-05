@@ -13,23 +13,21 @@ import (
 	"github.com/Lavizord/checkers-server/redisdb"
 )
 
-// OperatorModule defines the interface for operator-specific code
-type OperatorInterface interface {
+// PlatformInterface defines the interface for platform-specific code
+type PlatformInterface interface {
 	HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli)
 	HandleFetchWalletBalance(s models.Session, rc *redisdb.RedisClient) (int64, error)
 	HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, error)
 	HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, int64, error)
 }
 
-// OperatorModules maps operator names to their respective modules
-var OperatorModules = map[string]OperatorInterface{
+// PlatformModules maps platforms names to their respective modules
+var PlatformModules = map[string]PlatformInterface{
 	"SokkerDuel": &SokkerDuelModule{},
 	"TestOp":     &TestModule{},
-	//"AnotherOperator": &AnotherOperatorModule{},
-	// Add more operators as needed
 }
 
-// SokkerDuelModule handles requests for the SokkerDuel operator
+// SokkerDuelModule handles requests for the SokkerDuel platform
 type SokkerDuelModule struct{}
 
 // TestModule handles requests for test accounts
@@ -38,15 +36,15 @@ type TestModule struct{}
 // Helper function to save failed transactions
 func saveFailedBetTransaction(pgs *postgrescli.PostgresCli, session models.Session, betData models.SokkerDuelBet, apiError error, gameID string) error {
 	trans := models.Transaction{
-		ID:          betData.TransactionID,
-		SessionID:   session.ID,
-		Type:        "bet",
-		Amount:      betData.Amount,
-		Currency:    session.Currency,
-		Platform:    "sokkerpro",
-		Operator:    "SokkerDuel",
-		Client:      session.PlayerName,
-		Game:        session.OperatorIdentifier.GameName,
+		ID:        betData.TransactionID,
+		SessionID: session.ID,
+		Type:      "bet",
+		Amount:    betData.Amount,
+		Currency:  session.Currency,
+		Platform:  "sokkerpro",
+		Operator:  "SokkerDuel",
+		Client:    session.PlayerName,
+		//Game:        session.OperatorIdentifier.GameName,
 		RoundID:     gameID,
 		Timestamp:   time.Now(),
 		Status:      "error",
@@ -57,15 +55,15 @@ func saveFailedBetTransaction(pgs *postgrescli.PostgresCli, session models.Sessi
 
 func saveFailedWinTransaction(pgs *postgrescli.PostgresCli, session models.Session, winData models.SokkerDuelWin, apiError error, gameID string) error {
 	trans := models.Transaction{
-		ID:          winData.TransactionID,
-		SessionID:   session.ID,
-		Type:        "win",
-		Amount:      winData.Amount,
-		Currency:    session.Currency,
-		Platform:    "sokkerpro",
-		Operator:    "SokkerDuel",
-		Client:      session.PlayerName,
-		Game:        session.OperatorIdentifier.GameName,
+		ID:        winData.TransactionID,
+		SessionID: session.ID,
+		Type:      "win",
+		Amount:    winData.Amount,
+		Currency:  session.Currency,
+		Platform:  "sokkerpro",
+		Operator:  "SokkerDuel",
+		Client:    session.PlayerName,
+		//Game:        session.OperatorIdentifier.GameName,
 		RoundID:     gameID,
 		Timestamp:   time.Now(),
 		Status:      "error",
@@ -98,12 +96,12 @@ func generatePlayerSession(op models.Operator, token, username, currency string,
 		Token:      token,
 		PlayerName: username,
 		Currency:   currency,
-		OperatorIdentifier: models.OperatorIdentifier{
-			OperatorName:     op.OperatorName,
-			OperatorGameName: op.OperatorGameName,
-			GameName:         op.GameName,
-			WinFactor:        op.WinFactor,
-		},
+		//OperatorIdentifier: models.OperatorIdentifier{
+		//	OperatorName:     op.OperatorName,
+		//	OperatorGameName: op.OperatorGameName,
+		//	GameName:         op.GameName,
+		//	WinFactor:        op.WinFactor,
+		//},
 		OperatorBaseUrl: op.OperatorWalletBaseUrl,
 		CreatedAt:       time.Now(),
 	}

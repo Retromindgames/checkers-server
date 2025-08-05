@@ -88,6 +88,20 @@ func (gcu *GameConfigUpdate) SetNillableCanDropAndWins(b *bool) *GameConfigUpdat
 	return gcu
 }
 
+// SetCanBuyBonus sets the "can_buy_bonus" field.
+func (gcu *GameConfigUpdate) SetCanBuyBonus(b bool) *GameConfigUpdate {
+	gcu.mutation.SetCanBuyBonus(b)
+	return gcu
+}
+
+// SetNillableCanBuyBonus sets the "can_buy_bonus" field if the given value is not nil.
+func (gcu *GameConfigUpdate) SetNillableCanBuyBonus(b *bool) *GameConfigUpdate {
+	if b != nil {
+		gcu.SetCanBuyBonus(*b)
+	}
+	return gcu
+}
+
 // SetCanTurbo sets the "can_turbo" field.
 func (gcu *GameConfigUpdate) SetCanTurbo(b bool) *GameConfigUpdate {
 	gcu.mutation.SetCanTurbo(b)
@@ -350,6 +364,9 @@ func (gcu *GameConfigUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := gcu.mutation.CanDropAndWins(); ok {
 		_spec.SetField(gameconfig.FieldCanDropAndWins, field.TypeBool, value)
 	}
+	if value, ok := gcu.mutation.CanBuyBonus(); ok {
+		_spec.SetField(gameconfig.FieldCanBuyBonus, field.TypeBool, value)
+	}
 	if value, ok := gcu.mutation.CanTurbo(); ok {
 		_spec.SetField(gameconfig.FieldCanTurbo, field.TypeBool, value)
 	}
@@ -585,6 +602,20 @@ func (gcuo *GameConfigUpdateOne) SetCanDropAndWins(b bool) *GameConfigUpdateOne 
 func (gcuo *GameConfigUpdateOne) SetNillableCanDropAndWins(b *bool) *GameConfigUpdateOne {
 	if b != nil {
 		gcuo.SetCanDropAndWins(*b)
+	}
+	return gcuo
+}
+
+// SetCanBuyBonus sets the "can_buy_bonus" field.
+func (gcuo *GameConfigUpdateOne) SetCanBuyBonus(b bool) *GameConfigUpdateOne {
+	gcuo.mutation.SetCanBuyBonus(b)
+	return gcuo
+}
+
+// SetNillableCanBuyBonus sets the "can_buy_bonus" field if the given value is not nil.
+func (gcuo *GameConfigUpdateOne) SetNillableCanBuyBonus(b *bool) *GameConfigUpdateOne {
+	if b != nil {
+		gcuo.SetCanBuyBonus(*b)
 	}
 	return gcuo
 }
@@ -880,6 +911,9 @@ func (gcuo *GameConfigUpdateOne) sqlSave(ctx context.Context) (_node *GameConfig
 	}
 	if value, ok := gcuo.mutation.CanDropAndWins(); ok {
 		_spec.SetField(gameconfig.FieldCanDropAndWins, field.TypeBool, value)
+	}
+	if value, ok := gcuo.mutation.CanBuyBonus(); ok {
+		_spec.SetField(gameconfig.FieldCanBuyBonus, field.TypeBool, value)
 	}
 	if value, ok := gcuo.mutation.CanTurbo(); ok {
 		_spec.SetField(gameconfig.FieldCanTurbo, field.TypeBool, value)

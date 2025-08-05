@@ -25,12 +25,6 @@ type SessionCreate struct {
 	hooks    []Hook
 }
 
-// SetCanDemo sets the "can_demo" field.
-func (sc *SessionCreate) SetCanDemo(b bool) *SessionCreate {
-	sc.mutation.SetCanDemo(b)
-	return sc
-}
-
 // SetToken sets the "token" field.
 func (sc *SessionCreate) SetToken(s string) *SessionCreate {
 	sc.mutation.SetToken(s)
@@ -215,9 +209,6 @@ func (sc *SessionCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (sc *SessionCreate) check() error {
-	if _, ok := sc.mutation.CanDemo(); !ok {
-		return &ValidationError{Name: "can_demo", err: errors.New(`ent: missing required field "Session.can_demo"`)}
-	}
 	if _, ok := sc.mutation.Token(); !ok {
 		return &ValidationError{Name: "token", err: errors.New(`ent: missing required field "Session.token"`)}
 	}
@@ -256,10 +247,6 @@ func (sc *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec) {
 		_node = &Session{config: sc.config}
 		_spec = sqlgraph.NewCreateSpec(session.Table, sqlgraph.NewFieldSpec(session.FieldID, field.TypeInt))
 	)
-	if value, ok := sc.mutation.CanDemo(); ok {
-		_spec.SetField(session.FieldCanDemo, field.TypeBool, value)
-		_node.CanDemo = value
-	}
 	if value, ok := sc.mutation.Token(); ok {
 		_spec.SetField(session.FieldToken, field.TypeString, value)
 		_node.Token = value

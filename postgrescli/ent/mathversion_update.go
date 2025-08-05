@@ -78,6 +78,12 @@ func (mvu *MathVersionUpdate) AddVolatility(i int) *MathVersionUpdate {
 	return mvu
 }
 
+// ClearVolatility clears the value of the "volatility" field.
+func (mvu *MathVersionUpdate) ClearVolatility() *MathVersionUpdate {
+	mvu.mutation.ClearVolatility()
+	return mvu
+}
+
 // SetRtp sets the "rtp" field.
 func (mvu *MathVersionUpdate) SetRtp(i int) *MathVersionUpdate {
 	mvu.mutation.ResetRtp()
@@ -96,6 +102,12 @@ func (mvu *MathVersionUpdate) SetNillableRtp(i *int) *MathVersionUpdate {
 // AddRtp adds i to the "rtp" field.
 func (mvu *MathVersionUpdate) AddRtp(i int) *MathVersionUpdate {
 	mvu.mutation.AddRtp(i)
+	return mvu
+}
+
+// ClearRtp clears the value of the "rtp" field.
+func (mvu *MathVersionUpdate) ClearRtp() *MathVersionUpdate {
+	mvu.mutation.ClearRtp()
 	return mvu
 }
 
@@ -120,6 +132,12 @@ func (mvu *MathVersionUpdate) AddMaxWin(i int) *MathVersionUpdate {
 	return mvu
 }
 
+// ClearMaxWin clears the value of the "max_win" field.
+func (mvu *MathVersionUpdate) ClearMaxWin() *MathVersionUpdate {
+	mvu.mutation.ClearMaxWin()
+	return mvu
+}
+
 // SetCanBuyBonus sets the "can_buy_bonus" field.
 func (mvu *MathVersionUpdate) SetCanBuyBonus(b bool) *MathVersionUpdate {
 	mvu.mutation.SetCanBuyBonus(b)
@@ -134,6 +152,12 @@ func (mvu *MathVersionUpdate) SetNillableCanBuyBonus(b *bool) *MathVersionUpdate
 	return mvu
 }
 
+// ClearCanBuyBonus clears the value of the "can_buy_bonus" field.
+func (mvu *MathVersionUpdate) ClearCanBuyBonus() *MathVersionUpdate {
+	mvu.mutation.ClearCanBuyBonus()
+	return mvu
+}
+
 // SetURLReleaseNote sets the "url_release_note" field.
 func (mvu *MathVersionUpdate) SetURLReleaseNote(s string) *MathVersionUpdate {
 	mvu.mutation.SetURLReleaseNote(s)
@@ -145,6 +169,12 @@ func (mvu *MathVersionUpdate) SetNillableURLReleaseNote(s *string) *MathVersionU
 	if s != nil {
 		mvu.SetURLReleaseNote(*s)
 	}
+	return mvu
+}
+
+// ClearURLReleaseNote clears the value of the "url_release_note" field.
+func (mvu *MathVersionUpdate) ClearURLReleaseNote() *MathVersionUpdate {
+	mvu.mutation.ClearURLReleaseNote()
 	return mvu
 }
 
@@ -173,6 +203,12 @@ func (mvu *MathVersionUpdate) SetNillableCanAnteBet(b *bool) *MathVersionUpdate 
 	if b != nil {
 		mvu.SetCanAnteBet(*b)
 	}
+	return mvu
+}
+
+// ClearCanAnteBet clears the value of the "can_ante_bet" field.
+func (mvu *MathVersionUpdate) ClearCanAnteBet() *MathVersionUpdate {
+	mvu.mutation.ClearCanAnteBet()
 	return mvu
 }
 
@@ -301,11 +337,17 @@ func (mvu *MathVersionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := mvu.mutation.AddedVolatility(); ok {
 		_spec.AddField(mathversion.FieldVolatility, field.TypeInt, value)
 	}
+	if mvu.mutation.VolatilityCleared() {
+		_spec.ClearField(mathversion.FieldVolatility, field.TypeInt)
+	}
 	if value, ok := mvu.mutation.Rtp(); ok {
 		_spec.SetField(mathversion.FieldRtp, field.TypeInt, value)
 	}
 	if value, ok := mvu.mutation.AddedRtp(); ok {
 		_spec.AddField(mathversion.FieldRtp, field.TypeInt, value)
+	}
+	if mvu.mutation.RtpCleared() {
+		_spec.ClearField(mathversion.FieldRtp, field.TypeInt)
 	}
 	if value, ok := mvu.mutation.MaxWin(); ok {
 		_spec.SetField(mathversion.FieldMaxWin, field.TypeInt, value)
@@ -313,17 +355,29 @@ func (mvu *MathVersionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := mvu.mutation.AddedMaxWin(); ok {
 		_spec.AddField(mathversion.FieldMaxWin, field.TypeInt, value)
 	}
+	if mvu.mutation.MaxWinCleared() {
+		_spec.ClearField(mathversion.FieldMaxWin, field.TypeInt)
+	}
 	if value, ok := mvu.mutation.CanBuyBonus(); ok {
 		_spec.SetField(mathversion.FieldCanBuyBonus, field.TypeBool, value)
 	}
+	if mvu.mutation.CanBuyBonusCleared() {
+		_spec.ClearField(mathversion.FieldCanBuyBonus, field.TypeBool)
+	}
 	if value, ok := mvu.mutation.URLReleaseNote(); ok {
 		_spec.SetField(mathversion.FieldURLReleaseNote, field.TypeString, value)
+	}
+	if mvu.mutation.URLReleaseNoteCleared() {
+		_spec.ClearField(mathversion.FieldURLReleaseNote, field.TypeString)
 	}
 	if value, ok := mvu.mutation.Deprecated(); ok {
 		_spec.SetField(mathversion.FieldDeprecated, field.TypeBool, value)
 	}
 	if value, ok := mvu.mutation.CanAnteBet(); ok {
 		_spec.SetField(mathversion.FieldCanAnteBet, field.TypeBool, value)
+	}
+	if mvu.mutation.CanAnteBetCleared() {
+		_spec.ClearField(mathversion.FieldCanAnteBet, field.TypeBool)
 	}
 	if mvu.mutation.SessionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -484,6 +538,12 @@ func (mvuo *MathVersionUpdateOne) AddVolatility(i int) *MathVersionUpdateOne {
 	return mvuo
 }
 
+// ClearVolatility clears the value of the "volatility" field.
+func (mvuo *MathVersionUpdateOne) ClearVolatility() *MathVersionUpdateOne {
+	mvuo.mutation.ClearVolatility()
+	return mvuo
+}
+
 // SetRtp sets the "rtp" field.
 func (mvuo *MathVersionUpdateOne) SetRtp(i int) *MathVersionUpdateOne {
 	mvuo.mutation.ResetRtp()
@@ -502,6 +562,12 @@ func (mvuo *MathVersionUpdateOne) SetNillableRtp(i *int) *MathVersionUpdateOne {
 // AddRtp adds i to the "rtp" field.
 func (mvuo *MathVersionUpdateOne) AddRtp(i int) *MathVersionUpdateOne {
 	mvuo.mutation.AddRtp(i)
+	return mvuo
+}
+
+// ClearRtp clears the value of the "rtp" field.
+func (mvuo *MathVersionUpdateOne) ClearRtp() *MathVersionUpdateOne {
+	mvuo.mutation.ClearRtp()
 	return mvuo
 }
 
@@ -526,6 +592,12 @@ func (mvuo *MathVersionUpdateOne) AddMaxWin(i int) *MathVersionUpdateOne {
 	return mvuo
 }
 
+// ClearMaxWin clears the value of the "max_win" field.
+func (mvuo *MathVersionUpdateOne) ClearMaxWin() *MathVersionUpdateOne {
+	mvuo.mutation.ClearMaxWin()
+	return mvuo
+}
+
 // SetCanBuyBonus sets the "can_buy_bonus" field.
 func (mvuo *MathVersionUpdateOne) SetCanBuyBonus(b bool) *MathVersionUpdateOne {
 	mvuo.mutation.SetCanBuyBonus(b)
@@ -540,6 +612,12 @@ func (mvuo *MathVersionUpdateOne) SetNillableCanBuyBonus(b *bool) *MathVersionUp
 	return mvuo
 }
 
+// ClearCanBuyBonus clears the value of the "can_buy_bonus" field.
+func (mvuo *MathVersionUpdateOne) ClearCanBuyBonus() *MathVersionUpdateOne {
+	mvuo.mutation.ClearCanBuyBonus()
+	return mvuo
+}
+
 // SetURLReleaseNote sets the "url_release_note" field.
 func (mvuo *MathVersionUpdateOne) SetURLReleaseNote(s string) *MathVersionUpdateOne {
 	mvuo.mutation.SetURLReleaseNote(s)
@@ -551,6 +629,12 @@ func (mvuo *MathVersionUpdateOne) SetNillableURLReleaseNote(s *string) *MathVers
 	if s != nil {
 		mvuo.SetURLReleaseNote(*s)
 	}
+	return mvuo
+}
+
+// ClearURLReleaseNote clears the value of the "url_release_note" field.
+func (mvuo *MathVersionUpdateOne) ClearURLReleaseNote() *MathVersionUpdateOne {
+	mvuo.mutation.ClearURLReleaseNote()
 	return mvuo
 }
 
@@ -579,6 +663,12 @@ func (mvuo *MathVersionUpdateOne) SetNillableCanAnteBet(b *bool) *MathVersionUpd
 	if b != nil {
 		mvuo.SetCanAnteBet(*b)
 	}
+	return mvuo
+}
+
+// ClearCanAnteBet clears the value of the "can_ante_bet" field.
+func (mvuo *MathVersionUpdateOne) ClearCanAnteBet() *MathVersionUpdateOne {
+	mvuo.mutation.ClearCanAnteBet()
 	return mvuo
 }
 
@@ -737,11 +827,17 @@ func (mvuo *MathVersionUpdateOne) sqlSave(ctx context.Context) (_node *MathVersi
 	if value, ok := mvuo.mutation.AddedVolatility(); ok {
 		_spec.AddField(mathversion.FieldVolatility, field.TypeInt, value)
 	}
+	if mvuo.mutation.VolatilityCleared() {
+		_spec.ClearField(mathversion.FieldVolatility, field.TypeInt)
+	}
 	if value, ok := mvuo.mutation.Rtp(); ok {
 		_spec.SetField(mathversion.FieldRtp, field.TypeInt, value)
 	}
 	if value, ok := mvuo.mutation.AddedRtp(); ok {
 		_spec.AddField(mathversion.FieldRtp, field.TypeInt, value)
+	}
+	if mvuo.mutation.RtpCleared() {
+		_spec.ClearField(mathversion.FieldRtp, field.TypeInt)
 	}
 	if value, ok := mvuo.mutation.MaxWin(); ok {
 		_spec.SetField(mathversion.FieldMaxWin, field.TypeInt, value)
@@ -749,17 +845,29 @@ func (mvuo *MathVersionUpdateOne) sqlSave(ctx context.Context) (_node *MathVersi
 	if value, ok := mvuo.mutation.AddedMaxWin(); ok {
 		_spec.AddField(mathversion.FieldMaxWin, field.TypeInt, value)
 	}
+	if mvuo.mutation.MaxWinCleared() {
+		_spec.ClearField(mathversion.FieldMaxWin, field.TypeInt)
+	}
 	if value, ok := mvuo.mutation.CanBuyBonus(); ok {
 		_spec.SetField(mathversion.FieldCanBuyBonus, field.TypeBool, value)
 	}
+	if mvuo.mutation.CanBuyBonusCleared() {
+		_spec.ClearField(mathversion.FieldCanBuyBonus, field.TypeBool)
+	}
 	if value, ok := mvuo.mutation.URLReleaseNote(); ok {
 		_spec.SetField(mathversion.FieldURLReleaseNote, field.TypeString, value)
+	}
+	if mvuo.mutation.URLReleaseNoteCleared() {
+		_spec.ClearField(mathversion.FieldURLReleaseNote, field.TypeString)
 	}
 	if value, ok := mvuo.mutation.Deprecated(); ok {
 		_spec.SetField(mathversion.FieldDeprecated, field.TypeBool, value)
 	}
 	if value, ok := mvuo.mutation.CanAnteBet(); ok {
 		_spec.SetField(mathversion.FieldCanAnteBet, field.TypeBool, value)
+	}
+	if mvuo.mutation.CanAnteBetCleared() {
+		_spec.ClearField(mathversion.FieldCanAnteBet, field.TypeBool)
 	}
 	if mvuo.mutation.SessionsCleared() {
 		edge := &sqlgraph.EdgeSpec{

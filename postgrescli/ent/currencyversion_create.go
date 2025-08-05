@@ -9,7 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/currencyversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/gameconfig"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/gametype"
@@ -35,9 +35,25 @@ func (cvc *CurrencyVersionCreate) SetMinBet(i int) *CurrencyVersionCreate {
 	return cvc
 }
 
+// SetNillableMinBet sets the "min_bet" field if the given value is not nil.
+func (cvc *CurrencyVersionCreate) SetNillableMinBet(i *int) *CurrencyVersionCreate {
+	if i != nil {
+		cvc.SetMinBet(*i)
+	}
+	return cvc
+}
+
 // SetMaxExp sets the "max_exp" field.
 func (cvc *CurrencyVersionCreate) SetMaxExp(i int) *CurrencyVersionCreate {
 	cvc.mutation.SetMaxExp(i)
+	return cvc
+}
+
+// SetNillableMaxExp sets the "max_exp" field if the given value is not nil.
+func (cvc *CurrencyVersionCreate) SetNillableMaxExp(i *int) *CurrencyVersionCreate {
+	if i != nil {
+		cvc.SetMaxExp(*i)
+	}
 	return cvc
 }
 
@@ -47,15 +63,17 @@ func (cvc *CurrencyVersionCreate) SetDenominator(i int) *CurrencyVersionCreate {
 	return cvc
 }
 
-// SetCurrencyID sets the "currency_id" field.
-func (cvc *CurrencyVersionCreate) SetCurrencyID(i int) *CurrencyVersionCreate {
-	cvc.mutation.SetCurrencyID(i)
-	return cvc
-}
-
 // SetDefaultMultiplier sets the "default_multiplier" field.
 func (cvc *CurrencyVersionCreate) SetDefaultMultiplier(i int) *CurrencyVersionCreate {
 	cvc.mutation.SetDefaultMultiplier(i)
+	return cvc
+}
+
+// SetNillableDefaultMultiplier sets the "default_multiplier" field if the given value is not nil.
+func (cvc *CurrencyVersionCreate) SetNillableDefaultMultiplier(i *int) *CurrencyVersionCreate {
+	if i != nil {
+		cvc.SetDefaultMultiplier(*i)
+	}
 	return cvc
 }
 
@@ -65,9 +83,25 @@ func (cvc *CurrencyVersionCreate) SetDeprecated(b bool) *CurrencyVersionCreate {
 	return cvc
 }
 
+// SetNillableDeprecated sets the "deprecated" field if the given value is not nil.
+func (cvc *CurrencyVersionCreate) SetNillableDeprecated(b *bool) *CurrencyVersionCreate {
+	if b != nil {
+		cvc.SetDeprecated(*b)
+	}
+	return cvc
+}
+
 // SetCrashBetIncrement sets the "crash_bet_increment" field.
 func (cvc *CurrencyVersionCreate) SetCrashBetIncrement(i int) *CurrencyVersionCreate {
 	cvc.mutation.SetCrashBetIncrement(i)
+	return cvc
+}
+
+// SetNillableCrashBetIncrement sets the "crash_bet_increment" field if the given value is not nil.
+func (cvc *CurrencyVersionCreate) SetNillableCrashBetIncrement(i *int) *CurrencyVersionCreate {
+	if i != nil {
+		cvc.SetCrashBetIncrement(*i)
+	}
 	return cvc
 }
 
@@ -77,23 +111,23 @@ func (cvc *CurrencyVersionCreate) SetSlotsBetMultipliers(i []int) *CurrencyVersi
 	return cvc
 }
 
-// SetCurrencieID sets the "Currencie" edge to the Currencie entity by ID.
-func (cvc *CurrencyVersionCreate) SetCurrencieID(id int) *CurrencyVersionCreate {
-	cvc.mutation.SetCurrencieID(id)
+// SetCurrencyID sets the "Currency" edge to the Currency entity by ID.
+func (cvc *CurrencyVersionCreate) SetCurrencyID(id int) *CurrencyVersionCreate {
+	cvc.mutation.SetCurrencyID(id)
 	return cvc
 }
 
-// SetNillableCurrencieID sets the "Currencie" edge to the Currencie entity by ID if the given value is not nil.
-func (cvc *CurrencyVersionCreate) SetNillableCurrencieID(id *int) *CurrencyVersionCreate {
+// SetNillableCurrencyID sets the "Currency" edge to the Currency entity by ID if the given value is not nil.
+func (cvc *CurrencyVersionCreate) SetNillableCurrencyID(id *int) *CurrencyVersionCreate {
 	if id != nil {
-		cvc = cvc.SetCurrencieID(*id)
+		cvc = cvc.SetCurrencyID(*id)
 	}
 	return cvc
 }
 
-// SetCurrencie sets the "Currencie" edge to the Currencie entity.
-func (cvc *CurrencyVersionCreate) SetCurrencie(c *Currencie) *CurrencyVersionCreate {
-	return cvc.SetCurrencieID(c.ID)
+// SetCurrency sets the "Currency" edge to the Currency entity.
+func (cvc *CurrencyVersionCreate) SetCurrency(c *Currency) *CurrencyVersionCreate {
+	return cvc.SetCurrencyID(c.ID)
 }
 
 // SetGameTypesID sets the "game_types" edge to the GameType entity by ID.
@@ -152,6 +186,7 @@ func (cvc *CurrencyVersionCreate) Mutation() *CurrencyVersionMutation {
 
 // Save creates the CurrencyVersion in the database.
 func (cvc *CurrencyVersionCreate) Save(ctx context.Context) (*CurrencyVersion, error) {
+	cvc.defaults()
 	return withHooks(ctx, cvc.sqlSave, cvc.mutation, cvc.hooks)
 }
 
@@ -177,34 +212,24 @@ func (cvc *CurrencyVersionCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (cvc *CurrencyVersionCreate) defaults() {
+	if _, ok := cvc.mutation.Deprecated(); !ok {
+		v := currencyversion.DefaultDeprecated
+		cvc.mutation.SetDeprecated(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (cvc *CurrencyVersionCreate) check() error {
 	if _, ok := cvc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "CurrencyVersion.name"`)}
 	}
-	if _, ok := cvc.mutation.MinBet(); !ok {
-		return &ValidationError{Name: "min_bet", err: errors.New(`ent: missing required field "CurrencyVersion.min_bet"`)}
-	}
-	if _, ok := cvc.mutation.MaxExp(); !ok {
-		return &ValidationError{Name: "max_exp", err: errors.New(`ent: missing required field "CurrencyVersion.max_exp"`)}
-	}
 	if _, ok := cvc.mutation.Denominator(); !ok {
 		return &ValidationError{Name: "denominator", err: errors.New(`ent: missing required field "CurrencyVersion.denominator"`)}
 	}
-	if _, ok := cvc.mutation.CurrencyID(); !ok {
-		return &ValidationError{Name: "currency_id", err: errors.New(`ent: missing required field "CurrencyVersion.currency_id"`)}
-	}
-	if _, ok := cvc.mutation.DefaultMultiplier(); !ok {
-		return &ValidationError{Name: "default_multiplier", err: errors.New(`ent: missing required field "CurrencyVersion.default_multiplier"`)}
-	}
 	if _, ok := cvc.mutation.Deprecated(); !ok {
 		return &ValidationError{Name: "deprecated", err: errors.New(`ent: missing required field "CurrencyVersion.deprecated"`)}
-	}
-	if _, ok := cvc.mutation.CrashBetIncrement(); !ok {
-		return &ValidationError{Name: "crash_bet_increment", err: errors.New(`ent: missing required field "CurrencyVersion.crash_bet_increment"`)}
-	}
-	if _, ok := cvc.mutation.SlotsBetMultipliers(); !ok {
-		return &ValidationError{Name: "slots_bet_multipliers", err: errors.New(`ent: missing required field "CurrencyVersion.slots_bet_multipliers"`)}
 	}
 	return nil
 }
@@ -248,10 +273,6 @@ func (cvc *CurrencyVersionCreate) createSpec() (*CurrencyVersion, *sqlgraph.Crea
 		_spec.SetField(currencyversion.FieldDenominator, field.TypeInt, value)
 		_node.Denominator = value
 	}
-	if value, ok := cvc.mutation.CurrencyID(); ok {
-		_spec.SetField(currencyversion.FieldCurrencyID, field.TypeInt, value)
-		_node.CurrencyID = value
-	}
 	if value, ok := cvc.mutation.DefaultMultiplier(); ok {
 		_spec.SetField(currencyversion.FieldDefaultMultiplier, field.TypeInt, value)
 		_node.DefaultMultiplier = value
@@ -268,21 +289,21 @@ func (cvc *CurrencyVersionCreate) createSpec() (*CurrencyVersion, *sqlgraph.Crea
 		_spec.SetField(currencyversion.FieldSlotsBetMultipliers, field.TypeJSON, value)
 		_node.SlotsBetMultipliers = value
 	}
-	if nodes := cvc.mutation.CurrencieIDs(); len(nodes) > 0 {
+	if nodes := cvc.mutation.CurrencyIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   currencyversion.CurrencieTable,
-			Columns: []string{currencyversion.CurrencieColumn},
+			Table:   currencyversion.CurrencyTable,
+			Columns: []string{currencyversion.CurrencyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(currencie.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(currency.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.currencie_currency_versions = &nodes[0]
+		_node.currency_currency_versions = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := cvc.mutation.GameTypesIDs(); len(nodes) > 0 {
@@ -355,6 +376,7 @@ func (cvcb *CurrencyVersionCreateBulk) Save(ctx context.Context) ([]*CurrencyVer
 	for i := range cvcb.builders {
 		func(i int, root context.Context) {
 			builder := cvcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*CurrencyVersionMutation)
 				if !ok {

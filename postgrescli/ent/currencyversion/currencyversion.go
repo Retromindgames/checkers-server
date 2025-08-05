@@ -20,8 +20,6 @@ const (
 	FieldMaxExp = "max_exp"
 	// FieldDenominator holds the string denoting the denominator field in the database.
 	FieldDenominator = "denominator"
-	// FieldCurrencyID holds the string denoting the currency_id field in the database.
-	FieldCurrencyID = "currency_id"
 	// FieldDefaultMultiplier holds the string denoting the default_multiplier field in the database.
 	FieldDefaultMultiplier = "default_multiplier"
 	// FieldDeprecated holds the string denoting the deprecated field in the database.
@@ -30,8 +28,8 @@ const (
 	FieldCrashBetIncrement = "crash_bet_increment"
 	// FieldSlotsBetMultipliers holds the string denoting the slots_bet_multipliers field in the database.
 	FieldSlotsBetMultipliers = "slots_bet_multipliers"
-	// EdgeCurrencie holds the string denoting the currencie edge name in mutations.
-	EdgeCurrencie = "Currencie"
+	// EdgeCurrency holds the string denoting the currency edge name in mutations.
+	EdgeCurrency = "Currency"
 	// EdgeGameTypes holds the string denoting the game_types edge name in mutations.
 	EdgeGameTypes = "game_types"
 	// EdgeSessions holds the string denoting the sessions edge name in mutations.
@@ -40,13 +38,13 @@ const (
 	EdgeGameConfigs = "game_configs"
 	// Table holds the table name of the currencyversion in the database.
 	Table = "currency_versions"
-	// CurrencieTable is the table that holds the Currencie relation/edge.
-	CurrencieTable = "currency_versions"
-	// CurrencieInverseTable is the table name for the Currencie entity.
-	// It exists in this package in order to avoid circular dependency with the "currencie" package.
-	CurrencieInverseTable = "currencies"
-	// CurrencieColumn is the table column denoting the Currencie relation/edge.
-	CurrencieColumn = "currencie_currency_versions"
+	// CurrencyTable is the table that holds the Currency relation/edge.
+	CurrencyTable = "currency_versions"
+	// CurrencyInverseTable is the table name for the Currency entity.
+	// It exists in this package in order to avoid circular dependency with the "currency" package.
+	CurrencyInverseTable = "currencies"
+	// CurrencyColumn is the table column denoting the Currency relation/edge.
+	CurrencyColumn = "currency_currency_versions"
 	// GameTypesTable is the table that holds the game_types relation/edge.
 	GameTypesTable = "currency_versions"
 	// GameTypesInverseTable is the table name for the GameType entity.
@@ -77,7 +75,6 @@ var Columns = []string{
 	FieldMinBet,
 	FieldMaxExp,
 	FieldDenominator,
-	FieldCurrencyID,
 	FieldDefaultMultiplier,
 	FieldDeprecated,
 	FieldCrashBetIncrement,
@@ -87,7 +84,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "currency_versions"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"currencie_currency_versions",
+	"currency_currency_versions",
 	"game_type_currency_versions",
 }
 
@@ -105,6 +102,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultDeprecated holds the default value on creation for the "deprecated" field.
+	DefaultDeprecated bool
+)
 
 // OrderOption defines the ordering options for the CurrencyVersion queries.
 type OrderOption func(*sql.Selector)
@@ -134,11 +136,6 @@ func ByDenominator(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDenominator, opts...).ToFunc()
 }
 
-// ByCurrencyID orders the results by the currency_id field.
-func ByCurrencyID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCurrencyID, opts...).ToFunc()
-}
-
 // ByDefaultMultiplier orders the results by the default_multiplier field.
 func ByDefaultMultiplier(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDefaultMultiplier, opts...).ToFunc()
@@ -154,10 +151,10 @@ func ByCrashBetIncrement(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCrashBetIncrement, opts...).ToFunc()
 }
 
-// ByCurrencieField orders the results by Currencie field.
-func ByCurrencieField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByCurrencyField orders the results by Currency field.
+func ByCurrencyField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newCurrencieStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newCurrencyStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -195,11 +192,11 @@ func ByGameConfigs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newGameConfigsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newCurrencieStep() *sqlgraph.Step {
+func newCurrencyStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(CurrencieInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, true, CurrencieTable, CurrencieColumn),
+		sqlgraph.To(CurrencyInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, CurrencyTable, CurrencyColumn),
 	)
 }
 func newGameTypesStep() *sqlgraph.Step {

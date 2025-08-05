@@ -76,6 +76,11 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// DefaultDeprecated holds the default value on creation for the "deprecated" field.
+	DefaultDeprecated bool
+)
+
 // OrderOption defines the ordering options for the MathVersion queries.
 type OrderOption func(*sql.Selector)
 

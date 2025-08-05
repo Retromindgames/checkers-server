@@ -130,6 +130,12 @@ func (gvu *GameVersionUpdate) SetNillableURLMediaPack(s *string) *GameVersionUpd
 	return gvu
 }
 
+// ClearURLMediaPack clears the value of the "url_media_pack" field.
+func (gvu *GameVersionUpdate) ClearURLMediaPack() *GameVersionUpdate {
+	gvu.mutation.ClearURLMediaPack()
+	return gvu
+}
+
 // SetURLReleaseNote sets the "url_release_note" field.
 func (gvu *GameVersionUpdate) SetURLReleaseNote(s string) *GameVersionUpdate {
 	gvu.mutation.SetURLReleaseNote(s)
@@ -141,6 +147,12 @@ func (gvu *GameVersionUpdate) SetNillableURLReleaseNote(s *string) *GameVersionU
 	if s != nil {
 		gvu.SetURLReleaseNote(*s)
 	}
+	return gvu
+}
+
+// ClearURLReleaseNote clears the value of the "url_release_note" field.
+func (gvu *GameVersionUpdate) ClearURLReleaseNote() *GameVersionUpdate {
+	gvu.mutation.ClearURLReleaseNote()
 	return gvu
 }
 
@@ -170,6 +182,12 @@ func (gvu *GameVersionUpdate) AppendAvailableMathVersions(i []int) *GameVersionU
 	return gvu
 }
 
+// ClearAvailableMathVersions clears the value of the "available_math_versions" field.
+func (gvu *GameVersionUpdate) ClearAvailableMathVersions() *GameVersionUpdate {
+	gvu.mutation.ClearAvailableMathVersions()
+	return gvu
+}
+
 // SetCanAutoBet sets the "can_auto_bet" field.
 func (gvu *GameVersionUpdate) SetCanAutoBet(b bool) *GameVersionUpdate {
 	gvu.mutation.SetCanAutoBet(b)
@@ -195,6 +213,12 @@ func (gvu *GameVersionUpdate) SetNillableURLGameManual(s *string) *GameVersionUp
 	if s != nil {
 		gvu.SetURLGameManual(*s)
 	}
+	return gvu
+}
+
+// ClearURLGameManual clears the value of the "url_game_manual" field.
+func (gvu *GameVersionUpdate) ClearURLGameManual() *GameVersionUpdate {
+	gvu.mutation.ClearURLGameManual()
 	return gvu
 }
 
@@ -424,8 +448,14 @@ func (gvu *GameVersionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := gvu.mutation.URLMediaPack(); ok {
 		_spec.SetField(gameversion.FieldURLMediaPack, field.TypeString, value)
 	}
+	if gvu.mutation.URLMediaPackCleared() {
+		_spec.ClearField(gameversion.FieldURLMediaPack, field.TypeString)
+	}
 	if value, ok := gvu.mutation.URLReleaseNote(); ok {
 		_spec.SetField(gameversion.FieldURLReleaseNote, field.TypeString, value)
+	}
+	if gvu.mutation.URLReleaseNoteCleared() {
+		_spec.ClearField(gameversion.FieldURLReleaseNote, field.TypeString)
 	}
 	if value, ok := gvu.mutation.Deprecated(); ok {
 		_spec.SetField(gameversion.FieldDeprecated, field.TypeBool, value)
@@ -438,11 +468,17 @@ func (gvu *GameVersionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			sqljson.Append(u, gameversion.FieldAvailableMathVersions, value)
 		})
 	}
+	if gvu.mutation.AvailableMathVersionsCleared() {
+		_spec.ClearField(gameversion.FieldAvailableMathVersions, field.TypeJSON)
+	}
 	if value, ok := gvu.mutation.CanAutoBet(); ok {
 		_spec.SetField(gameversion.FieldCanAutoBet, field.TypeBool, value)
 	}
 	if value, ok := gvu.mutation.URLGameManual(); ok {
 		_spec.SetField(gameversion.FieldURLGameManual, field.TypeString, value)
+	}
+	if gvu.mutation.URLGameManualCleared() {
+		_spec.ClearField(gameversion.FieldURLGameManual, field.TypeString)
 	}
 	if value, ok := gvu.mutation.CanAutoCashout(); ok {
 		_spec.SetField(gameversion.FieldCanAutoCashout, field.TypeBool, value)
@@ -719,6 +755,12 @@ func (gvuo *GameVersionUpdateOne) SetNillableURLMediaPack(s *string) *GameVersio
 	return gvuo
 }
 
+// ClearURLMediaPack clears the value of the "url_media_pack" field.
+func (gvuo *GameVersionUpdateOne) ClearURLMediaPack() *GameVersionUpdateOne {
+	gvuo.mutation.ClearURLMediaPack()
+	return gvuo
+}
+
 // SetURLReleaseNote sets the "url_release_note" field.
 func (gvuo *GameVersionUpdateOne) SetURLReleaseNote(s string) *GameVersionUpdateOne {
 	gvuo.mutation.SetURLReleaseNote(s)
@@ -730,6 +772,12 @@ func (gvuo *GameVersionUpdateOne) SetNillableURLReleaseNote(s *string) *GameVers
 	if s != nil {
 		gvuo.SetURLReleaseNote(*s)
 	}
+	return gvuo
+}
+
+// ClearURLReleaseNote clears the value of the "url_release_note" field.
+func (gvuo *GameVersionUpdateOne) ClearURLReleaseNote() *GameVersionUpdateOne {
+	gvuo.mutation.ClearURLReleaseNote()
 	return gvuo
 }
 
@@ -759,6 +807,12 @@ func (gvuo *GameVersionUpdateOne) AppendAvailableMathVersions(i []int) *GameVers
 	return gvuo
 }
 
+// ClearAvailableMathVersions clears the value of the "available_math_versions" field.
+func (gvuo *GameVersionUpdateOne) ClearAvailableMathVersions() *GameVersionUpdateOne {
+	gvuo.mutation.ClearAvailableMathVersions()
+	return gvuo
+}
+
 // SetCanAutoBet sets the "can_auto_bet" field.
 func (gvuo *GameVersionUpdateOne) SetCanAutoBet(b bool) *GameVersionUpdateOne {
 	gvuo.mutation.SetCanAutoBet(b)
@@ -784,6 +838,12 @@ func (gvuo *GameVersionUpdateOne) SetNillableURLGameManual(s *string) *GameVersi
 	if s != nil {
 		gvuo.SetURLGameManual(*s)
 	}
+	return gvuo
+}
+
+// ClearURLGameManual clears the value of the "url_game_manual" field.
+func (gvuo *GameVersionUpdateOne) ClearURLGameManual() *GameVersionUpdateOne {
+	gvuo.mutation.ClearURLGameManual()
 	return gvuo
 }
 
@@ -1043,8 +1103,14 @@ func (gvuo *GameVersionUpdateOne) sqlSave(ctx context.Context) (_node *GameVersi
 	if value, ok := gvuo.mutation.URLMediaPack(); ok {
 		_spec.SetField(gameversion.FieldURLMediaPack, field.TypeString, value)
 	}
+	if gvuo.mutation.URLMediaPackCleared() {
+		_spec.ClearField(gameversion.FieldURLMediaPack, field.TypeString)
+	}
 	if value, ok := gvuo.mutation.URLReleaseNote(); ok {
 		_spec.SetField(gameversion.FieldURLReleaseNote, field.TypeString, value)
+	}
+	if gvuo.mutation.URLReleaseNoteCleared() {
+		_spec.ClearField(gameversion.FieldURLReleaseNote, field.TypeString)
 	}
 	if value, ok := gvuo.mutation.Deprecated(); ok {
 		_spec.SetField(gameversion.FieldDeprecated, field.TypeBool, value)
@@ -1057,11 +1123,17 @@ func (gvuo *GameVersionUpdateOne) sqlSave(ctx context.Context) (_node *GameVersi
 			sqljson.Append(u, gameversion.FieldAvailableMathVersions, value)
 		})
 	}
+	if gvuo.mutation.AvailableMathVersionsCleared() {
+		_spec.ClearField(gameversion.FieldAvailableMathVersions, field.TypeJSON)
+	}
 	if value, ok := gvuo.mutation.CanAutoBet(); ok {
 		_spec.SetField(gameversion.FieldCanAutoBet, field.TypeBool, value)
 	}
 	if value, ok := gvuo.mutation.URLGameManual(); ok {
 		_spec.SetField(gameversion.FieldURLGameManual, field.TypeString, value)
+	}
+	if gvuo.mutation.URLGameManualCleared() {
+		_spec.ClearField(gameversion.FieldURLGameManual, field.TypeString)
 	}
 	if value, ok := gvuo.mutation.CanAutoCashout(); ok {
 		_spec.SetField(gameversion.FieldCanAutoCashout, field.TypeBool, value)

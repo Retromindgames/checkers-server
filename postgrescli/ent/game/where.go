@@ -188,6 +188,16 @@ func ExternalIDHasSuffix(v string) predicate.Game {
 	return predicate.Game(sql.FieldHasSuffix(FieldExternalID, v))
 }
 
+// ExternalIDIsNil applies the IsNil predicate on the "external_id" field.
+func ExternalIDIsNil() predicate.Game {
+	return predicate.Game(sql.FieldIsNull(FieldExternalID))
+}
+
+// ExternalIDNotNil applies the NotNil predicate on the "external_id" field.
+func ExternalIDNotNil() predicate.Game {
+	return predicate.Game(sql.FieldNotNull(FieldExternalID))
+}
+
 // ExternalIDEqualFold applies the EqualFold predicate on the "external_id" field.
 func ExternalIDEqualFold(v string) predicate.Game {
 	return predicate.Game(sql.FieldEqualFold(FieldExternalID, v))

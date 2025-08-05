@@ -16,7 +16,6 @@ type Session struct {
 // Fields of the Session.
 func (Session) Fields() []ent.Field {
 	return []ent.Field{
-		field.Bool("can_demo"),
 		field.String("token"),
 		field.String("client_id"),
 

@@ -1,9 +1,12 @@
 package models
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
+	"github.com/Lavizord/checkers-server/postgrescli/ent"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 )
@@ -14,14 +17,14 @@ type GameLaunchResponse struct {
 }
 
 type Session struct {
-	ID                 string             `json:"session_id"`
-	Token              string             `json:"token"`
-	PlayerName         string             `json:"player_name"`
-	Currency           string             `json:"currency"`
-	OperatorBaseUrl    string             `json:"operator_base_url"`
-	CreatedAt          time.Time          `json:"created_at"`
-	ExtractID          int64              `json:"extract_id"` // This was created to store the extract ID of a bet, so that we can later use it in the win post...
-	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
+	ID              string      `json:"session_id"`
+	Token           string      `json:"token"`
+	PlayerName      string      `json:"player_name"`
+	Currency        string      `json:"currency"`
+	OperatorBaseUrl string      `json:"operator_base_url"`
+	CreatedAt       time.Time   `json:"created_at"`
+	ExtractID       int64       `json:"extract_id"` // This was created to store the extract ID of a bet, so that we can later use it in the win post...
+	OperatorDTO     OperatorDTO `json:"operator"`
 }
 
 func (s *Session) IsTokenExpired() bool {
@@ -64,11 +67,148 @@ type Transaction struct {
 	Timestamp   time.Time `json:"timestamp"`      // Timestamp in UTC
 }
 
-type OperatorIdentifier struct {
-	OperatorName     string  `json:"operator_name"`
-	OperatorGameName string  `json:"operator_game_name"`
-	GameName         string  `json:"game_name"`
-	WinFactor        float64 `json:"win_factor"`
+type OperatorDTO struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Alias string `json:"operator_game_name"`
+}
+
+func OperatorToDTO(op *ent.Operator) OperatorDTO {
+	return OperatorDTO{
+		Name:  op.Name,
+		Alias: op.Alias,
+	}
+}
+func OperatorsToDTO(ops []*ent.Operator) []OperatorDTO {
+	dto := make([]OperatorDTO, len(ops))
+	for i, op := range ops {
+		dto[i] = OperatorToDTO(op)
+	}
+	return dto
+}
+
+// Flattens the data from the game config and related entities into a single object.
+//
+// This will be stored in redis too avoid too many querys to the database.
+type GameConfigDTO struct {
+	// Operator
+	OperatorName  string
+	OperatorAlias string
+	// Platform
+	PlatformName              string
+	PlatformHash              string
+	PlatformHomeButtonPayload string
+	// Game
+	GameName          string
+	GameTrademarkName string
+	// Game Versions
+	GameVersion    string
+	UrlMediaPack   string
+	UrlReleaseNote string
+	UrlGameManual  string
+	// Game Configs
+	CanDemo        bool
+	CanTournament  bool
+	CanFreeBets    bool
+	CanDropAndWins bool
+	CanBuyBonus    bool
+	CanTurbo       bool
+	CanAutoBet     bool
+	CanAutoCashout bool
+	CanAnteBet     bool
+	// Currency Versions
+	CurrencyName               string
+	CurrencySymbol             string
+	CurrencyThousandSeparator  string
+	CurrencyUnitsSeparator     string
+	CurrencySymbolPosition     string
+	CurrencyDenominator        int
+	CurrencyMinBet             int
+	CurrencyMaxExp             int
+	CurrencyDefaultMultiplier  int
+	CurrencyCrashBetIncrement  int
+	CurrencySlotsBetMultiplier []int
+	// Math Versions
+	MathName                  string
+	MathVersion               string
+	MathVersionUrlReleaseNote string
+	Volatility                int
+	Rtp                       int
+	MaxWin                    int
+	//CanBuyBonus      int //TODO: This field is in several tables....
+	//CanAnteBet       int //TODO: This field is in several tables....
+}
+
+func GameConfigToDTO(gc *ent.GameConfig) GameConfigDTO {
+	dto := GameConfigDTO{}
+	b, _ := json.MarshalIndent(gc, "", "  ")
+	fmt.Println(string(b))
+
+	if gc.Edges.Operator != nil {
+		dto.OperatorName = gc.Edges.Operator.Name
+		dto.OperatorAlias = gc.Edges.Operator.Alias
+
+		if gc.Edges.Operator.Edges.Platforms != nil {
+			dto.PlatformName = gc.Edges.Operator.Edges.Platforms.Name
+			dto.PlatformHash = gc.Edges.Operator.Edges.Platforms.Hash
+			dto.PlatformHomeButtonPayload = gc.Edges.Operator.Edges.Platforms.HomeButtonPayload
+		}
+	}
+
+	if gc.Edges.GameVersions != nil {
+		dto.GameName = gc.Edges.Games.Name
+		dto.GameTrademarkName = gc.Edges.Games.TrademarkName
+		dto.GameVersion = gc.Edges.GameVersions.Version
+		dto.UrlMediaPack = gc.Edges.GameVersions.URLMediaPack
+		dto.UrlReleaseNote = gc.Edges.GameVersions.URLReleaseNote
+		dto.UrlGameManual = gc.Edges.GameVersions.URLMediaPack
+	}
+
+	if gc.Edges.CurrencyVersions != nil {
+		dto.CurrencyName = gc.Edges.CurrencyVersions.Name
+		dto.CurrencyDenominator = gc.Edges.CurrencyVersions.Denominator
+		dto.CurrencyMinBet = gc.Edges.CurrencyVersions.MinBet
+		dto.CurrencyMaxExp = gc.Edges.CurrencyVersions.MaxExp
+		dto.CurrencyDefaultMultiplier = gc.Edges.CurrencyVersions.DefaultMultiplier
+		dto.CurrencyCrashBetIncrement = gc.Edges.CurrencyVersions.CrashBetIncrement
+		dto.CurrencySlotsBetMultiplier = gc.Edges.CurrencyVersions.SlotsBetMultipliers
+
+		if gc.Edges.CurrencyVersions.Edges.Currency != nil {
+			dto.CurrencySymbol = gc.Edges.CurrencyVersions.Edges.Currency.Symbol
+			dto.CurrencySymbolPosition = gc.Edges.CurrencyVersions.Edges.Currency.SymbolPosition
+			dto.CurrencyThousandSeparator = gc.Edges.CurrencyVersions.Edges.Currency.ThousandsSeparator
+			dto.CurrencyUnitsSeparator = gc.Edges.CurrencyVersions.Edges.Currency.UnitsSeparator
+		}
+	}
+
+	if gc.Edges.MathVersions != nil {
+		dto.MathName = gc.Edges.MathVersions.Name
+		dto.MathVersion = gc.Edges.MathVersions.Version
+		dto.MathVersionUrlReleaseNote = gc.Edges.MathVersions.URLReleaseNote
+		dto.Volatility = gc.Edges.MathVersions.Volatility
+		dto.Rtp = gc.Edges.MathVersions.Rtp
+		dto.MaxWin = gc.Edges.MathVersions.MaxWin
+	}
+
+	dto.CanDemo = gc.CanDemo
+	dto.CanTournament = gc.CanTournament
+	dto.CanFreeBets = gc.CanFreeBets
+	dto.CanDropAndWins = gc.CanDropAndWins
+	dto.CanBuyBonus = gc.CanBuyBonus
+	dto.CanTurbo = gc.CanTurbo
+	dto.CanAutoBet = gc.CanAutoBet
+	dto.CanAutoCashout = gc.CanAutoCashout
+	dto.CanAnteBet = gc.CanAnteBet
+
+	return dto
+}
+
+func GameConfigsToDTO(gcs []*ent.GameConfig) []GameConfigDTO {
+	dto := make([]GameConfigDTO, len(gcs))
+	for i, gc := range gcs {
+		dto[i] = GameConfigToDTO(gc)
+	}
+	return dto
 }
 
 type PlayerCountPerBetValue struct {

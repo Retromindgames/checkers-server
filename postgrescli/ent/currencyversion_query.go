@@ -12,7 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/currencyversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/gameconfig"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/gametype"
@@ -27,7 +27,7 @@ type CurrencyVersionQuery struct {
 	order           []currencyversion.OrderOption
 	inters          []Interceptor
 	predicates      []predicate.CurrencyVersion
-	withCurrencie   *CurrencieQuery
+	withCurrency    *CurrencyQuery
 	withGameTypes   *GameTypeQuery
 	withSessions    *SessionQuery
 	withGameConfigs *GameConfigQuery
@@ -68,9 +68,9 @@ func (cvq *CurrencyVersionQuery) Order(o ...currencyversion.OrderOption) *Curren
 	return cvq
 }
 
-// QueryCurrencie chains the current query on the "Currencie" edge.
-func (cvq *CurrencyVersionQuery) QueryCurrencie() *CurrencieQuery {
-	query := (&CurrencieClient{config: cvq.config}).Query()
+// QueryCurrency chains the current query on the "Currency" edge.
+func (cvq *CurrencyVersionQuery) QueryCurrency() *CurrencyQuery {
+	query := (&CurrencyClient{config: cvq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := cvq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -81,8 +81,8 @@ func (cvq *CurrencyVersionQuery) QueryCurrencie() *CurrencieQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(currencyversion.Table, currencyversion.FieldID, selector),
-			sqlgraph.To(currencie.Table, currencie.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, currencyversion.CurrencieTable, currencyversion.CurrencieColumn),
+			sqlgraph.To(currency.Table, currency.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, currencyversion.CurrencyTable, currencyversion.CurrencyColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(cvq.driver.Dialect(), step)
 		return fromU, nil
@@ -348,7 +348,7 @@ func (cvq *CurrencyVersionQuery) Clone() *CurrencyVersionQuery {
 		order:           append([]currencyversion.OrderOption{}, cvq.order...),
 		inters:          append([]Interceptor{}, cvq.inters...),
 		predicates:      append([]predicate.CurrencyVersion{}, cvq.predicates...),
-		withCurrencie:   cvq.withCurrencie.Clone(),
+		withCurrency:    cvq.withCurrency.Clone(),
 		withGameTypes:   cvq.withGameTypes.Clone(),
 		withSessions:    cvq.withSessions.Clone(),
 		withGameConfigs: cvq.withGameConfigs.Clone(),
@@ -358,14 +358,14 @@ func (cvq *CurrencyVersionQuery) Clone() *CurrencyVersionQuery {
 	}
 }
 
-// WithCurrencie tells the query-builder to eager-load the nodes that are connected to
-// the "Currencie" edge. The optional arguments are used to configure the query builder of the edge.
-func (cvq *CurrencyVersionQuery) WithCurrencie(opts ...func(*CurrencieQuery)) *CurrencyVersionQuery {
-	query := (&CurrencieClient{config: cvq.config}).Query()
+// WithCurrency tells the query-builder to eager-load the nodes that are connected to
+// the "Currency" edge. The optional arguments are used to configure the query builder of the edge.
+func (cvq *CurrencyVersionQuery) WithCurrency(opts ...func(*CurrencyQuery)) *CurrencyVersionQuery {
+	query := (&CurrencyClient{config: cvq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	cvq.withCurrencie = query
+	cvq.withCurrency = query
 	return cvq
 }
 
@@ -482,13 +482,13 @@ func (cvq *CurrencyVersionQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		withFKs     = cvq.withFKs
 		_spec       = cvq.querySpec()
 		loadedTypes = [4]bool{
-			cvq.withCurrencie != nil,
+			cvq.withCurrency != nil,
 			cvq.withGameTypes != nil,
 			cvq.withSessions != nil,
 			cvq.withGameConfigs != nil,
 		}
 	)
-	if cvq.withCurrencie != nil || cvq.withGameTypes != nil {
+	if cvq.withCurrency != nil || cvq.withGameTypes != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -512,9 +512,9 @@ func (cvq *CurrencyVersionQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := cvq.withCurrencie; query != nil {
-		if err := cvq.loadCurrencie(ctx, query, nodes, nil,
-			func(n *CurrencyVersion, e *Currencie) { n.Edges.Currencie = e }); err != nil {
+	if query := cvq.withCurrency; query != nil {
+		if err := cvq.loadCurrency(ctx, query, nodes, nil,
+			func(n *CurrencyVersion, e *Currency) { n.Edges.Currency = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -541,14 +541,14 @@ func (cvq *CurrencyVersionQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	return nodes, nil
 }
 
-func (cvq *CurrencyVersionQuery) loadCurrencie(ctx context.Context, query *CurrencieQuery, nodes []*CurrencyVersion, init func(*CurrencyVersion), assign func(*CurrencyVersion, *Currencie)) error {
+func (cvq *CurrencyVersionQuery) loadCurrency(ctx context.Context, query *CurrencyQuery, nodes []*CurrencyVersion, init func(*CurrencyVersion), assign func(*CurrencyVersion, *Currency)) error {
 	ids := make([]int, 0, len(nodes))
 	nodeids := make(map[int][]*CurrencyVersion)
 	for i := range nodes {
-		if nodes[i].currencie_currency_versions == nil {
+		if nodes[i].currency_currency_versions == nil {
 			continue
 		}
-		fk := *nodes[i].currencie_currency_versions
+		fk := *nodes[i].currency_currency_versions
 		if _, ok := nodeids[fk]; !ok {
 			ids = append(ids, fk)
 		}
@@ -557,7 +557,7 @@ func (cvq *CurrencyVersionQuery) loadCurrencie(ctx context.Context, query *Curre
 	if len(ids) == 0 {
 		return nil
 	}
-	query.Where(currencie.IDIn(ids...))
+	query.Where(currency.IDIn(ids...))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
@@ -565,7 +565,7 @@ func (cvq *CurrencyVersionQuery) loadCurrencie(ctx context.Context, query *Curre
 	for _, n := range neighbors {
 		nodes, ok := nodeids[n.ID]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "currencie_currency_versions" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected foreign-key "currency_currency_versions" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/currencyversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/gameconfig"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/gametype"
@@ -67,6 +67,12 @@ func (cvu *CurrencyVersionUpdate) AddMinBet(i int) *CurrencyVersionUpdate {
 	return cvu
 }
 
+// ClearMinBet clears the value of the "min_bet" field.
+func (cvu *CurrencyVersionUpdate) ClearMinBet() *CurrencyVersionUpdate {
+	cvu.mutation.ClearMinBet()
+	return cvu
+}
+
 // SetMaxExp sets the "max_exp" field.
 func (cvu *CurrencyVersionUpdate) SetMaxExp(i int) *CurrencyVersionUpdate {
 	cvu.mutation.ResetMaxExp()
@@ -85,6 +91,12 @@ func (cvu *CurrencyVersionUpdate) SetNillableMaxExp(i *int) *CurrencyVersionUpda
 // AddMaxExp adds i to the "max_exp" field.
 func (cvu *CurrencyVersionUpdate) AddMaxExp(i int) *CurrencyVersionUpdate {
 	cvu.mutation.AddMaxExp(i)
+	return cvu
+}
+
+// ClearMaxExp clears the value of the "max_exp" field.
+func (cvu *CurrencyVersionUpdate) ClearMaxExp() *CurrencyVersionUpdate {
+	cvu.mutation.ClearMaxExp()
 	return cvu
 }
 
@@ -109,27 +121,6 @@ func (cvu *CurrencyVersionUpdate) AddDenominator(i int) *CurrencyVersionUpdate {
 	return cvu
 }
 
-// SetCurrencyID sets the "currency_id" field.
-func (cvu *CurrencyVersionUpdate) SetCurrencyID(i int) *CurrencyVersionUpdate {
-	cvu.mutation.ResetCurrencyID()
-	cvu.mutation.SetCurrencyID(i)
-	return cvu
-}
-
-// SetNillableCurrencyID sets the "currency_id" field if the given value is not nil.
-func (cvu *CurrencyVersionUpdate) SetNillableCurrencyID(i *int) *CurrencyVersionUpdate {
-	if i != nil {
-		cvu.SetCurrencyID(*i)
-	}
-	return cvu
-}
-
-// AddCurrencyID adds i to the "currency_id" field.
-func (cvu *CurrencyVersionUpdate) AddCurrencyID(i int) *CurrencyVersionUpdate {
-	cvu.mutation.AddCurrencyID(i)
-	return cvu
-}
-
 // SetDefaultMultiplier sets the "default_multiplier" field.
 func (cvu *CurrencyVersionUpdate) SetDefaultMultiplier(i int) *CurrencyVersionUpdate {
 	cvu.mutation.ResetDefaultMultiplier()
@@ -148,6 +139,12 @@ func (cvu *CurrencyVersionUpdate) SetNillableDefaultMultiplier(i *int) *Currency
 // AddDefaultMultiplier adds i to the "default_multiplier" field.
 func (cvu *CurrencyVersionUpdate) AddDefaultMultiplier(i int) *CurrencyVersionUpdate {
 	cvu.mutation.AddDefaultMultiplier(i)
+	return cvu
+}
+
+// ClearDefaultMultiplier clears the value of the "default_multiplier" field.
+func (cvu *CurrencyVersionUpdate) ClearDefaultMultiplier() *CurrencyVersionUpdate {
+	cvu.mutation.ClearDefaultMultiplier()
 	return cvu
 }
 
@@ -186,6 +183,12 @@ func (cvu *CurrencyVersionUpdate) AddCrashBetIncrement(i int) *CurrencyVersionUp
 	return cvu
 }
 
+// ClearCrashBetIncrement clears the value of the "crash_bet_increment" field.
+func (cvu *CurrencyVersionUpdate) ClearCrashBetIncrement() *CurrencyVersionUpdate {
+	cvu.mutation.ClearCrashBetIncrement()
+	return cvu
+}
+
 // SetSlotsBetMultipliers sets the "slots_bet_multipliers" field.
 func (cvu *CurrencyVersionUpdate) SetSlotsBetMultipliers(i []int) *CurrencyVersionUpdate {
 	cvu.mutation.SetSlotsBetMultipliers(i)
@@ -198,23 +201,29 @@ func (cvu *CurrencyVersionUpdate) AppendSlotsBetMultipliers(i []int) *CurrencyVe
 	return cvu
 }
 
-// SetCurrencieID sets the "Currencie" edge to the Currencie entity by ID.
-func (cvu *CurrencyVersionUpdate) SetCurrencieID(id int) *CurrencyVersionUpdate {
-	cvu.mutation.SetCurrencieID(id)
+// ClearSlotsBetMultipliers clears the value of the "slots_bet_multipliers" field.
+func (cvu *CurrencyVersionUpdate) ClearSlotsBetMultipliers() *CurrencyVersionUpdate {
+	cvu.mutation.ClearSlotsBetMultipliers()
 	return cvu
 }
 
-// SetNillableCurrencieID sets the "Currencie" edge to the Currencie entity by ID if the given value is not nil.
-func (cvu *CurrencyVersionUpdate) SetNillableCurrencieID(id *int) *CurrencyVersionUpdate {
+// SetCurrencyID sets the "Currency" edge to the Currency entity by ID.
+func (cvu *CurrencyVersionUpdate) SetCurrencyID(id int) *CurrencyVersionUpdate {
+	cvu.mutation.SetCurrencyID(id)
+	return cvu
+}
+
+// SetNillableCurrencyID sets the "Currency" edge to the Currency entity by ID if the given value is not nil.
+func (cvu *CurrencyVersionUpdate) SetNillableCurrencyID(id *int) *CurrencyVersionUpdate {
 	if id != nil {
-		cvu = cvu.SetCurrencieID(*id)
+		cvu = cvu.SetCurrencyID(*id)
 	}
 	return cvu
 }
 
-// SetCurrencie sets the "Currencie" edge to the Currencie entity.
-func (cvu *CurrencyVersionUpdate) SetCurrencie(c *Currencie) *CurrencyVersionUpdate {
-	return cvu.SetCurrencieID(c.ID)
+// SetCurrency sets the "Currency" edge to the Currency entity.
+func (cvu *CurrencyVersionUpdate) SetCurrency(c *Currency) *CurrencyVersionUpdate {
+	return cvu.SetCurrencyID(c.ID)
 }
 
 // SetGameTypesID sets the "game_types" edge to the GameType entity by ID.
@@ -271,9 +280,9 @@ func (cvu *CurrencyVersionUpdate) Mutation() *CurrencyVersionMutation {
 	return cvu.mutation
 }
 
-// ClearCurrencie clears the "Currencie" edge to the Currencie entity.
-func (cvu *CurrencyVersionUpdate) ClearCurrencie() *CurrencyVersionUpdate {
-	cvu.mutation.ClearCurrencie()
+// ClearCurrency clears the "Currency" edge to the Currency entity.
+func (cvu *CurrencyVersionUpdate) ClearCurrency() *CurrencyVersionUpdate {
+	cvu.mutation.ClearCurrency()
 	return cvu
 }
 
@@ -370,11 +379,17 @@ func (cvu *CurrencyVersionUpdate) sqlSave(ctx context.Context) (n int, err error
 	if value, ok := cvu.mutation.AddedMinBet(); ok {
 		_spec.AddField(currencyversion.FieldMinBet, field.TypeInt, value)
 	}
+	if cvu.mutation.MinBetCleared() {
+		_spec.ClearField(currencyversion.FieldMinBet, field.TypeInt)
+	}
 	if value, ok := cvu.mutation.MaxExp(); ok {
 		_spec.SetField(currencyversion.FieldMaxExp, field.TypeInt, value)
 	}
 	if value, ok := cvu.mutation.AddedMaxExp(); ok {
 		_spec.AddField(currencyversion.FieldMaxExp, field.TypeInt, value)
+	}
+	if cvu.mutation.MaxExpCleared() {
+		_spec.ClearField(currencyversion.FieldMaxExp, field.TypeInt)
 	}
 	if value, ok := cvu.mutation.Denominator(); ok {
 		_spec.SetField(currencyversion.FieldDenominator, field.TypeInt, value)
@@ -382,17 +397,14 @@ func (cvu *CurrencyVersionUpdate) sqlSave(ctx context.Context) (n int, err error
 	if value, ok := cvu.mutation.AddedDenominator(); ok {
 		_spec.AddField(currencyversion.FieldDenominator, field.TypeInt, value)
 	}
-	if value, ok := cvu.mutation.CurrencyID(); ok {
-		_spec.SetField(currencyversion.FieldCurrencyID, field.TypeInt, value)
-	}
-	if value, ok := cvu.mutation.AddedCurrencyID(); ok {
-		_spec.AddField(currencyversion.FieldCurrencyID, field.TypeInt, value)
-	}
 	if value, ok := cvu.mutation.DefaultMultiplier(); ok {
 		_spec.SetField(currencyversion.FieldDefaultMultiplier, field.TypeInt, value)
 	}
 	if value, ok := cvu.mutation.AddedDefaultMultiplier(); ok {
 		_spec.AddField(currencyversion.FieldDefaultMultiplier, field.TypeInt, value)
+	}
+	if cvu.mutation.DefaultMultiplierCleared() {
+		_spec.ClearField(currencyversion.FieldDefaultMultiplier, field.TypeInt)
 	}
 	if value, ok := cvu.mutation.Deprecated(); ok {
 		_spec.SetField(currencyversion.FieldDeprecated, field.TypeBool, value)
@@ -403,6 +415,9 @@ func (cvu *CurrencyVersionUpdate) sqlSave(ctx context.Context) (n int, err error
 	if value, ok := cvu.mutation.AddedCrashBetIncrement(); ok {
 		_spec.AddField(currencyversion.FieldCrashBetIncrement, field.TypeInt, value)
 	}
+	if cvu.mutation.CrashBetIncrementCleared() {
+		_spec.ClearField(currencyversion.FieldCrashBetIncrement, field.TypeInt)
+	}
 	if value, ok := cvu.mutation.SlotsBetMultipliers(); ok {
 		_spec.SetField(currencyversion.FieldSlotsBetMultipliers, field.TypeJSON, value)
 	}
@@ -411,28 +426,31 @@ func (cvu *CurrencyVersionUpdate) sqlSave(ctx context.Context) (n int, err error
 			sqljson.Append(u, currencyversion.FieldSlotsBetMultipliers, value)
 		})
 	}
-	if cvu.mutation.CurrencieCleared() {
+	if cvu.mutation.SlotsBetMultipliersCleared() {
+		_spec.ClearField(currencyversion.FieldSlotsBetMultipliers, field.TypeJSON)
+	}
+	if cvu.mutation.CurrencyCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   currencyversion.CurrencieTable,
-			Columns: []string{currencyversion.CurrencieColumn},
+			Table:   currencyversion.CurrencyTable,
+			Columns: []string{currencyversion.CurrencyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(currencie.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(currency.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cvu.mutation.CurrencieIDs(); len(nodes) > 0 {
+	if nodes := cvu.mutation.CurrencyIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   currencyversion.CurrencieTable,
-			Columns: []string{currencyversion.CurrencieColumn},
+			Table:   currencyversion.CurrencyTable,
+			Columns: []string{currencyversion.CurrencyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(currencie.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(currency.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -614,6 +632,12 @@ func (cvuo *CurrencyVersionUpdateOne) AddMinBet(i int) *CurrencyVersionUpdateOne
 	return cvuo
 }
 
+// ClearMinBet clears the value of the "min_bet" field.
+func (cvuo *CurrencyVersionUpdateOne) ClearMinBet() *CurrencyVersionUpdateOne {
+	cvuo.mutation.ClearMinBet()
+	return cvuo
+}
+
 // SetMaxExp sets the "max_exp" field.
 func (cvuo *CurrencyVersionUpdateOne) SetMaxExp(i int) *CurrencyVersionUpdateOne {
 	cvuo.mutation.ResetMaxExp()
@@ -632,6 +656,12 @@ func (cvuo *CurrencyVersionUpdateOne) SetNillableMaxExp(i *int) *CurrencyVersion
 // AddMaxExp adds i to the "max_exp" field.
 func (cvuo *CurrencyVersionUpdateOne) AddMaxExp(i int) *CurrencyVersionUpdateOne {
 	cvuo.mutation.AddMaxExp(i)
+	return cvuo
+}
+
+// ClearMaxExp clears the value of the "max_exp" field.
+func (cvuo *CurrencyVersionUpdateOne) ClearMaxExp() *CurrencyVersionUpdateOne {
+	cvuo.mutation.ClearMaxExp()
 	return cvuo
 }
 
@@ -656,27 +686,6 @@ func (cvuo *CurrencyVersionUpdateOne) AddDenominator(i int) *CurrencyVersionUpda
 	return cvuo
 }
 
-// SetCurrencyID sets the "currency_id" field.
-func (cvuo *CurrencyVersionUpdateOne) SetCurrencyID(i int) *CurrencyVersionUpdateOne {
-	cvuo.mutation.ResetCurrencyID()
-	cvuo.mutation.SetCurrencyID(i)
-	return cvuo
-}
-
-// SetNillableCurrencyID sets the "currency_id" field if the given value is not nil.
-func (cvuo *CurrencyVersionUpdateOne) SetNillableCurrencyID(i *int) *CurrencyVersionUpdateOne {
-	if i != nil {
-		cvuo.SetCurrencyID(*i)
-	}
-	return cvuo
-}
-
-// AddCurrencyID adds i to the "currency_id" field.
-func (cvuo *CurrencyVersionUpdateOne) AddCurrencyID(i int) *CurrencyVersionUpdateOne {
-	cvuo.mutation.AddCurrencyID(i)
-	return cvuo
-}
-
 // SetDefaultMultiplier sets the "default_multiplier" field.
 func (cvuo *CurrencyVersionUpdateOne) SetDefaultMultiplier(i int) *CurrencyVersionUpdateOne {
 	cvuo.mutation.ResetDefaultMultiplier()
@@ -695,6 +704,12 @@ func (cvuo *CurrencyVersionUpdateOne) SetNillableDefaultMultiplier(i *int) *Curr
 // AddDefaultMultiplier adds i to the "default_multiplier" field.
 func (cvuo *CurrencyVersionUpdateOne) AddDefaultMultiplier(i int) *CurrencyVersionUpdateOne {
 	cvuo.mutation.AddDefaultMultiplier(i)
+	return cvuo
+}
+
+// ClearDefaultMultiplier clears the value of the "default_multiplier" field.
+func (cvuo *CurrencyVersionUpdateOne) ClearDefaultMultiplier() *CurrencyVersionUpdateOne {
+	cvuo.mutation.ClearDefaultMultiplier()
 	return cvuo
 }
 
@@ -733,6 +748,12 @@ func (cvuo *CurrencyVersionUpdateOne) AddCrashBetIncrement(i int) *CurrencyVersi
 	return cvuo
 }
 
+// ClearCrashBetIncrement clears the value of the "crash_bet_increment" field.
+func (cvuo *CurrencyVersionUpdateOne) ClearCrashBetIncrement() *CurrencyVersionUpdateOne {
+	cvuo.mutation.ClearCrashBetIncrement()
+	return cvuo
+}
+
 // SetSlotsBetMultipliers sets the "slots_bet_multipliers" field.
 func (cvuo *CurrencyVersionUpdateOne) SetSlotsBetMultipliers(i []int) *CurrencyVersionUpdateOne {
 	cvuo.mutation.SetSlotsBetMultipliers(i)
@@ -745,23 +766,29 @@ func (cvuo *CurrencyVersionUpdateOne) AppendSlotsBetMultipliers(i []int) *Curren
 	return cvuo
 }
 
-// SetCurrencieID sets the "Currencie" edge to the Currencie entity by ID.
-func (cvuo *CurrencyVersionUpdateOne) SetCurrencieID(id int) *CurrencyVersionUpdateOne {
-	cvuo.mutation.SetCurrencieID(id)
+// ClearSlotsBetMultipliers clears the value of the "slots_bet_multipliers" field.
+func (cvuo *CurrencyVersionUpdateOne) ClearSlotsBetMultipliers() *CurrencyVersionUpdateOne {
+	cvuo.mutation.ClearSlotsBetMultipliers()
 	return cvuo
 }
 
-// SetNillableCurrencieID sets the "Currencie" edge to the Currencie entity by ID if the given value is not nil.
-func (cvuo *CurrencyVersionUpdateOne) SetNillableCurrencieID(id *int) *CurrencyVersionUpdateOne {
+// SetCurrencyID sets the "Currency" edge to the Currency entity by ID.
+func (cvuo *CurrencyVersionUpdateOne) SetCurrencyID(id int) *CurrencyVersionUpdateOne {
+	cvuo.mutation.SetCurrencyID(id)
+	return cvuo
+}
+
+// SetNillableCurrencyID sets the "Currency" edge to the Currency entity by ID if the given value is not nil.
+func (cvuo *CurrencyVersionUpdateOne) SetNillableCurrencyID(id *int) *CurrencyVersionUpdateOne {
 	if id != nil {
-		cvuo = cvuo.SetCurrencieID(*id)
+		cvuo = cvuo.SetCurrencyID(*id)
 	}
 	return cvuo
 }
 
-// SetCurrencie sets the "Currencie" edge to the Currencie entity.
-func (cvuo *CurrencyVersionUpdateOne) SetCurrencie(c *Currencie) *CurrencyVersionUpdateOne {
-	return cvuo.SetCurrencieID(c.ID)
+// SetCurrency sets the "Currency" edge to the Currency entity.
+func (cvuo *CurrencyVersionUpdateOne) SetCurrency(c *Currency) *CurrencyVersionUpdateOne {
+	return cvuo.SetCurrencyID(c.ID)
 }
 
 // SetGameTypesID sets the "game_types" edge to the GameType entity by ID.
@@ -818,9 +845,9 @@ func (cvuo *CurrencyVersionUpdateOne) Mutation() *CurrencyVersionMutation {
 	return cvuo.mutation
 }
 
-// ClearCurrencie clears the "Currencie" edge to the Currencie entity.
-func (cvuo *CurrencyVersionUpdateOne) ClearCurrencie() *CurrencyVersionUpdateOne {
-	cvuo.mutation.ClearCurrencie()
+// ClearCurrency clears the "Currency" edge to the Currency entity.
+func (cvuo *CurrencyVersionUpdateOne) ClearCurrency() *CurrencyVersionUpdateOne {
+	cvuo.mutation.ClearCurrency()
 	return cvuo
 }
 
@@ -947,11 +974,17 @@ func (cvuo *CurrencyVersionUpdateOne) sqlSave(ctx context.Context) (_node *Curre
 	if value, ok := cvuo.mutation.AddedMinBet(); ok {
 		_spec.AddField(currencyversion.FieldMinBet, field.TypeInt, value)
 	}
+	if cvuo.mutation.MinBetCleared() {
+		_spec.ClearField(currencyversion.FieldMinBet, field.TypeInt)
+	}
 	if value, ok := cvuo.mutation.MaxExp(); ok {
 		_spec.SetField(currencyversion.FieldMaxExp, field.TypeInt, value)
 	}
 	if value, ok := cvuo.mutation.AddedMaxExp(); ok {
 		_spec.AddField(currencyversion.FieldMaxExp, field.TypeInt, value)
+	}
+	if cvuo.mutation.MaxExpCleared() {
+		_spec.ClearField(currencyversion.FieldMaxExp, field.TypeInt)
 	}
 	if value, ok := cvuo.mutation.Denominator(); ok {
 		_spec.SetField(currencyversion.FieldDenominator, field.TypeInt, value)
@@ -959,17 +992,14 @@ func (cvuo *CurrencyVersionUpdateOne) sqlSave(ctx context.Context) (_node *Curre
 	if value, ok := cvuo.mutation.AddedDenominator(); ok {
 		_spec.AddField(currencyversion.FieldDenominator, field.TypeInt, value)
 	}
-	if value, ok := cvuo.mutation.CurrencyID(); ok {
-		_spec.SetField(currencyversion.FieldCurrencyID, field.TypeInt, value)
-	}
-	if value, ok := cvuo.mutation.AddedCurrencyID(); ok {
-		_spec.AddField(currencyversion.FieldCurrencyID, field.TypeInt, value)
-	}
 	if value, ok := cvuo.mutation.DefaultMultiplier(); ok {
 		_spec.SetField(currencyversion.FieldDefaultMultiplier, field.TypeInt, value)
 	}
 	if value, ok := cvuo.mutation.AddedDefaultMultiplier(); ok {
 		_spec.AddField(currencyversion.FieldDefaultMultiplier, field.TypeInt, value)
+	}
+	if cvuo.mutation.DefaultMultiplierCleared() {
+		_spec.ClearField(currencyversion.FieldDefaultMultiplier, field.TypeInt)
 	}
 	if value, ok := cvuo.mutation.Deprecated(); ok {
 		_spec.SetField(currencyversion.FieldDeprecated, field.TypeBool, value)
@@ -980,6 +1010,9 @@ func (cvuo *CurrencyVersionUpdateOne) sqlSave(ctx context.Context) (_node *Curre
 	if value, ok := cvuo.mutation.AddedCrashBetIncrement(); ok {
 		_spec.AddField(currencyversion.FieldCrashBetIncrement, field.TypeInt, value)
 	}
+	if cvuo.mutation.CrashBetIncrementCleared() {
+		_spec.ClearField(currencyversion.FieldCrashBetIncrement, field.TypeInt)
+	}
 	if value, ok := cvuo.mutation.SlotsBetMultipliers(); ok {
 		_spec.SetField(currencyversion.FieldSlotsBetMultipliers, field.TypeJSON, value)
 	}
@@ -988,28 +1021,31 @@ func (cvuo *CurrencyVersionUpdateOne) sqlSave(ctx context.Context) (_node *Curre
 			sqljson.Append(u, currencyversion.FieldSlotsBetMultipliers, value)
 		})
 	}
-	if cvuo.mutation.CurrencieCleared() {
+	if cvuo.mutation.SlotsBetMultipliersCleared() {
+		_spec.ClearField(currencyversion.FieldSlotsBetMultipliers, field.TypeJSON)
+	}
+	if cvuo.mutation.CurrencyCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   currencyversion.CurrencieTable,
-			Columns: []string{currencyversion.CurrencieColumn},
+			Table:   currencyversion.CurrencyTable,
+			Columns: []string{currencyversion.CurrencyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(currencie.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(currency.FieldID, field.TypeInt),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := cvuo.mutation.CurrencieIDs(); len(nodes) > 0 {
+	if nodes := cvuo.mutation.CurrencyIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   currencyversion.CurrencieTable,
-			Columns: []string{currencyversion.CurrencieColumn},
+			Table:   currencyversion.CurrencyTable,
+			Columns: []string{currencyversion.CurrencyColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(currencie.FieldID, field.TypeInt),
+				IDSpec: sqlgraph.NewFieldSpec(currency.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

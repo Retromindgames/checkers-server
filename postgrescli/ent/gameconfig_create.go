@@ -30,9 +30,25 @@ func (gcc *GameConfigCreate) SetCanDemo(b bool) *GameConfigCreate {
 	return gcc
 }
 
+// SetNillableCanDemo sets the "can_demo" field if the given value is not nil.
+func (gcc *GameConfigCreate) SetNillableCanDemo(b *bool) *GameConfigCreate {
+	if b != nil {
+		gcc.SetCanDemo(*b)
+	}
+	return gcc
+}
+
 // SetCanTournament sets the "can_tournament" field.
 func (gcc *GameConfigCreate) SetCanTournament(b bool) *GameConfigCreate {
 	gcc.mutation.SetCanTournament(b)
+	return gcc
+}
+
+// SetNillableCanTournament sets the "can_tournament" field if the given value is not nil.
+func (gcc *GameConfigCreate) SetNillableCanTournament(b *bool) *GameConfigCreate {
+	if b != nil {
+		gcc.SetCanTournament(*b)
+	}
 	return gcc
 }
 
@@ -42,9 +58,39 @@ func (gcc *GameConfigCreate) SetCanFreeBets(b bool) *GameConfigCreate {
 	return gcc
 }
 
+// SetNillableCanFreeBets sets the "can_free_bets" field if the given value is not nil.
+func (gcc *GameConfigCreate) SetNillableCanFreeBets(b *bool) *GameConfigCreate {
+	if b != nil {
+		gcc.SetCanFreeBets(*b)
+	}
+	return gcc
+}
+
 // SetCanDropAndWins sets the "can_drop_and_wins" field.
 func (gcc *GameConfigCreate) SetCanDropAndWins(b bool) *GameConfigCreate {
 	gcc.mutation.SetCanDropAndWins(b)
+	return gcc
+}
+
+// SetNillableCanDropAndWins sets the "can_drop_and_wins" field if the given value is not nil.
+func (gcc *GameConfigCreate) SetNillableCanDropAndWins(b *bool) *GameConfigCreate {
+	if b != nil {
+		gcc.SetCanDropAndWins(*b)
+	}
+	return gcc
+}
+
+// SetCanBuyBonus sets the "can_buy_bonus" field.
+func (gcc *GameConfigCreate) SetCanBuyBonus(b bool) *GameConfigCreate {
+	gcc.mutation.SetCanBuyBonus(b)
+	return gcc
+}
+
+// SetNillableCanBuyBonus sets the "can_buy_bonus" field if the given value is not nil.
+func (gcc *GameConfigCreate) SetNillableCanBuyBonus(b *bool) *GameConfigCreate {
+	if b != nil {
+		gcc.SetCanBuyBonus(*b)
+	}
 	return gcc
 }
 
@@ -54,9 +100,25 @@ func (gcc *GameConfigCreate) SetCanTurbo(b bool) *GameConfigCreate {
 	return gcc
 }
 
+// SetNillableCanTurbo sets the "can_turbo" field if the given value is not nil.
+func (gcc *GameConfigCreate) SetNillableCanTurbo(b *bool) *GameConfigCreate {
+	if b != nil {
+		gcc.SetCanTurbo(*b)
+	}
+	return gcc
+}
+
 // SetIsActive sets the "is_active" field.
 func (gcc *GameConfigCreate) SetIsActive(b bool) *GameConfigCreate {
 	gcc.mutation.SetIsActive(b)
+	return gcc
+}
+
+// SetNillableIsActive sets the "is_active" field if the given value is not nil.
+func (gcc *GameConfigCreate) SetNillableIsActive(b *bool) *GameConfigCreate {
+	if b != nil {
+		gcc.SetIsActive(*b)
+	}
 	return gcc
 }
 
@@ -66,9 +128,25 @@ func (gcc *GameConfigCreate) SetCanAutoBet(b bool) *GameConfigCreate {
 	return gcc
 }
 
+// SetNillableCanAutoBet sets the "can_auto_bet" field if the given value is not nil.
+func (gcc *GameConfigCreate) SetNillableCanAutoBet(b *bool) *GameConfigCreate {
+	if b != nil {
+		gcc.SetCanAutoBet(*b)
+	}
+	return gcc
+}
+
 // SetCanAutoCashout sets the "can_auto_cashout" field.
 func (gcc *GameConfigCreate) SetCanAutoCashout(b bool) *GameConfigCreate {
 	gcc.mutation.SetCanAutoCashout(b)
+	return gcc
+}
+
+// SetNillableCanAutoCashout sets the "can_auto_cashout" field if the given value is not nil.
+func (gcc *GameConfigCreate) SetNillableCanAutoCashout(b *bool) *GameConfigCreate {
+	if b != nil {
+		gcc.SetCanAutoCashout(*b)
+	}
 	return gcc
 }
 
@@ -78,9 +156,25 @@ func (gcc *GameConfigCreate) SetCanAnteBet(b bool) *GameConfigCreate {
 	return gcc
 }
 
+// SetNillableCanAnteBet sets the "can_ante_bet" field if the given value is not nil.
+func (gcc *GameConfigCreate) SetNillableCanAnteBet(b *bool) *GameConfigCreate {
+	if b != nil {
+		gcc.SetCanAnteBet(*b)
+	}
+	return gcc
+}
+
 // SetCanHomeButton sets the "can_home_button" field.
 func (gcc *GameConfigCreate) SetCanHomeButton(b bool) *GameConfigCreate {
 	gcc.mutation.SetCanHomeButton(b)
+	return gcc
+}
+
+// SetNillableCanHomeButton sets the "can_home_button" field if the given value is not nil.
+func (gcc *GameConfigCreate) SetNillableCanHomeButton(b *bool) *GameConfigCreate {
+	if b != nil {
+		gcc.SetCanHomeButton(*b)
+	}
 	return gcc
 }
 
@@ -186,6 +280,7 @@ func (gcc *GameConfigCreate) Mutation() *GameConfigMutation {
 
 // Save creates the GameConfig in the database.
 func (gcc *GameConfigCreate) Save(ctx context.Context) (*GameConfig, error) {
+	gcc.defaults()
 	return withHooks(ctx, gcc.sqlSave, gcc.mutation, gcc.hooks)
 }
 
@@ -211,6 +306,54 @@ func (gcc *GameConfigCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (gcc *GameConfigCreate) defaults() {
+	if _, ok := gcc.mutation.CanDemo(); !ok {
+		v := gameconfig.DefaultCanDemo
+		gcc.mutation.SetCanDemo(v)
+	}
+	if _, ok := gcc.mutation.CanTournament(); !ok {
+		v := gameconfig.DefaultCanTournament
+		gcc.mutation.SetCanTournament(v)
+	}
+	if _, ok := gcc.mutation.CanFreeBets(); !ok {
+		v := gameconfig.DefaultCanFreeBets
+		gcc.mutation.SetCanFreeBets(v)
+	}
+	if _, ok := gcc.mutation.CanDropAndWins(); !ok {
+		v := gameconfig.DefaultCanDropAndWins
+		gcc.mutation.SetCanDropAndWins(v)
+	}
+	if _, ok := gcc.mutation.CanBuyBonus(); !ok {
+		v := gameconfig.DefaultCanBuyBonus
+		gcc.mutation.SetCanBuyBonus(v)
+	}
+	if _, ok := gcc.mutation.CanTurbo(); !ok {
+		v := gameconfig.DefaultCanTurbo
+		gcc.mutation.SetCanTurbo(v)
+	}
+	if _, ok := gcc.mutation.IsActive(); !ok {
+		v := gameconfig.DefaultIsActive
+		gcc.mutation.SetIsActive(v)
+	}
+	if _, ok := gcc.mutation.CanAutoBet(); !ok {
+		v := gameconfig.DefaultCanAutoBet
+		gcc.mutation.SetCanAutoBet(v)
+	}
+	if _, ok := gcc.mutation.CanAutoCashout(); !ok {
+		v := gameconfig.DefaultCanAutoCashout
+		gcc.mutation.SetCanAutoCashout(v)
+	}
+	if _, ok := gcc.mutation.CanAnteBet(); !ok {
+		v := gameconfig.DefaultCanAnteBet
+		gcc.mutation.SetCanAnteBet(v)
+	}
+	if _, ok := gcc.mutation.CanHomeButton(); !ok {
+		v := gameconfig.DefaultCanHomeButton
+		gcc.mutation.SetCanHomeButton(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (gcc *GameConfigCreate) check() error {
 	if _, ok := gcc.mutation.CanDemo(); !ok {
@@ -224,6 +367,9 @@ func (gcc *GameConfigCreate) check() error {
 	}
 	if _, ok := gcc.mutation.CanDropAndWins(); !ok {
 		return &ValidationError{Name: "can_drop_and_wins", err: errors.New(`ent: missing required field "GameConfig.can_drop_and_wins"`)}
+	}
+	if _, ok := gcc.mutation.CanBuyBonus(); !ok {
+		return &ValidationError{Name: "can_buy_bonus", err: errors.New(`ent: missing required field "GameConfig.can_buy_bonus"`)}
 	}
 	if _, ok := gcc.mutation.CanTurbo(); !ok {
 		return &ValidationError{Name: "can_turbo", err: errors.New(`ent: missing required field "GameConfig.can_turbo"`)}
@@ -284,6 +430,10 @@ func (gcc *GameConfigCreate) createSpec() (*GameConfig, *sqlgraph.CreateSpec) {
 	if value, ok := gcc.mutation.CanDropAndWins(); ok {
 		_spec.SetField(gameconfig.FieldCanDropAndWins, field.TypeBool, value)
 		_node.CanDropAndWins = value
+	}
+	if value, ok := gcc.mutation.CanBuyBonus(); ok {
+		_spec.SetField(gameconfig.FieldCanBuyBonus, field.TypeBool, value)
+		_node.CanBuyBonus = value
 	}
 	if value, ok := gcc.mutation.CanTurbo(); ok {
 		_spec.SetField(gameconfig.FieldCanTurbo, field.TypeBool, value)
@@ -415,6 +565,7 @@ func (gccb *GameConfigCreateBulk) Save(ctx context.Context) ([]*GameConfig, erro
 	for i := range gccb.builders {
 		func(i int, root context.Context) {
 			builder := gccb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*GameConfigMutation)
 				if !ok {

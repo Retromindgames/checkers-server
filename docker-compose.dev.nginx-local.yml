@@ -8,7 +8,7 @@ services:
       - ./nginx-local.conf:/etc/nginx/nginx.conf  # Use local NGINX config
     depends_on:
       - wsapi
-      - restapi
+      - api
     networks:
       - app-network
 
@@ -27,11 +27,11 @@ services:
     networks:
       - app-network
 
-  restapi:
-    container_name: restapiworker
+  api:
+    container_name: api
     build:
       context: .
-      dockerfile: restapiworker.dockerfile
+      dockerfile: ./api/api.dockerfile
     expose:
       - "80" 
     networks:

@@ -12,8 +12,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
-	// Currencie is the client for interacting with the Currencie builders.
-	Currencie *CurrencieClient
+	// Currency is the client for interacting with the Currency builders.
+	Currency *CurrencyClient
 	// CurrencyVersion is the client for interacting with the CurrencyVersion builders.
 	CurrencyVersion *CurrencyVersionClient
 	// Feature is the client for interacting with the Feature builders.
@@ -173,7 +173,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
-	tx.Currencie = NewCurrencieClient(tx.config)
+	tx.Currency = NewCurrencyClient(tx.config)
 	tx.CurrencyVersion = NewCurrencyVersionClient(tx.config)
 	tx.Feature = NewFeatureClient(tx.config)
 	tx.Game = NewGameClient(tx.config)
@@ -197,7 +197,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Currencie.QueryXXX(), the query will be executed
+// applies a query, for example: Currency.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

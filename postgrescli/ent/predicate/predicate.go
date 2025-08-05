@@ -6,8 +6,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
-// Currencie is the predicate function for currencie builders.
-type Currencie func(*sql.Selector)
+// Currency is the predicate function for currency builders.
+type Currency func(*sql.Selector)
 
 // CurrencyVersion is the predicate function for currencyversion builders.
 type CurrencyVersion func(*sql.Selector)

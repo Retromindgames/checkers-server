@@ -8,8 +8,10 @@ import (
 
 	"github.com/Lavizord/checkers-server/config"
 	"github.com/Lavizord/checkers-server/interfaces"
+	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/models"
 	"github.com/Lavizord/checkers-server/postgrescli"
+	"github.com/Lavizord/checkers-server/postgrescli/ent"
 	"github.com/Lavizord/checkers-server/redisdb"
 
 	"github.com/gorilla/mux"
@@ -38,16 +40,75 @@ func init() {
 		config.Cfg.Postgres.Ssl,
 	)
 	if err != nil {
-		log.Fatalf("[PostgreSQL] Error initializing POSTGRES client: %v\n", err)
+		logger.Default.Fatalf("[PostgreSQL] Error initializing POSTGRES client: %v\n", err)
 	}
 	postgresClient = sqlcliente
+
+	err = postgresClient.CreateDb()
+	if err != nil {
+		logger.Default.Fatalf("error creating db: %v", err)
+	} else {
+		logger.Default.Infof("created db...")
+	}
+	err = postgresClient.SeedDb()
+	if err != nil {
+		logger.Default.Fatalf("error seeding db: %v", err)
+	} else {
+		logger.Default.Infof("seeded db...")
+	}
+
+	_, err = CacheOperators()
+	if err != nil {
+		logger.Default.Fatalf("error caching operators in redis: %v", err)
+	} else {
+		logger.Default.Infof("cached operators in redis...")
+	}
+
+	_, err = CacheGameConfigs()
+	if err != nil {
+		logger.Default.Fatalf("error caching game configs in redis: %v", err)
+	} else {
+		logger.Default.Infof("cached game configs in redis...")
+	}
+
+	logger.Default.Info("initialized api...")
+}
+
+func CacheOperators() ([]*ent.Operator, error) {
+	op, err := postgresClient.GetOperators()
+	if err != nil {
+		return nil, err
+	}
+	if len(op) == 0 || op == nil {
+		return nil, fmt.Errorf("failed to cache operators, none found in database.")
+	}
+
+	err = redisClient.AddOperators(op)
+	if err != nil {
+		return nil, fmt.Errorf("failed adding operators in redis.")
+	}
+
+	return op, nil
+}
+
+func CacheGameConfigs() ([]*ent.GameConfig, error) {
+	gc, err := postgresClient.GetAllGameConfigs()
+	if err != nil {
+		return nil, err
+	}
+	if len(gc) == 0 || gc == nil {
+		return nil, fmt.Errorf("failed to cache game configs, none found in database.")
+	}
+
+	err = redisClient.AddGameConfigs(gc)
+	if err != nil {
+		return nil, fmt.Errorf("failed adding game configs in redis.")
+	}
+
+	return gc, nil
 }
 
 func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
-	handleGameLaunchHandler(w, r)
-}
-
-func handleGameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.GameLaunchRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
@@ -56,48 +117,35 @@ func handleGameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	if req.GameID == "" || req.OperatorName == "" {
+	if req.GameID == "" || req.OperatorName == "" || req.Currency == "" {
 		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
 			Success: false,
-			Message: "Game ID and Operator Name are required",
+			Message: "Game ID, Operator Name and Currency are required",
 		})
 		return
 	}
 
-	//log.Printf("Received Game Launch Request: %+v", req)
-	// 1ª Procurar no cache, o operator tem ttl definido.
-	operator, err := redisClient.GetOperator(req.OperatorName, req.GameID)
+	config, err := redisClient.GetGameConfig(req.GameID, req.OperatorName, req.Currency)
 	if err != nil {
-		// se não encontrar no cache procurar no postgress.
-		log.Printf("[GameLaunchHandler] - error fetching operator from redis: %v", err)
-		operator, err = postgresClient.FetchOperator(req.OperatorName, req.GameID)
+		config, err := postgresClient.GetGameConfig(req.GameID, req.OperatorName, req.Currency)
 		if err != nil {
-			log.Printf("[GameLaunchHandler] - error fetching the operator from sql: %v", err)
+			logger.Default.Warnf("[GameLaunchHandler] - error fetching the gameconfig from sql: %v", err)
 			respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
 				Success: false,
 				Message: fmt.Sprintf("Invalid operator / gameID: %v", err),
 			})
 			return
 		}
-		// Se encontrar no postgress, guardar no cache.
-		redisClient.AddOperator(operator)
+		redisClient.AddGameConfig(config)
 	}
 
-	if !operator.Active {
-		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
-			Success: false,
-			Message: fmt.Sprintf("Inactive game for operator: %s", req.OperatorName),
-		})
-		return
-	}
-
-	module, exists := interfaces.OperatorModules[req.OperatorName]
+	module, exists := interfaces.PlatformModules[config.PlatformName]
 	if !exists {
 		respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
 			Success: false,
-			Message: fmt.Sprintf("Unsupported operator: %s", req.OperatorName),
+			Message: fmt.Sprintf("Unsupported platform: %s", req.OperatorName),
 		})
+		logger.Default.Warnf("[GameLaunchHandler] - Unsupported platform: %s", config.PlatformName)
 		return
 	}
 

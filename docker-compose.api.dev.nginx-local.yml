@@ -1,0 +1,57 @@
+services:
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - "80:80"  # HTTP only
+    volumes:
+      - ./nginx-api-local.conf:/etc/nginx/nginx.conf  # Use local NGINX config
+    depends_on:
+      - api
+    networks:
+      - app-network
+
+  api:
+    container_name: api
+    build:
+      context: .
+      dockerfile: ./api/api.dockerfile
+    env_file:
+      - .env
+    expose:
+      - "80" 
+    networks:
+      - app-network
+    depends_on:
+      - redis
+      - postgres
+
+  redis:
+    container_name: redis
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: sa
+      POSTGRES_PASSWORD: checkersdb
+      POSTGRES_DB: checkers
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge

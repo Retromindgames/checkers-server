@@ -33,20 +33,6 @@ func (su *SessionUpdate) Where(ps ...predicate.Session) *SessionUpdate {
 	return su
 }
 
-// SetCanDemo sets the "can_demo" field.
-func (su *SessionUpdate) SetCanDemo(b bool) *SessionUpdate {
-	su.mutation.SetCanDemo(b)
-	return su
-}
-
-// SetNillableCanDemo sets the "can_demo" field if the given value is not nil.
-func (su *SessionUpdate) SetNillableCanDemo(b *bool) *SessionUpdate {
-	if b != nil {
-		su.SetCanDemo(*b)
-	}
-	return su
-}
-
 // SetToken sets the "token" field.
 func (su *SessionUpdate) SetToken(s string) *SessionUpdate {
 	su.mutation.SetToken(s)
@@ -289,9 +275,6 @@ func (su *SessionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := su.mutation.CanDemo(); ok {
-		_spec.SetField(session.FieldCanDemo, field.TypeBool, value)
-	}
 	if value, ok := su.mutation.Token(); ok {
 		_spec.SetField(session.FieldToken, field.TypeString, value)
 	}
@@ -473,20 +456,6 @@ type SessionUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *SessionMutation
-}
-
-// SetCanDemo sets the "can_demo" field.
-func (suo *SessionUpdateOne) SetCanDemo(b bool) *SessionUpdateOne {
-	suo.mutation.SetCanDemo(b)
-	return suo
-}
-
-// SetNillableCanDemo sets the "can_demo" field if the given value is not nil.
-func (suo *SessionUpdateOne) SetNillableCanDemo(b *bool) *SessionUpdateOne {
-	if b != nil {
-		suo.SetCanDemo(*b)
-	}
-	return suo
 }
 
 // SetToken sets the "token" field.
@@ -760,9 +729,6 @@ func (suo *SessionUpdateOne) sqlSave(ctx context.Context) (_node *Session, err e
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := suo.mutation.CanDemo(); ok {
-		_spec.SetField(session.FieldCanDemo, field.TypeBool, value)
 	}
 	if value, ok := suo.mutation.Token(); ok {
 		_spec.SetField(session.FieldToken, field.TypeString, value)

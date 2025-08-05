@@ -15,7 +15,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/currencyversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/feature"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/game"
@@ -37,8 +37,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
-	// Currencie is the client for interacting with the Currencie builders.
-	Currencie *CurrencieClient
+	// Currency is the client for interacting with the Currency builders.
+	Currency *CurrencyClient
 	// CurrencyVersion is the client for interacting with the CurrencyVersion builders.
 	CurrencyVersion *CurrencyVersionClient
 	// Feature is the client for interacting with the Feature builders.
@@ -78,7 +78,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
-	c.Currencie = NewCurrencieClient(c.config)
+	c.Currency = NewCurrencyClient(c.config)
 	c.CurrencyVersion = NewCurrencyVersionClient(c.config)
 	c.Feature = NewFeatureClient(c.config)
 	c.Game = NewGameClient(c.config)
@@ -185,7 +185,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:             ctx,
 		config:          cfg,
-		Currencie:       NewCurrencieClient(cfg),
+		Currency:        NewCurrencyClient(cfg),
 		CurrencyVersion: NewCurrencyVersionClient(cfg),
 		Feature:         NewFeatureClient(cfg),
 		Game:            NewGameClient(cfg),
@@ -219,7 +219,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:             ctx,
 		config:          cfg,
-		Currencie:       NewCurrencieClient(cfg),
+		Currency:        NewCurrencyClient(cfg),
 		CurrencyVersion: NewCurrencyVersionClient(cfg),
 		Feature:         NewFeatureClient(cfg),
 		Game:            NewGameClient(cfg),
@@ -240,7 +240,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Currencie.
+//		Currency.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -263,7 +263,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Currencie, c.CurrencyVersion, c.Feature, c.Game, c.GameConfig, c.GameFeature,
+		c.Currency, c.CurrencyVersion, c.Feature, c.Game, c.GameConfig, c.GameFeature,
 		c.GameType, c.GameVersion, c.MathVersion, c.Operator, c.Platform, c.Serie,
 		c.SerieFeature, c.Session, c.Studio,
 	} {
@@ -275,7 +275,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Currencie, c.CurrencyVersion, c.Feature, c.Game, c.GameConfig, c.GameFeature,
+		c.Currency, c.CurrencyVersion, c.Feature, c.Game, c.GameConfig, c.GameFeature,
 		c.GameType, c.GameVersion, c.MathVersion, c.Operator, c.Platform, c.Serie,
 		c.SerieFeature, c.Session, c.Studio,
 	} {
@@ -286,8 +286,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
-	case *CurrencieMutation:
-		return c.Currencie.mutate(ctx, m)
+	case *CurrencyMutation:
+		return c.Currency.mutate(ctx, m)
 	case *CurrencyVersionMutation:
 		return c.CurrencyVersion.mutate(ctx, m)
 	case *FeatureMutation:
@@ -321,107 +321,107 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	}
 }
 
-// CurrencieClient is a client for the Currencie schema.
-type CurrencieClient struct {
+// CurrencyClient is a client for the Currency schema.
+type CurrencyClient struct {
 	config
 }
 
-// NewCurrencieClient returns a client for the Currencie from the given config.
-func NewCurrencieClient(c config) *CurrencieClient {
-	return &CurrencieClient{config: c}
+// NewCurrencyClient returns a client for the Currency from the given config.
+func NewCurrencyClient(c config) *CurrencyClient {
+	return &CurrencyClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `currencie.Hooks(f(g(h())))`.
-func (c *CurrencieClient) Use(hooks ...Hook) {
-	c.hooks.Currencie = append(c.hooks.Currencie, hooks...)
+// A call to `Use(f, g, h)` equals to `currency.Hooks(f(g(h())))`.
+func (c *CurrencyClient) Use(hooks ...Hook) {
+	c.hooks.Currency = append(c.hooks.Currency, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `currencie.Intercept(f(g(h())))`.
-func (c *CurrencieClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Currencie = append(c.inters.Currencie, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `currency.Intercept(f(g(h())))`.
+func (c *CurrencyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Currency = append(c.inters.Currency, interceptors...)
 }
 
-// Create returns a builder for creating a Currencie entity.
-func (c *CurrencieClient) Create() *CurrencieCreate {
-	mutation := newCurrencieMutation(c.config, OpCreate)
-	return &CurrencieCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a Currency entity.
+func (c *CurrencyClient) Create() *CurrencyCreate {
+	mutation := newCurrencyMutation(c.config, OpCreate)
+	return &CurrencyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of Currencie entities.
-func (c *CurrencieClient) CreateBulk(builders ...*CurrencieCreate) *CurrencieCreateBulk {
-	return &CurrencieCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Currency entities.
+func (c *CurrencyClient) CreateBulk(builders ...*CurrencyCreate) *CurrencyCreateBulk {
+	return &CurrencyCreateBulk{config: c.config, builders: builders}
 }
 
 // MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
 // a builder and applies setFunc on it.
-func (c *CurrencieClient) MapCreateBulk(slice any, setFunc func(*CurrencieCreate, int)) *CurrencieCreateBulk {
+func (c *CurrencyClient) MapCreateBulk(slice any, setFunc func(*CurrencyCreate, int)) *CurrencyCreateBulk {
 	rv := reflect.ValueOf(slice)
 	if rv.Kind() != reflect.Slice {
-		return &CurrencieCreateBulk{err: fmt.Errorf("calling to CurrencieClient.MapCreateBulk with wrong type %T, need slice", slice)}
+		return &CurrencyCreateBulk{err: fmt.Errorf("calling to CurrencyClient.MapCreateBulk with wrong type %T, need slice", slice)}
 	}
-	builders := make([]*CurrencieCreate, rv.Len())
+	builders := make([]*CurrencyCreate, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		builders[i] = c.Create()
 		setFunc(builders[i], i)
 	}
-	return &CurrencieCreateBulk{config: c.config, builders: builders}
+	return &CurrencyCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for Currencie.
-func (c *CurrencieClient) Update() *CurrencieUpdate {
-	mutation := newCurrencieMutation(c.config, OpUpdate)
-	return &CurrencieUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Currency.
+func (c *CurrencyClient) Update() *CurrencyUpdate {
+	mutation := newCurrencyMutation(c.config, OpUpdate)
+	return &CurrencyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *CurrencieClient) UpdateOne(cu *Currencie) *CurrencieUpdateOne {
-	mutation := newCurrencieMutation(c.config, OpUpdateOne, withCurrencie(cu))
-	return &CurrencieUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *CurrencyClient) UpdateOne(cu *Currency) *CurrencyUpdateOne {
+	mutation := newCurrencyMutation(c.config, OpUpdateOne, withCurrency(cu))
+	return &CurrencyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *CurrencieClient) UpdateOneID(id int) *CurrencieUpdateOne {
-	mutation := newCurrencieMutation(c.config, OpUpdateOne, withCurrencieID(id))
-	return &CurrencieUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *CurrencyClient) UpdateOneID(id int) *CurrencyUpdateOne {
+	mutation := newCurrencyMutation(c.config, OpUpdateOne, withCurrencyID(id))
+	return &CurrencyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for Currencie.
-func (c *CurrencieClient) Delete() *CurrencieDelete {
-	mutation := newCurrencieMutation(c.config, OpDelete)
-	return &CurrencieDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Currency.
+func (c *CurrencyClient) Delete() *CurrencyDelete {
+	mutation := newCurrencyMutation(c.config, OpDelete)
+	return &CurrencyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *CurrencieClient) DeleteOne(cu *Currencie) *CurrencieDeleteOne {
+func (c *CurrencyClient) DeleteOne(cu *Currency) *CurrencyDeleteOne {
 	return c.DeleteOneID(cu.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *CurrencieClient) DeleteOneID(id int) *CurrencieDeleteOne {
-	builder := c.Delete().Where(currencie.ID(id))
+func (c *CurrencyClient) DeleteOneID(id int) *CurrencyDeleteOne {
+	builder := c.Delete().Where(currency.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &CurrencieDeleteOne{builder}
+	return &CurrencyDeleteOne{builder}
 }
 
-// Query returns a query builder for Currencie.
-func (c *CurrencieClient) Query() *CurrencieQuery {
-	return &CurrencieQuery{
+// Query returns a query builder for Currency.
+func (c *CurrencyClient) Query() *CurrencyQuery {
+	return &CurrencyQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeCurrencie},
+		ctx:    &QueryContext{Type: TypeCurrency},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a Currencie entity by its id.
-func (c *CurrencieClient) Get(ctx context.Context, id int) (*Currencie, error) {
-	return c.Query().Where(currencie.ID(id)).Only(ctx)
+// Get returns a Currency entity by its id.
+func (c *CurrencyClient) Get(ctx context.Context, id int) (*Currency, error) {
+	return c.Query().Where(currency.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *CurrencieClient) GetX(ctx context.Context, id int) *Currencie {
+func (c *CurrencyClient) GetX(ctx context.Context, id int) *Currency {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -429,15 +429,15 @@ func (c *CurrencieClient) GetX(ctx context.Context, id int) *Currencie {
 	return obj
 }
 
-// QueryCurrencyVersions queries the currency_versions edge of a Currencie.
-func (c *CurrencieClient) QueryCurrencyVersions(cu *Currencie) *CurrencyVersionQuery {
+// QueryCurrencyVersions queries the currency_versions edge of a Currency.
+func (c *CurrencyClient) QueryCurrencyVersions(cu *Currency) *CurrencyVersionQuery {
 	query := (&CurrencyVersionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := cu.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(currencie.Table, currencie.FieldID, id),
+			sqlgraph.From(currency.Table, currency.FieldID, id),
 			sqlgraph.To(currencyversion.Table, currencyversion.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, currencie.CurrencyVersionsTable, currencie.CurrencyVersionsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, currency.CurrencyVersionsTable, currency.CurrencyVersionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(cu.driver.Dialect(), step)
 		return fromV, nil
@@ -446,27 +446,27 @@ func (c *CurrencieClient) QueryCurrencyVersions(cu *Currencie) *CurrencyVersionQ
 }
 
 // Hooks returns the client hooks.
-func (c *CurrencieClient) Hooks() []Hook {
-	return c.hooks.Currencie
+func (c *CurrencyClient) Hooks() []Hook {
+	return c.hooks.Currency
 }
 
 // Interceptors returns the client interceptors.
-func (c *CurrencieClient) Interceptors() []Interceptor {
-	return c.inters.Currencie
+func (c *CurrencyClient) Interceptors() []Interceptor {
+	return c.inters.Currency
 }
 
-func (c *CurrencieClient) mutate(ctx context.Context, m *CurrencieMutation) (Value, error) {
+func (c *CurrencyClient) mutate(ctx context.Context, m *CurrencyMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&CurrencieCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&CurrencyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&CurrencieUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&CurrencyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&CurrencieUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&CurrencyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&CurrencieDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&CurrencyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown Currencie mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown Currency mutation op: %q", m.Op())
 	}
 }
 
@@ -578,15 +578,15 @@ func (c *CurrencyVersionClient) GetX(ctx context.Context, id int) *CurrencyVersi
 	return obj
 }
 
-// QueryCurrencie queries the Currencie edge of a CurrencyVersion.
-func (c *CurrencyVersionClient) QueryCurrencie(cv *CurrencyVersion) *CurrencieQuery {
-	query := (&CurrencieClient{config: c.config}).Query()
+// QueryCurrency queries the Currency edge of a CurrencyVersion.
+func (c *CurrencyVersionClient) QueryCurrency(cv *CurrencyVersion) *CurrencyQuery {
+	query := (&CurrencyClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := cv.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(currencyversion.Table, currencyversion.FieldID, id),
-			sqlgraph.To(currencie.Table, currencie.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, currencyversion.CurrencieTable, currencyversion.CurrencieColumn),
+			sqlgraph.To(currency.Table, currency.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, currencyversion.CurrencyTable, currencyversion.CurrencyColumn),
 		)
 		fromV = sqlgraph.Neighbors(cv.driver.Dialect(), step)
 		return fromV, nil
@@ -3023,12 +3023,12 @@ func (c *StudioClient) mutate(ctx context.Context, m *StudioMutation) (Value, er
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Currencie, CurrencyVersion, Feature, Game, GameConfig, GameFeature, GameType,
+		Currency, CurrencyVersion, Feature, Game, GameConfig, GameFeature, GameType,
 		GameVersion, MathVersion, Operator, Platform, Serie, SerieFeature, Session,
 		Studio []ent.Hook
 	}
 	inters struct {
-		Currencie, CurrencyVersion, Feature, Game, GameConfig, GameFeature, GameType,
+		Currency, CurrencyVersion, Feature, Game, GameConfig, GameFeature, GameType,
 		GameVersion, MathVersion, Operator, Platform, Serie, SerieFeature, Session,
 		Studio []ent.Interceptor
 	}

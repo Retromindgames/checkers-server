@@ -11,7 +11,7 @@ services:
       - ./nginx-staging.conf:/etc/nginx/nginx.conf
     depends_on:
       - wsapi
-      - restapi
+      - api
     networks:
       - app-network
 
@@ -29,11 +29,11 @@ services:
     networks:
       - app-network
 
-  restapi:
-    container_name: restapiworker
+  api:
+    container_name: api
     build:
       context: .
-      dockerfile: restapiworker.dockerfile
+      dockerfile: ./api/api.dockerfile
     expose:
       - "8080"
     networks:

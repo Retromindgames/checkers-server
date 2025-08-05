@@ -11,7 +11,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/currencyversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/feature"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/game"
@@ -38,7 +38,7 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeCurrencie       = "Currencie"
+	TypeCurrency        = "Currency"
 	TypeCurrencyVersion = "CurrencyVersion"
 	TypeFeature         = "Feature"
 	TypeGame            = "Game"
@@ -55,8 +55,8 @@ const (
 	TypeStudio          = "Studio"
 )
 
-// CurrencieMutation represents an operation that mutates the Currencie nodes in the graph.
-type CurrencieMutation struct {
+// CurrencyMutation represents an operation that mutates the Currency nodes in the graph.
+type CurrencyMutation struct {
 	config
 	op                       Op
 	typ                      string
@@ -73,21 +73,21 @@ type CurrencieMutation struct {
 	removedcurrency_versions map[int]struct{}
 	clearedcurrency_versions bool
 	done                     bool
-	oldValue                 func(context.Context) (*Currencie, error)
-	predicates               []predicate.Currencie
+	oldValue                 func(context.Context) (*Currency, error)
+	predicates               []predicate.Currency
 }
 
-var _ ent.Mutation = (*CurrencieMutation)(nil)
+var _ ent.Mutation = (*CurrencyMutation)(nil)
 
-// currencieOption allows management of the mutation configuration using functional options.
-type currencieOption func(*CurrencieMutation)
+// currencyOption allows management of the mutation configuration using functional options.
+type currencyOption func(*CurrencyMutation)
 
-// newCurrencieMutation creates new mutation for the Currencie entity.
-func newCurrencieMutation(c config, op Op, opts ...currencieOption) *CurrencieMutation {
-	m := &CurrencieMutation{
+// newCurrencyMutation creates new mutation for the Currency entity.
+func newCurrencyMutation(c config, op Op, opts ...currencyOption) *CurrencyMutation {
+	m := &CurrencyMutation{
 		config:        c,
 		op:            op,
-		typ:           TypeCurrencie,
+		typ:           TypeCurrency,
 		clearedFields: make(map[string]struct{}),
 	}
 	for _, opt := range opts {
@@ -96,20 +96,20 @@ func newCurrencieMutation(c config, op Op, opts ...currencieOption) *CurrencieMu
 	return m
 }
 
-// withCurrencieID sets the ID field of the mutation.
-func withCurrencieID(id int) currencieOption {
-	return func(m *CurrencieMutation) {
+// withCurrencyID sets the ID field of the mutation.
+func withCurrencyID(id int) currencyOption {
+	return func(m *CurrencyMutation) {
 		var (
 			err   error
 			once  sync.Once
-			value *Currencie
+			value *Currency
 		)
-		m.oldValue = func(ctx context.Context) (*Currencie, error) {
+		m.oldValue = func(ctx context.Context) (*Currency, error) {
 			once.Do(func() {
 				if m.done {
 					err = errors.New("querying old values post mutation is not allowed")
 				} else {
-					value, err = m.Client().Currencie.Get(ctx, id)
+					value, err = m.Client().Currency.Get(ctx, id)
 				}
 			})
 			return value, err
@@ -118,10 +118,10 @@ func withCurrencieID(id int) currencieOption {
 	}
 }
 
-// withCurrencie sets the old Currencie of the mutation.
-func withCurrencie(node *Currencie) currencieOption {
-	return func(m *CurrencieMutation) {
-		m.oldValue = func(context.Context) (*Currencie, error) {
+// withCurrency sets the old Currency of the mutation.
+func withCurrency(node *Currency) currencyOption {
+	return func(m *CurrencyMutation) {
+		m.oldValue = func(context.Context) (*Currency, error) {
 			return node, nil
 		}
 		m.id = &node.ID
@@ -130,7 +130,7 @@ func withCurrencie(node *Currencie) currencieOption {
 
 // Client returns a new `ent.Client` from the mutation. If the mutation was
 // executed in a transaction (ent.Tx), a transactional client is returned.
-func (m CurrencieMutation) Client() *Client {
+func (m CurrencyMutation) Client() *Client {
 	client := &Client{config: m.config}
 	client.init()
 	return client
@@ -138,7 +138,7 @@ func (m CurrencieMutation) Client() *Client {
 
 // Tx returns an `ent.Tx` for mutations that were executed in transactions;
 // it returns an error otherwise.
-func (m CurrencieMutation) Tx() (*Tx, error) {
+func (m CurrencyMutation) Tx() (*Tx, error) {
 	if _, ok := m.driver.(*txDriver); !ok {
 		return nil, errors.New("ent: mutation is not running in a transaction")
 	}
@@ -149,7 +149,7 @@ func (m CurrencieMutation) Tx() (*Tx, error) {
 
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *CurrencieMutation) ID() (id int, exists bool) {
+func (m *CurrencyMutation) ID() (id int, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -160,7 +160,7 @@ func (m *CurrencieMutation) ID() (id int, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *CurrencieMutation) IDs(ctx context.Context) ([]int, error) {
+func (m *CurrencyMutation) IDs(ctx context.Context) ([]int, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
@@ -169,19 +169,19 @@ func (m *CurrencieMutation) IDs(ctx context.Context) ([]int, error) {
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().Currencie.Query().Where(m.predicates...).IDs(ctx)
+		return m.Client().Currency.Query().Where(m.predicates...).IDs(ctx)
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
 }
 
 // SetName sets the "name" field.
-func (m *CurrencieMutation) SetName(s string) {
+func (m *CurrencyMutation) SetName(s string) {
 	m.name = &s
 }
 
 // Name returns the value of the "name" field in the mutation.
-func (m *CurrencieMutation) Name() (r string, exists bool) {
+func (m *CurrencyMutation) Name() (r string, exists bool) {
 	v := m.name
 	if v == nil {
 		return
@@ -189,10 +189,10 @@ func (m *CurrencieMutation) Name() (r string, exists bool) {
 	return *v, true
 }
 
-// OldName returns the old "name" field's value of the Currencie entity.
-// If the Currencie object wasn't provided to the builder, the object is fetched from the database.
+// OldName returns the old "name" field's value of the Currency entity.
+// If the Currency object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CurrencieMutation) OldName(ctx context.Context) (v string, err error) {
+func (m *CurrencyMutation) OldName(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldName is only allowed on UpdateOne operations")
 	}
@@ -207,17 +207,17 @@ func (m *CurrencieMutation) OldName(ctx context.Context) (v string, err error) {
 }
 
 // ResetName resets all changes to the "name" field.
-func (m *CurrencieMutation) ResetName() {
+func (m *CurrencyMutation) ResetName() {
 	m.name = nil
 }
 
 // SetSymbol sets the "symbol" field.
-func (m *CurrencieMutation) SetSymbol(s string) {
+func (m *CurrencyMutation) SetSymbol(s string) {
 	m.symbol = &s
 }
 
 // Symbol returns the value of the "symbol" field in the mutation.
-func (m *CurrencieMutation) Symbol() (r string, exists bool) {
+func (m *CurrencyMutation) Symbol() (r string, exists bool) {
 	v := m.symbol
 	if v == nil {
 		return
@@ -225,10 +225,10 @@ func (m *CurrencieMutation) Symbol() (r string, exists bool) {
 	return *v, true
 }
 
-// OldSymbol returns the old "symbol" field's value of the Currencie entity.
-// If the Currencie object wasn't provided to the builder, the object is fetched from the database.
+// OldSymbol returns the old "symbol" field's value of the Currency entity.
+// If the Currency object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CurrencieMutation) OldSymbol(ctx context.Context) (v string, err error) {
+func (m *CurrencyMutation) OldSymbol(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldSymbol is only allowed on UpdateOne operations")
 	}
@@ -243,17 +243,17 @@ func (m *CurrencieMutation) OldSymbol(ctx context.Context) (v string, err error)
 }
 
 // ResetSymbol resets all changes to the "symbol" field.
-func (m *CurrencieMutation) ResetSymbol() {
+func (m *CurrencyMutation) ResetSymbol() {
 	m.symbol = nil
 }
 
 // SetThousandsSeparator sets the "thousands_separator" field.
-func (m *CurrencieMutation) SetThousandsSeparator(s string) {
+func (m *CurrencyMutation) SetThousandsSeparator(s string) {
 	m.thousands_separator = &s
 }
 
 // ThousandsSeparator returns the value of the "thousands_separator" field in the mutation.
-func (m *CurrencieMutation) ThousandsSeparator() (r string, exists bool) {
+func (m *CurrencyMutation) ThousandsSeparator() (r string, exists bool) {
 	v := m.thousands_separator
 	if v == nil {
 		return
@@ -261,10 +261,10 @@ func (m *CurrencieMutation) ThousandsSeparator() (r string, exists bool) {
 	return *v, true
 }
 
-// OldThousandsSeparator returns the old "thousands_separator" field's value of the Currencie entity.
-// If the Currencie object wasn't provided to the builder, the object is fetched from the database.
+// OldThousandsSeparator returns the old "thousands_separator" field's value of the Currency entity.
+// If the Currency object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CurrencieMutation) OldThousandsSeparator(ctx context.Context) (v string, err error) {
+func (m *CurrencyMutation) OldThousandsSeparator(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldThousandsSeparator is only allowed on UpdateOne operations")
 	}
@@ -279,17 +279,17 @@ func (m *CurrencieMutation) OldThousandsSeparator(ctx context.Context) (v string
 }
 
 // ResetThousandsSeparator resets all changes to the "thousands_separator" field.
-func (m *CurrencieMutation) ResetThousandsSeparator() {
+func (m *CurrencyMutation) ResetThousandsSeparator() {
 	m.thousands_separator = nil
 }
 
 // SetUnitsSeparator sets the "units_separator" field.
-func (m *CurrencieMutation) SetUnitsSeparator(s string) {
+func (m *CurrencyMutation) SetUnitsSeparator(s string) {
 	m.units_separator = &s
 }
 
 // UnitsSeparator returns the value of the "units_separator" field in the mutation.
-func (m *CurrencieMutation) UnitsSeparator() (r string, exists bool) {
+func (m *CurrencyMutation) UnitsSeparator() (r string, exists bool) {
 	v := m.units_separator
 	if v == nil {
 		return
@@ -297,10 +297,10 @@ func (m *CurrencieMutation) UnitsSeparator() (r string, exists bool) {
 	return *v, true
 }
 
-// OldUnitsSeparator returns the old "units_separator" field's value of the Currencie entity.
-// If the Currencie object wasn't provided to the builder, the object is fetched from the database.
+// OldUnitsSeparator returns the old "units_separator" field's value of the Currency entity.
+// If the Currency object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CurrencieMutation) OldUnitsSeparator(ctx context.Context) (v string, err error) {
+func (m *CurrencyMutation) OldUnitsSeparator(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldUnitsSeparator is only allowed on UpdateOne operations")
 	}
@@ -315,17 +315,17 @@ func (m *CurrencieMutation) OldUnitsSeparator(ctx context.Context) (v string, er
 }
 
 // ResetUnitsSeparator resets all changes to the "units_separator" field.
-func (m *CurrencieMutation) ResetUnitsSeparator() {
+func (m *CurrencyMutation) ResetUnitsSeparator() {
 	m.units_separator = nil
 }
 
 // SetSymbolPosition sets the "symbol_position" field.
-func (m *CurrencieMutation) SetSymbolPosition(s string) {
+func (m *CurrencyMutation) SetSymbolPosition(s string) {
 	m.symbol_position = &s
 }
 
 // SymbolPosition returns the value of the "symbol_position" field in the mutation.
-func (m *CurrencieMutation) SymbolPosition() (r string, exists bool) {
+func (m *CurrencyMutation) SymbolPosition() (r string, exists bool) {
 	v := m.symbol_position
 	if v == nil {
 		return
@@ -333,10 +333,10 @@ func (m *CurrencieMutation) SymbolPosition() (r string, exists bool) {
 	return *v, true
 }
 
-// OldSymbolPosition returns the old "symbol_position" field's value of the Currencie entity.
-// If the Currencie object wasn't provided to the builder, the object is fetched from the database.
+// OldSymbolPosition returns the old "symbol_position" field's value of the Currency entity.
+// If the Currency object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CurrencieMutation) OldSymbolPosition(ctx context.Context) (v string, err error) {
+func (m *CurrencyMutation) OldSymbolPosition(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldSymbolPosition is only allowed on UpdateOne operations")
 	}
@@ -351,18 +351,18 @@ func (m *CurrencieMutation) OldSymbolPosition(ctx context.Context) (v string, er
 }
 
 // ResetSymbolPosition resets all changes to the "symbol_position" field.
-func (m *CurrencieMutation) ResetSymbolPosition() {
+func (m *CurrencyMutation) ResetSymbolPosition() {
 	m.symbol_position = nil
 }
 
 // SetDenominator sets the "denominator" field.
-func (m *CurrencieMutation) SetDenominator(i int) {
+func (m *CurrencyMutation) SetDenominator(i int) {
 	m.denominator = &i
 	m.adddenominator = nil
 }
 
 // Denominator returns the value of the "denominator" field in the mutation.
-func (m *CurrencieMutation) Denominator() (r int, exists bool) {
+func (m *CurrencyMutation) Denominator() (r int, exists bool) {
 	v := m.denominator
 	if v == nil {
 		return
@@ -370,10 +370,10 @@ func (m *CurrencieMutation) Denominator() (r int, exists bool) {
 	return *v, true
 }
 
-// OldDenominator returns the old "denominator" field's value of the Currencie entity.
-// If the Currencie object wasn't provided to the builder, the object is fetched from the database.
+// OldDenominator returns the old "denominator" field's value of the Currency entity.
+// If the Currency object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CurrencieMutation) OldDenominator(ctx context.Context) (v int, err error) {
+func (m *CurrencyMutation) OldDenominator(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldDenominator is only allowed on UpdateOne operations")
 	}
@@ -388,7 +388,7 @@ func (m *CurrencieMutation) OldDenominator(ctx context.Context) (v int, err erro
 }
 
 // AddDenominator adds i to the "denominator" field.
-func (m *CurrencieMutation) AddDenominator(i int) {
+func (m *CurrencyMutation) AddDenominator(i int) {
 	if m.adddenominator != nil {
 		*m.adddenominator += i
 	} else {
@@ -397,7 +397,7 @@ func (m *CurrencieMutation) AddDenominator(i int) {
 }
 
 // AddedDenominator returns the value that was added to the "denominator" field in this mutation.
-func (m *CurrencieMutation) AddedDenominator() (r int, exists bool) {
+func (m *CurrencyMutation) AddedDenominator() (r int, exists bool) {
 	v := m.adddenominator
 	if v == nil {
 		return
@@ -406,13 +406,13 @@ func (m *CurrencieMutation) AddedDenominator() (r int, exists bool) {
 }
 
 // ResetDenominator resets all changes to the "denominator" field.
-func (m *CurrencieMutation) ResetDenominator() {
+func (m *CurrencyMutation) ResetDenominator() {
 	m.denominator = nil
 	m.adddenominator = nil
 }
 
 // AddCurrencyVersionIDs adds the "currency_versions" edge to the CurrencyVersion entity by ids.
-func (m *CurrencieMutation) AddCurrencyVersionIDs(ids ...int) {
+func (m *CurrencyMutation) AddCurrencyVersionIDs(ids ...int) {
 	if m.currency_versions == nil {
 		m.currency_versions = make(map[int]struct{})
 	}
@@ -422,17 +422,17 @@ func (m *CurrencieMutation) AddCurrencyVersionIDs(ids ...int) {
 }
 
 // ClearCurrencyVersions clears the "currency_versions" edge to the CurrencyVersion entity.
-func (m *CurrencieMutation) ClearCurrencyVersions() {
+func (m *CurrencyMutation) ClearCurrencyVersions() {
 	m.clearedcurrency_versions = true
 }
 
 // CurrencyVersionsCleared reports if the "currency_versions" edge to the CurrencyVersion entity was cleared.
-func (m *CurrencieMutation) CurrencyVersionsCleared() bool {
+func (m *CurrencyMutation) CurrencyVersionsCleared() bool {
 	return m.clearedcurrency_versions
 }
 
 // RemoveCurrencyVersionIDs removes the "currency_versions" edge to the CurrencyVersion entity by IDs.
-func (m *CurrencieMutation) RemoveCurrencyVersionIDs(ids ...int) {
+func (m *CurrencyMutation) RemoveCurrencyVersionIDs(ids ...int) {
 	if m.removedcurrency_versions == nil {
 		m.removedcurrency_versions = make(map[int]struct{})
 	}
@@ -443,7 +443,7 @@ func (m *CurrencieMutation) RemoveCurrencyVersionIDs(ids ...int) {
 }
 
 // RemovedCurrencyVersions returns the removed IDs of the "currency_versions" edge to the CurrencyVersion entity.
-func (m *CurrencieMutation) RemovedCurrencyVersionsIDs() (ids []int) {
+func (m *CurrencyMutation) RemovedCurrencyVersionsIDs() (ids []int) {
 	for id := range m.removedcurrency_versions {
 		ids = append(ids, id)
 	}
@@ -451,7 +451,7 @@ func (m *CurrencieMutation) RemovedCurrencyVersionsIDs() (ids []int) {
 }
 
 // CurrencyVersionsIDs returns the "currency_versions" edge IDs in the mutation.
-func (m *CurrencieMutation) CurrencyVersionsIDs() (ids []int) {
+func (m *CurrencyMutation) CurrencyVersionsIDs() (ids []int) {
 	for id := range m.currency_versions {
 		ids = append(ids, id)
 	}
@@ -459,21 +459,21 @@ func (m *CurrencieMutation) CurrencyVersionsIDs() (ids []int) {
 }
 
 // ResetCurrencyVersions resets all changes to the "currency_versions" edge.
-func (m *CurrencieMutation) ResetCurrencyVersions() {
+func (m *CurrencyMutation) ResetCurrencyVersions() {
 	m.currency_versions = nil
 	m.clearedcurrency_versions = false
 	m.removedcurrency_versions = nil
 }
 
-// Where appends a list predicates to the CurrencieMutation builder.
-func (m *CurrencieMutation) Where(ps ...predicate.Currencie) {
+// Where appends a list predicates to the CurrencyMutation builder.
+func (m *CurrencyMutation) Where(ps ...predicate.Currency) {
 	m.predicates = append(m.predicates, ps...)
 }
 
-// WhereP appends storage-level predicates to the CurrencieMutation builder. Using this method,
+// WhereP appends storage-level predicates to the CurrencyMutation builder. Using this method,
 // users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *CurrencieMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.Currencie, len(ps))
+func (m *CurrencyMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Currency, len(ps))
 	for i := range ps {
 		p[i] = ps[i]
 	}
@@ -481,42 +481,42 @@ func (m *CurrencieMutation) WhereP(ps ...func(*sql.Selector)) {
 }
 
 // Op returns the operation name.
-func (m *CurrencieMutation) Op() Op {
+func (m *CurrencyMutation) Op() Op {
 	return m.op
 }
 
 // SetOp allows setting the mutation operation.
-func (m *CurrencieMutation) SetOp(op Op) {
+func (m *CurrencyMutation) SetOp(op Op) {
 	m.op = op
 }
 
-// Type returns the node type of this mutation (Currencie).
-func (m *CurrencieMutation) Type() string {
+// Type returns the node type of this mutation (Currency).
+func (m *CurrencyMutation) Type() string {
 	return m.typ
 }
 
 // Fields returns all fields that were changed during this mutation. Note that in
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
-func (m *CurrencieMutation) Fields() []string {
+func (m *CurrencyMutation) Fields() []string {
 	fields := make([]string, 0, 6)
 	if m.name != nil {
-		fields = append(fields, currencie.FieldName)
+		fields = append(fields, currency.FieldName)
 	}
 	if m.symbol != nil {
-		fields = append(fields, currencie.FieldSymbol)
+		fields = append(fields, currency.FieldSymbol)
 	}
 	if m.thousands_separator != nil {
-		fields = append(fields, currencie.FieldThousandsSeparator)
+		fields = append(fields, currency.FieldThousandsSeparator)
 	}
 	if m.units_separator != nil {
-		fields = append(fields, currencie.FieldUnitsSeparator)
+		fields = append(fields, currency.FieldUnitsSeparator)
 	}
 	if m.symbol_position != nil {
-		fields = append(fields, currencie.FieldSymbolPosition)
+		fields = append(fields, currency.FieldSymbolPosition)
 	}
 	if m.denominator != nil {
-		fields = append(fields, currencie.FieldDenominator)
+		fields = append(fields, currency.FieldDenominator)
 	}
 	return fields
 }
@@ -524,19 +524,19 @@ func (m *CurrencieMutation) Fields() []string {
 // Field returns the value of a field with the given name. The second boolean
 // return value indicates that this field was not set, or was not defined in the
 // schema.
-func (m *CurrencieMutation) Field(name string) (ent.Value, bool) {
+func (m *CurrencyMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case currencie.FieldName:
+	case currency.FieldName:
 		return m.Name()
-	case currencie.FieldSymbol:
+	case currency.FieldSymbol:
 		return m.Symbol()
-	case currencie.FieldThousandsSeparator:
+	case currency.FieldThousandsSeparator:
 		return m.ThousandsSeparator()
-	case currencie.FieldUnitsSeparator:
+	case currency.FieldUnitsSeparator:
 		return m.UnitsSeparator()
-	case currencie.FieldSymbolPosition:
+	case currency.FieldSymbolPosition:
 		return m.SymbolPosition()
-	case currencie.FieldDenominator:
+	case currency.FieldDenominator:
 		return m.Denominator()
 	}
 	return nil, false
@@ -545,65 +545,65 @@ func (m *CurrencieMutation) Field(name string) (ent.Value, bool) {
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
-func (m *CurrencieMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+func (m *CurrencyMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case currencie.FieldName:
+	case currency.FieldName:
 		return m.OldName(ctx)
-	case currencie.FieldSymbol:
+	case currency.FieldSymbol:
 		return m.OldSymbol(ctx)
-	case currencie.FieldThousandsSeparator:
+	case currency.FieldThousandsSeparator:
 		return m.OldThousandsSeparator(ctx)
-	case currencie.FieldUnitsSeparator:
+	case currency.FieldUnitsSeparator:
 		return m.OldUnitsSeparator(ctx)
-	case currencie.FieldSymbolPosition:
+	case currency.FieldSymbolPosition:
 		return m.OldSymbolPosition(ctx)
-	case currencie.FieldDenominator:
+	case currency.FieldDenominator:
 		return m.OldDenominator(ctx)
 	}
-	return nil, fmt.Errorf("unknown Currencie field %s", name)
+	return nil, fmt.Errorf("unknown Currency field %s", name)
 }
 
 // SetField sets the value of a field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *CurrencieMutation) SetField(name string, value ent.Value) error {
+func (m *CurrencyMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case currencie.FieldName:
+	case currency.FieldName:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
 		return nil
-	case currencie.FieldSymbol:
+	case currency.FieldSymbol:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSymbol(v)
 		return nil
-	case currencie.FieldThousandsSeparator:
+	case currency.FieldThousandsSeparator:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetThousandsSeparator(v)
 		return nil
-	case currencie.FieldUnitsSeparator:
+	case currency.FieldUnitsSeparator:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUnitsSeparator(v)
 		return nil
-	case currencie.FieldSymbolPosition:
+	case currency.FieldSymbolPosition:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetSymbolPosition(v)
 		return nil
-	case currencie.FieldDenominator:
+	case currency.FieldDenominator:
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
@@ -611,15 +611,15 @@ func (m *CurrencieMutation) SetField(name string, value ent.Value) error {
 		m.SetDenominator(v)
 		return nil
 	}
-	return fmt.Errorf("unknown Currencie field %s", name)
+	return fmt.Errorf("unknown Currency field %s", name)
 }
 
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
-func (m *CurrencieMutation) AddedFields() []string {
+func (m *CurrencyMutation) AddedFields() []string {
 	var fields []string
 	if m.adddenominator != nil {
-		fields = append(fields, currencie.FieldDenominator)
+		fields = append(fields, currency.FieldDenominator)
 	}
 	return fields
 }
@@ -627,9 +627,9 @@ func (m *CurrencieMutation) AddedFields() []string {
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
-func (m *CurrencieMutation) AddedField(name string) (ent.Value, bool) {
+func (m *CurrencyMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
-	case currencie.FieldDenominator:
+	case currency.FieldDenominator:
 		return m.AddedDenominator()
 	}
 	return nil, false
@@ -638,9 +638,9 @@ func (m *CurrencieMutation) AddedField(name string) (ent.Value, bool) {
 // AddField adds the value to the field with the given name. It returns an error if
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
-func (m *CurrencieMutation) AddField(name string, value ent.Value) error {
+func (m *CurrencyMutation) AddField(name string, value ent.Value) error {
 	switch name {
-	case currencie.FieldDenominator:
+	case currency.FieldDenominator:
 		v, ok := value.(int)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
@@ -648,68 +648,68 @@ func (m *CurrencieMutation) AddField(name string, value ent.Value) error {
 		m.AddDenominator(v)
 		return nil
 	}
-	return fmt.Errorf("unknown Currencie numeric field %s", name)
+	return fmt.Errorf("unknown Currency numeric field %s", name)
 }
 
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
-func (m *CurrencieMutation) ClearedFields() []string {
+func (m *CurrencyMutation) ClearedFields() []string {
 	return nil
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
 // cleared in this mutation.
-func (m *CurrencieMutation) FieldCleared(name string) bool {
+func (m *CurrencyMutation) FieldCleared(name string) bool {
 	_, ok := m.clearedFields[name]
 	return ok
 }
 
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
-func (m *CurrencieMutation) ClearField(name string) error {
-	return fmt.Errorf("unknown Currencie nullable field %s", name)
+func (m *CurrencyMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Currency nullable field %s", name)
 }
 
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
-func (m *CurrencieMutation) ResetField(name string) error {
+func (m *CurrencyMutation) ResetField(name string) error {
 	switch name {
-	case currencie.FieldName:
+	case currency.FieldName:
 		m.ResetName()
 		return nil
-	case currencie.FieldSymbol:
+	case currency.FieldSymbol:
 		m.ResetSymbol()
 		return nil
-	case currencie.FieldThousandsSeparator:
+	case currency.FieldThousandsSeparator:
 		m.ResetThousandsSeparator()
 		return nil
-	case currencie.FieldUnitsSeparator:
+	case currency.FieldUnitsSeparator:
 		m.ResetUnitsSeparator()
 		return nil
-	case currencie.FieldSymbolPosition:
+	case currency.FieldSymbolPosition:
 		m.ResetSymbolPosition()
 		return nil
-	case currencie.FieldDenominator:
+	case currency.FieldDenominator:
 		m.ResetDenominator()
 		return nil
 	}
-	return fmt.Errorf("unknown Currencie field %s", name)
+	return fmt.Errorf("unknown Currency field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
-func (m *CurrencieMutation) AddedEdges() []string {
+func (m *CurrencyMutation) AddedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.currency_versions != nil {
-		edges = append(edges, currencie.EdgeCurrencyVersions)
+		edges = append(edges, currency.EdgeCurrencyVersions)
 	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
-func (m *CurrencieMutation) AddedIDs(name string) []ent.Value {
+func (m *CurrencyMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case currencie.EdgeCurrencyVersions:
+	case currency.EdgeCurrencyVersions:
 		ids := make([]ent.Value, 0, len(m.currency_versions))
 		for id := range m.currency_versions {
 			ids = append(ids, id)
@@ -720,19 +720,19 @@ func (m *CurrencieMutation) AddedIDs(name string) []ent.Value {
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
-func (m *CurrencieMutation) RemovedEdges() []string {
+func (m *CurrencyMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.removedcurrency_versions != nil {
-		edges = append(edges, currencie.EdgeCurrencyVersions)
+		edges = append(edges, currency.EdgeCurrencyVersions)
 	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
-func (m *CurrencieMutation) RemovedIDs(name string) []ent.Value {
+func (m *CurrencyMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case currencie.EdgeCurrencyVersions:
+	case currency.EdgeCurrencyVersions:
 		ids := make([]ent.Value, 0, len(m.removedcurrency_versions))
 		for id := range m.removedcurrency_versions {
 			ids = append(ids, id)
@@ -743,19 +743,19 @@ func (m *CurrencieMutation) RemovedIDs(name string) []ent.Value {
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *CurrencieMutation) ClearedEdges() []string {
+func (m *CurrencyMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 1)
 	if m.clearedcurrency_versions {
-		edges = append(edges, currencie.EdgeCurrencyVersions)
+		edges = append(edges, currency.EdgeCurrencyVersions)
 	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
-func (m *CurrencieMutation) EdgeCleared(name string) bool {
+func (m *CurrencyMutation) EdgeCleared(name string) bool {
 	switch name {
-	case currencie.EdgeCurrencyVersions:
+	case currency.EdgeCurrencyVersions:
 		return m.clearedcurrency_versions
 	}
 	return false
@@ -763,21 +763,21 @@ func (m *CurrencieMutation) EdgeCleared(name string) bool {
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
-func (m *CurrencieMutation) ClearEdge(name string) error {
+func (m *CurrencyMutation) ClearEdge(name string) error {
 	switch name {
 	}
-	return fmt.Errorf("unknown Currencie unique edge %s", name)
+	return fmt.Errorf("unknown Currency unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
-func (m *CurrencieMutation) ResetEdge(name string) error {
+func (m *CurrencyMutation) ResetEdge(name string) error {
 	switch name {
-	case currencie.EdgeCurrencyVersions:
+	case currency.EdgeCurrencyVersions:
 		m.ResetCurrencyVersions()
 		return nil
 	}
-	return fmt.Errorf("unknown Currencie edge %s", name)
+	return fmt.Errorf("unknown Currency edge %s", name)
 }
 
 // CurrencyVersionMutation represents an operation that mutates the CurrencyVersion nodes in the graph.
@@ -793,8 +793,6 @@ type CurrencyVersionMutation struct {
 	addmax_exp                  *int
 	denominator                 *int
 	adddenominator              *int
-	currency_id                 *int
-	addcurrency_id              *int
 	default_multiplier          *int
 	adddefault_multiplier       *int
 	deprecated                  *bool
@@ -803,8 +801,8 @@ type CurrencyVersionMutation struct {
 	slots_bet_multipliers       *[]int
 	appendslots_bet_multipliers []int
 	clearedFields               map[string]struct{}
-	_Currencie                  *int
-	cleared_Currencie           bool
+	_Currency                   *int
+	cleared_Currency            bool
 	game_types                  *int
 	clearedgame_types           bool
 	sessions                    map[int]struct{}
@@ -1002,10 +1000,24 @@ func (m *CurrencyVersionMutation) AddedMinBet() (r int, exists bool) {
 	return *v, true
 }
 
+// ClearMinBet clears the value of the "min_bet" field.
+func (m *CurrencyVersionMutation) ClearMinBet() {
+	m.min_bet = nil
+	m.addmin_bet = nil
+	m.clearedFields[currencyversion.FieldMinBet] = struct{}{}
+}
+
+// MinBetCleared returns if the "min_bet" field was cleared in this mutation.
+func (m *CurrencyVersionMutation) MinBetCleared() bool {
+	_, ok := m.clearedFields[currencyversion.FieldMinBet]
+	return ok
+}
+
 // ResetMinBet resets all changes to the "min_bet" field.
 func (m *CurrencyVersionMutation) ResetMinBet() {
 	m.min_bet = nil
 	m.addmin_bet = nil
+	delete(m.clearedFields, currencyversion.FieldMinBet)
 }
 
 // SetMaxExp sets the "max_exp" field.
@@ -1058,10 +1070,24 @@ func (m *CurrencyVersionMutation) AddedMaxExp() (r int, exists bool) {
 	return *v, true
 }
 
+// ClearMaxExp clears the value of the "max_exp" field.
+func (m *CurrencyVersionMutation) ClearMaxExp() {
+	m.max_exp = nil
+	m.addmax_exp = nil
+	m.clearedFields[currencyversion.FieldMaxExp] = struct{}{}
+}
+
+// MaxExpCleared returns if the "max_exp" field was cleared in this mutation.
+func (m *CurrencyVersionMutation) MaxExpCleared() bool {
+	_, ok := m.clearedFields[currencyversion.FieldMaxExp]
+	return ok
+}
+
 // ResetMaxExp resets all changes to the "max_exp" field.
 func (m *CurrencyVersionMutation) ResetMaxExp() {
 	m.max_exp = nil
 	m.addmax_exp = nil
+	delete(m.clearedFields, currencyversion.FieldMaxExp)
 }
 
 // SetDenominator sets the "denominator" field.
@@ -1120,62 +1146,6 @@ func (m *CurrencyVersionMutation) ResetDenominator() {
 	m.adddenominator = nil
 }
 
-// SetCurrencyID sets the "currency_id" field.
-func (m *CurrencyVersionMutation) SetCurrencyID(i int) {
-	m.currency_id = &i
-	m.addcurrency_id = nil
-}
-
-// CurrencyID returns the value of the "currency_id" field in the mutation.
-func (m *CurrencyVersionMutation) CurrencyID() (r int, exists bool) {
-	v := m.currency_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCurrencyID returns the old "currency_id" field's value of the CurrencyVersion entity.
-// If the CurrencyVersion object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CurrencyVersionMutation) OldCurrencyID(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCurrencyID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCurrencyID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCurrencyID: %w", err)
-	}
-	return oldValue.CurrencyID, nil
-}
-
-// AddCurrencyID adds i to the "currency_id" field.
-func (m *CurrencyVersionMutation) AddCurrencyID(i int) {
-	if m.addcurrency_id != nil {
-		*m.addcurrency_id += i
-	} else {
-		m.addcurrency_id = &i
-	}
-}
-
-// AddedCurrencyID returns the value that was added to the "currency_id" field in this mutation.
-func (m *CurrencyVersionMutation) AddedCurrencyID() (r int, exists bool) {
-	v := m.addcurrency_id
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetCurrencyID resets all changes to the "currency_id" field.
-func (m *CurrencyVersionMutation) ResetCurrencyID() {
-	m.currency_id = nil
-	m.addcurrency_id = nil
-}
-
 // SetDefaultMultiplier sets the "default_multiplier" field.
 func (m *CurrencyVersionMutation) SetDefaultMultiplier(i int) {
 	m.default_multiplier = &i
@@ -1226,10 +1196,24 @@ func (m *CurrencyVersionMutation) AddedDefaultMultiplier() (r int, exists bool) 
 	return *v, true
 }
 
+// ClearDefaultMultiplier clears the value of the "default_multiplier" field.
+func (m *CurrencyVersionMutation) ClearDefaultMultiplier() {
+	m.default_multiplier = nil
+	m.adddefault_multiplier = nil
+	m.clearedFields[currencyversion.FieldDefaultMultiplier] = struct{}{}
+}
+
+// DefaultMultiplierCleared returns if the "default_multiplier" field was cleared in this mutation.
+func (m *CurrencyVersionMutation) DefaultMultiplierCleared() bool {
+	_, ok := m.clearedFields[currencyversion.FieldDefaultMultiplier]
+	return ok
+}
+
 // ResetDefaultMultiplier resets all changes to the "default_multiplier" field.
 func (m *CurrencyVersionMutation) ResetDefaultMultiplier() {
 	m.default_multiplier = nil
 	m.adddefault_multiplier = nil
+	delete(m.clearedFields, currencyversion.FieldDefaultMultiplier)
 }
 
 // SetDeprecated sets the "deprecated" field.
@@ -1318,10 +1302,24 @@ func (m *CurrencyVersionMutation) AddedCrashBetIncrement() (r int, exists bool) 
 	return *v, true
 }
 
+// ClearCrashBetIncrement clears the value of the "crash_bet_increment" field.
+func (m *CurrencyVersionMutation) ClearCrashBetIncrement() {
+	m.crash_bet_increment = nil
+	m.addcrash_bet_increment = nil
+	m.clearedFields[currencyversion.FieldCrashBetIncrement] = struct{}{}
+}
+
+// CrashBetIncrementCleared returns if the "crash_bet_increment" field was cleared in this mutation.
+func (m *CurrencyVersionMutation) CrashBetIncrementCleared() bool {
+	_, ok := m.clearedFields[currencyversion.FieldCrashBetIncrement]
+	return ok
+}
+
 // ResetCrashBetIncrement resets all changes to the "crash_bet_increment" field.
 func (m *CurrencyVersionMutation) ResetCrashBetIncrement() {
 	m.crash_bet_increment = nil
 	m.addcrash_bet_increment = nil
+	delete(m.clearedFields, currencyversion.FieldCrashBetIncrement)
 }
 
 // SetSlotsBetMultipliers sets the "slots_bet_multipliers" field.
@@ -1369,49 +1367,63 @@ func (m *CurrencyVersionMutation) AppendedSlotsBetMultipliers() ([]int, bool) {
 	return m.appendslots_bet_multipliers, true
 }
 
+// ClearSlotsBetMultipliers clears the value of the "slots_bet_multipliers" field.
+func (m *CurrencyVersionMutation) ClearSlotsBetMultipliers() {
+	m.slots_bet_multipliers = nil
+	m.appendslots_bet_multipliers = nil
+	m.clearedFields[currencyversion.FieldSlotsBetMultipliers] = struct{}{}
+}
+
+// SlotsBetMultipliersCleared returns if the "slots_bet_multipliers" field was cleared in this mutation.
+func (m *CurrencyVersionMutation) SlotsBetMultipliersCleared() bool {
+	_, ok := m.clearedFields[currencyversion.FieldSlotsBetMultipliers]
+	return ok
+}
+
 // ResetSlotsBetMultipliers resets all changes to the "slots_bet_multipliers" field.
 func (m *CurrencyVersionMutation) ResetSlotsBetMultipliers() {
 	m.slots_bet_multipliers = nil
 	m.appendslots_bet_multipliers = nil
+	delete(m.clearedFields, currencyversion.FieldSlotsBetMultipliers)
 }
 
-// SetCurrencieID sets the "Currencie" edge to the Currencie entity by id.
-func (m *CurrencyVersionMutation) SetCurrencieID(id int) {
-	m._Currencie = &id
+// SetCurrencyID sets the "Currency" edge to the Currency entity by id.
+func (m *CurrencyVersionMutation) SetCurrencyID(id int) {
+	m._Currency = &id
 }
 
-// ClearCurrencie clears the "Currencie" edge to the Currencie entity.
-func (m *CurrencyVersionMutation) ClearCurrencie() {
-	m.cleared_Currencie = true
+// ClearCurrency clears the "Currency" edge to the Currency entity.
+func (m *CurrencyVersionMutation) ClearCurrency() {
+	m.cleared_Currency = true
 }
 
-// CurrencieCleared reports if the "Currencie" edge to the Currencie entity was cleared.
-func (m *CurrencyVersionMutation) CurrencieCleared() bool {
-	return m.cleared_Currencie
+// CurrencyCleared reports if the "Currency" edge to the Currency entity was cleared.
+func (m *CurrencyVersionMutation) CurrencyCleared() bool {
+	return m.cleared_Currency
 }
 
-// CurrencieID returns the "Currencie" edge ID in the mutation.
-func (m *CurrencyVersionMutation) CurrencieID() (id int, exists bool) {
-	if m._Currencie != nil {
-		return *m._Currencie, true
+// CurrencyID returns the "Currency" edge ID in the mutation.
+func (m *CurrencyVersionMutation) CurrencyID() (id int, exists bool) {
+	if m._Currency != nil {
+		return *m._Currency, true
 	}
 	return
 }
 
-// CurrencieIDs returns the "Currencie" edge IDs in the mutation.
+// CurrencyIDs returns the "Currency" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// CurrencieID instead. It exists only for internal usage by the builders.
-func (m *CurrencyVersionMutation) CurrencieIDs() (ids []int) {
-	if id := m._Currencie; id != nil {
+// CurrencyID instead. It exists only for internal usage by the builders.
+func (m *CurrencyVersionMutation) CurrencyIDs() (ids []int) {
+	if id := m._Currency; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetCurrencie resets all changes to the "Currencie" edge.
-func (m *CurrencyVersionMutation) ResetCurrencie() {
-	m._Currencie = nil
-	m.cleared_Currencie = false
+// ResetCurrency resets all changes to the "Currency" edge.
+func (m *CurrencyVersionMutation) ResetCurrency() {
+	m._Currency = nil
+	m.cleared_Currency = false
 }
 
 // SetGameTypesID sets the "game_types" edge to the GameType entity by id.
@@ -1595,7 +1607,7 @@ func (m *CurrencyVersionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CurrencyVersionMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 8)
 	if m.name != nil {
 		fields = append(fields, currencyversion.FieldName)
 	}
@@ -1607,9 +1619,6 @@ func (m *CurrencyVersionMutation) Fields() []string {
 	}
 	if m.denominator != nil {
 		fields = append(fields, currencyversion.FieldDenominator)
-	}
-	if m.currency_id != nil {
-		fields = append(fields, currencyversion.FieldCurrencyID)
 	}
 	if m.default_multiplier != nil {
 		fields = append(fields, currencyversion.FieldDefaultMultiplier)
@@ -1639,8 +1648,6 @@ func (m *CurrencyVersionMutation) Field(name string) (ent.Value, bool) {
 		return m.MaxExp()
 	case currencyversion.FieldDenominator:
 		return m.Denominator()
-	case currencyversion.FieldCurrencyID:
-		return m.CurrencyID()
 	case currencyversion.FieldDefaultMultiplier:
 		return m.DefaultMultiplier()
 	case currencyversion.FieldDeprecated:
@@ -1666,8 +1673,6 @@ func (m *CurrencyVersionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldMaxExp(ctx)
 	case currencyversion.FieldDenominator:
 		return m.OldDenominator(ctx)
-	case currencyversion.FieldCurrencyID:
-		return m.OldCurrencyID(ctx)
 	case currencyversion.FieldDefaultMultiplier:
 		return m.OldDefaultMultiplier(ctx)
 	case currencyversion.FieldDeprecated:
@@ -1712,13 +1717,6 @@ func (m *CurrencyVersionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDenominator(v)
-		return nil
-	case currencyversion.FieldCurrencyID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCurrencyID(v)
 		return nil
 	case currencyversion.FieldDefaultMultiplier:
 		v, ok := value.(int)
@@ -1765,9 +1763,6 @@ func (m *CurrencyVersionMutation) AddedFields() []string {
 	if m.adddenominator != nil {
 		fields = append(fields, currencyversion.FieldDenominator)
 	}
-	if m.addcurrency_id != nil {
-		fields = append(fields, currencyversion.FieldCurrencyID)
-	}
 	if m.adddefault_multiplier != nil {
 		fields = append(fields, currencyversion.FieldDefaultMultiplier)
 	}
@@ -1788,8 +1783,6 @@ func (m *CurrencyVersionMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedMaxExp()
 	case currencyversion.FieldDenominator:
 		return m.AddedDenominator()
-	case currencyversion.FieldCurrencyID:
-		return m.AddedCurrencyID()
 	case currencyversion.FieldDefaultMultiplier:
 		return m.AddedDefaultMultiplier()
 	case currencyversion.FieldCrashBetIncrement:
@@ -1824,13 +1817,6 @@ func (m *CurrencyVersionMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddDenominator(v)
 		return nil
-	case currencyversion.FieldCurrencyID:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddCurrencyID(v)
-		return nil
 	case currencyversion.FieldDefaultMultiplier:
 		v, ok := value.(int)
 		if !ok {
@@ -1852,7 +1838,23 @@ func (m *CurrencyVersionMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *CurrencyVersionMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(currencyversion.FieldMinBet) {
+		fields = append(fields, currencyversion.FieldMinBet)
+	}
+	if m.FieldCleared(currencyversion.FieldMaxExp) {
+		fields = append(fields, currencyversion.FieldMaxExp)
+	}
+	if m.FieldCleared(currencyversion.FieldDefaultMultiplier) {
+		fields = append(fields, currencyversion.FieldDefaultMultiplier)
+	}
+	if m.FieldCleared(currencyversion.FieldCrashBetIncrement) {
+		fields = append(fields, currencyversion.FieldCrashBetIncrement)
+	}
+	if m.FieldCleared(currencyversion.FieldSlotsBetMultipliers) {
+		fields = append(fields, currencyversion.FieldSlotsBetMultipliers)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -1865,6 +1867,23 @@ func (m *CurrencyVersionMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *CurrencyVersionMutation) ClearField(name string) error {
+	switch name {
+	case currencyversion.FieldMinBet:
+		m.ClearMinBet()
+		return nil
+	case currencyversion.FieldMaxExp:
+		m.ClearMaxExp()
+		return nil
+	case currencyversion.FieldDefaultMultiplier:
+		m.ClearDefaultMultiplier()
+		return nil
+	case currencyversion.FieldCrashBetIncrement:
+		m.ClearCrashBetIncrement()
+		return nil
+	case currencyversion.FieldSlotsBetMultipliers:
+		m.ClearSlotsBetMultipliers()
+		return nil
+	}
 	return fmt.Errorf("unknown CurrencyVersion nullable field %s", name)
 }
 
@@ -1883,9 +1902,6 @@ func (m *CurrencyVersionMutation) ResetField(name string) error {
 		return nil
 	case currencyversion.FieldDenominator:
 		m.ResetDenominator()
-		return nil
-	case currencyversion.FieldCurrencyID:
-		m.ResetCurrencyID()
 		return nil
 	case currencyversion.FieldDefaultMultiplier:
 		m.ResetDefaultMultiplier()
@@ -1906,8 +1922,8 @@ func (m *CurrencyVersionMutation) ResetField(name string) error {
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CurrencyVersionMutation) AddedEdges() []string {
 	edges := make([]string, 0, 4)
-	if m._Currencie != nil {
-		edges = append(edges, currencyversion.EdgeCurrencie)
+	if m._Currency != nil {
+		edges = append(edges, currencyversion.EdgeCurrency)
 	}
 	if m.game_types != nil {
 		edges = append(edges, currencyversion.EdgeGameTypes)
@@ -1925,8 +1941,8 @@ func (m *CurrencyVersionMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *CurrencyVersionMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case currencyversion.EdgeCurrencie:
-		if id := m._Currencie; id != nil {
+	case currencyversion.EdgeCurrency:
+		if id := m._Currency; id != nil {
 			return []ent.Value{*id}
 		}
 	case currencyversion.EdgeGameTypes:
@@ -1984,8 +2000,8 @@ func (m *CurrencyVersionMutation) RemovedIDs(name string) []ent.Value {
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CurrencyVersionMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 4)
-	if m.cleared_Currencie {
-		edges = append(edges, currencyversion.EdgeCurrencie)
+	if m.cleared_Currency {
+		edges = append(edges, currencyversion.EdgeCurrency)
 	}
 	if m.clearedgame_types {
 		edges = append(edges, currencyversion.EdgeGameTypes)
@@ -2003,8 +2019,8 @@ func (m *CurrencyVersionMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *CurrencyVersionMutation) EdgeCleared(name string) bool {
 	switch name {
-	case currencyversion.EdgeCurrencie:
-		return m.cleared_Currencie
+	case currencyversion.EdgeCurrency:
+		return m.cleared_Currency
 	case currencyversion.EdgeGameTypes:
 		return m.clearedgame_types
 	case currencyversion.EdgeSessions:
@@ -2019,8 +2035,8 @@ func (m *CurrencyVersionMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *CurrencyVersionMutation) ClearEdge(name string) error {
 	switch name {
-	case currencyversion.EdgeCurrencie:
-		m.ClearCurrencie()
+	case currencyversion.EdgeCurrency:
+		m.ClearCurrency()
 		return nil
 	case currencyversion.EdgeGameTypes:
 		m.ClearGameTypes()
@@ -2033,8 +2049,8 @@ func (m *CurrencyVersionMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *CurrencyVersionMutation) ResetEdge(name string) error {
 	switch name {
-	case currencyversion.EdgeCurrencie:
-		m.ResetCurrencie()
+	case currencyversion.EdgeCurrency:
+		m.ResetCurrency()
 		return nil
 	case currencyversion.EdgeGameTypes:
 		m.ResetGameTypes()
@@ -2803,9 +2819,22 @@ func (m *GameMutation) OldExternalID(ctx context.Context) (v string, err error) 
 	return oldValue.ExternalID, nil
 }
 
+// ClearExternalID clears the value of the "external_id" field.
+func (m *GameMutation) ClearExternalID() {
+	m.external_id = nil
+	m.clearedFields[game.FieldExternalID] = struct{}{}
+}
+
+// ExternalIDCleared returns if the "external_id" field was cleared in this mutation.
+func (m *GameMutation) ExternalIDCleared() bool {
+	_, ok := m.clearedFields[game.FieldExternalID]
+	return ok
+}
+
 // ResetExternalID resets all changes to the "external_id" field.
 func (m *GameMutation) ResetExternalID() {
 	m.external_id = nil
+	delete(m.clearedFields, game.FieldExternalID)
 }
 
 // SetTrademarkName sets the "trademark_name" field.
@@ -3309,7 +3338,11 @@ func (m *GameMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *GameMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(game.FieldExternalID) {
+		fields = append(fields, game.FieldExternalID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -3322,6 +3355,11 @@ func (m *GameMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *GameMutation) ClearField(name string) error {
+	switch name {
+	case game.FieldExternalID:
+		m.ClearExternalID()
+		return nil
+	}
 	return fmt.Errorf("unknown Game nullable field %s", name)
 }
 
@@ -3568,6 +3606,7 @@ type GameConfigMutation struct {
 	can_tournament           *bool
 	can_free_bets            *bool
 	can_drop_and_wins        *bool
+	can_buy_bonus            *bool
 	can_turbo                *bool
 	is_active                *bool
 	can_auto_bet             *bool
@@ -3830,6 +3869,42 @@ func (m *GameConfigMutation) OldCanDropAndWins(ctx context.Context) (v bool, err
 // ResetCanDropAndWins resets all changes to the "can_drop_and_wins" field.
 func (m *GameConfigMutation) ResetCanDropAndWins() {
 	m.can_drop_and_wins = nil
+}
+
+// SetCanBuyBonus sets the "can_buy_bonus" field.
+func (m *GameConfigMutation) SetCanBuyBonus(b bool) {
+	m.can_buy_bonus = &b
+}
+
+// CanBuyBonus returns the value of the "can_buy_bonus" field in the mutation.
+func (m *GameConfigMutation) CanBuyBonus() (r bool, exists bool) {
+	v := m.can_buy_bonus
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCanBuyBonus returns the old "can_buy_bonus" field's value of the GameConfig entity.
+// If the GameConfig object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GameConfigMutation) OldCanBuyBonus(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCanBuyBonus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCanBuyBonus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCanBuyBonus: %w", err)
+	}
+	return oldValue.CanBuyBonus, nil
+}
+
+// ResetCanBuyBonus resets all changes to the "can_buy_bonus" field.
+func (m *GameConfigMutation) ResetCanBuyBonus() {
+	m.can_buy_bonus = nil
 }
 
 // SetCanTurbo sets the "can_turbo" field.
@@ -4277,7 +4352,7 @@ func (m *GameConfigMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GameConfigMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.can_demo != nil {
 		fields = append(fields, gameconfig.FieldCanDemo)
 	}
@@ -4289,6 +4364,9 @@ func (m *GameConfigMutation) Fields() []string {
 	}
 	if m.can_drop_and_wins != nil {
 		fields = append(fields, gameconfig.FieldCanDropAndWins)
+	}
+	if m.can_buy_bonus != nil {
+		fields = append(fields, gameconfig.FieldCanBuyBonus)
 	}
 	if m.can_turbo != nil {
 		fields = append(fields, gameconfig.FieldCanTurbo)
@@ -4324,6 +4402,8 @@ func (m *GameConfigMutation) Field(name string) (ent.Value, bool) {
 		return m.CanFreeBets()
 	case gameconfig.FieldCanDropAndWins:
 		return m.CanDropAndWins()
+	case gameconfig.FieldCanBuyBonus:
+		return m.CanBuyBonus()
 	case gameconfig.FieldCanTurbo:
 		return m.CanTurbo()
 	case gameconfig.FieldIsActive:
@@ -4353,6 +4433,8 @@ func (m *GameConfigMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldCanFreeBets(ctx)
 	case gameconfig.FieldCanDropAndWins:
 		return m.OldCanDropAndWins(ctx)
+	case gameconfig.FieldCanBuyBonus:
+		return m.OldCanBuyBonus(ctx)
 	case gameconfig.FieldCanTurbo:
 		return m.OldCanTurbo(ctx)
 	case gameconfig.FieldIsActive:
@@ -4401,6 +4483,13 @@ func (m *GameConfigMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCanDropAndWins(v)
+		return nil
+	case gameconfig.FieldCanBuyBonus:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCanBuyBonus(v)
 		return nil
 	case gameconfig.FieldCanTurbo:
 		v, ok := value.(bool)
@@ -4504,6 +4593,9 @@ func (m *GameConfigMutation) ResetField(name string) error {
 		return nil
 	case gameconfig.FieldCanDropAndWins:
 		m.ResetCanDropAndWins()
+		return nil
+	case gameconfig.FieldCanBuyBonus:
+		m.ResetCanBuyBonus()
 		return nil
 	case gameconfig.FieldCanTurbo:
 		m.ResetCanTurbo()
@@ -6085,9 +6177,22 @@ func (m *GameVersionMutation) OldURLMediaPack(ctx context.Context) (v string, er
 	return oldValue.URLMediaPack, nil
 }
 
+// ClearURLMediaPack clears the value of the "url_media_pack" field.
+func (m *GameVersionMutation) ClearURLMediaPack() {
+	m.url_media_pack = nil
+	m.clearedFields[gameversion.FieldURLMediaPack] = struct{}{}
+}
+
+// URLMediaPackCleared returns if the "url_media_pack" field was cleared in this mutation.
+func (m *GameVersionMutation) URLMediaPackCleared() bool {
+	_, ok := m.clearedFields[gameversion.FieldURLMediaPack]
+	return ok
+}
+
 // ResetURLMediaPack resets all changes to the "url_media_pack" field.
 func (m *GameVersionMutation) ResetURLMediaPack() {
 	m.url_media_pack = nil
+	delete(m.clearedFields, gameversion.FieldURLMediaPack)
 }
 
 // SetURLReleaseNote sets the "url_release_note" field.
@@ -6121,9 +6226,22 @@ func (m *GameVersionMutation) OldURLReleaseNote(ctx context.Context) (v string, 
 	return oldValue.URLReleaseNote, nil
 }
 
+// ClearURLReleaseNote clears the value of the "url_release_note" field.
+func (m *GameVersionMutation) ClearURLReleaseNote() {
+	m.url_release_note = nil
+	m.clearedFields[gameversion.FieldURLReleaseNote] = struct{}{}
+}
+
+// URLReleaseNoteCleared returns if the "url_release_note" field was cleared in this mutation.
+func (m *GameVersionMutation) URLReleaseNoteCleared() bool {
+	_, ok := m.clearedFields[gameversion.FieldURLReleaseNote]
+	return ok
+}
+
 // ResetURLReleaseNote resets all changes to the "url_release_note" field.
 func (m *GameVersionMutation) ResetURLReleaseNote() {
 	m.url_release_note = nil
+	delete(m.clearedFields, gameversion.FieldURLReleaseNote)
 }
 
 // SetDeprecated sets the "deprecated" field.
@@ -6207,10 +6325,24 @@ func (m *GameVersionMutation) AppendedAvailableMathVersions() ([]int, bool) {
 	return m.appendavailable_math_versions, true
 }
 
+// ClearAvailableMathVersions clears the value of the "available_math_versions" field.
+func (m *GameVersionMutation) ClearAvailableMathVersions() {
+	m.available_math_versions = nil
+	m.appendavailable_math_versions = nil
+	m.clearedFields[gameversion.FieldAvailableMathVersions] = struct{}{}
+}
+
+// AvailableMathVersionsCleared returns if the "available_math_versions" field was cleared in this mutation.
+func (m *GameVersionMutation) AvailableMathVersionsCleared() bool {
+	_, ok := m.clearedFields[gameversion.FieldAvailableMathVersions]
+	return ok
+}
+
 // ResetAvailableMathVersions resets all changes to the "available_math_versions" field.
 func (m *GameVersionMutation) ResetAvailableMathVersions() {
 	m.available_math_versions = nil
 	m.appendavailable_math_versions = nil
+	delete(m.clearedFields, gameversion.FieldAvailableMathVersions)
 }
 
 // SetCanAutoBet sets the "can_auto_bet" field.
@@ -6280,9 +6412,22 @@ func (m *GameVersionMutation) OldURLGameManual(ctx context.Context) (v string, e
 	return oldValue.URLGameManual, nil
 }
 
+// ClearURLGameManual clears the value of the "url_game_manual" field.
+func (m *GameVersionMutation) ClearURLGameManual() {
+	m.url_game_manual = nil
+	m.clearedFields[gameversion.FieldURLGameManual] = struct{}{}
+}
+
+// URLGameManualCleared returns if the "url_game_manual" field was cleared in this mutation.
+func (m *GameVersionMutation) URLGameManualCleared() bool {
+	_, ok := m.clearedFields[gameversion.FieldURLGameManual]
+	return ok
+}
+
 // ResetURLGameManual resets all changes to the "url_game_manual" field.
 func (m *GameVersionMutation) ResetURLGameManual() {
 	m.url_game_manual = nil
+	delete(m.clearedFields, gameversion.FieldURLGameManual)
 }
 
 // SetCanAutoCashout sets the "can_auto_cashout" field.
@@ -6879,7 +7024,20 @@ func (m *GameVersionMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *GameVersionMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(gameversion.FieldURLMediaPack) {
+		fields = append(fields, gameversion.FieldURLMediaPack)
+	}
+	if m.FieldCleared(gameversion.FieldURLReleaseNote) {
+		fields = append(fields, gameversion.FieldURLReleaseNote)
+	}
+	if m.FieldCleared(gameversion.FieldAvailableMathVersions) {
+		fields = append(fields, gameversion.FieldAvailableMathVersions)
+	}
+	if m.FieldCleared(gameversion.FieldURLGameManual) {
+		fields = append(fields, gameversion.FieldURLGameManual)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -6892,6 +7050,20 @@ func (m *GameVersionMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *GameVersionMutation) ClearField(name string) error {
+	switch name {
+	case gameversion.FieldURLMediaPack:
+		m.ClearURLMediaPack()
+		return nil
+	case gameversion.FieldURLReleaseNote:
+		m.ClearURLReleaseNote()
+		return nil
+	case gameversion.FieldAvailableMathVersions:
+		m.ClearAvailableMathVersions()
+		return nil
+	case gameversion.FieldURLGameManual:
+		m.ClearURLGameManual()
+		return nil
+	}
 	return fmt.Errorf("unknown GameVersion nullable field %s", name)
 }
 
@@ -7344,10 +7516,24 @@ func (m *MathVersionMutation) AddedVolatility() (r int, exists bool) {
 	return *v, true
 }
 
+// ClearVolatility clears the value of the "volatility" field.
+func (m *MathVersionMutation) ClearVolatility() {
+	m.volatility = nil
+	m.addvolatility = nil
+	m.clearedFields[mathversion.FieldVolatility] = struct{}{}
+}
+
+// VolatilityCleared returns if the "volatility" field was cleared in this mutation.
+func (m *MathVersionMutation) VolatilityCleared() bool {
+	_, ok := m.clearedFields[mathversion.FieldVolatility]
+	return ok
+}
+
 // ResetVolatility resets all changes to the "volatility" field.
 func (m *MathVersionMutation) ResetVolatility() {
 	m.volatility = nil
 	m.addvolatility = nil
+	delete(m.clearedFields, mathversion.FieldVolatility)
 }
 
 // SetRtp sets the "rtp" field.
@@ -7400,10 +7586,24 @@ func (m *MathVersionMutation) AddedRtp() (r int, exists bool) {
 	return *v, true
 }
 
+// ClearRtp clears the value of the "rtp" field.
+func (m *MathVersionMutation) ClearRtp() {
+	m.rtp = nil
+	m.addrtp = nil
+	m.clearedFields[mathversion.FieldRtp] = struct{}{}
+}
+
+// RtpCleared returns if the "rtp" field was cleared in this mutation.
+func (m *MathVersionMutation) RtpCleared() bool {
+	_, ok := m.clearedFields[mathversion.FieldRtp]
+	return ok
+}
+
 // ResetRtp resets all changes to the "rtp" field.
 func (m *MathVersionMutation) ResetRtp() {
 	m.rtp = nil
 	m.addrtp = nil
+	delete(m.clearedFields, mathversion.FieldRtp)
 }
 
 // SetMaxWin sets the "max_win" field.
@@ -7456,10 +7656,24 @@ func (m *MathVersionMutation) AddedMaxWin() (r int, exists bool) {
 	return *v, true
 }
 
+// ClearMaxWin clears the value of the "max_win" field.
+func (m *MathVersionMutation) ClearMaxWin() {
+	m.max_win = nil
+	m.addmax_win = nil
+	m.clearedFields[mathversion.FieldMaxWin] = struct{}{}
+}
+
+// MaxWinCleared returns if the "max_win" field was cleared in this mutation.
+func (m *MathVersionMutation) MaxWinCleared() bool {
+	_, ok := m.clearedFields[mathversion.FieldMaxWin]
+	return ok
+}
+
 // ResetMaxWin resets all changes to the "max_win" field.
 func (m *MathVersionMutation) ResetMaxWin() {
 	m.max_win = nil
 	m.addmax_win = nil
+	delete(m.clearedFields, mathversion.FieldMaxWin)
 }
 
 // SetCanBuyBonus sets the "can_buy_bonus" field.
@@ -7493,9 +7707,22 @@ func (m *MathVersionMutation) OldCanBuyBonus(ctx context.Context) (v bool, err e
 	return oldValue.CanBuyBonus, nil
 }
 
+// ClearCanBuyBonus clears the value of the "can_buy_bonus" field.
+func (m *MathVersionMutation) ClearCanBuyBonus() {
+	m.can_buy_bonus = nil
+	m.clearedFields[mathversion.FieldCanBuyBonus] = struct{}{}
+}
+
+// CanBuyBonusCleared returns if the "can_buy_bonus" field was cleared in this mutation.
+func (m *MathVersionMutation) CanBuyBonusCleared() bool {
+	_, ok := m.clearedFields[mathversion.FieldCanBuyBonus]
+	return ok
+}
+
 // ResetCanBuyBonus resets all changes to the "can_buy_bonus" field.
 func (m *MathVersionMutation) ResetCanBuyBonus() {
 	m.can_buy_bonus = nil
+	delete(m.clearedFields, mathversion.FieldCanBuyBonus)
 }
 
 // SetURLReleaseNote sets the "url_release_note" field.
@@ -7529,9 +7756,22 @@ func (m *MathVersionMutation) OldURLReleaseNote(ctx context.Context) (v string, 
 	return oldValue.URLReleaseNote, nil
 }
 
+// ClearURLReleaseNote clears the value of the "url_release_note" field.
+func (m *MathVersionMutation) ClearURLReleaseNote() {
+	m.url_release_note = nil
+	m.clearedFields[mathversion.FieldURLReleaseNote] = struct{}{}
+}
+
+// URLReleaseNoteCleared returns if the "url_release_note" field was cleared in this mutation.
+func (m *MathVersionMutation) URLReleaseNoteCleared() bool {
+	_, ok := m.clearedFields[mathversion.FieldURLReleaseNote]
+	return ok
+}
+
 // ResetURLReleaseNote resets all changes to the "url_release_note" field.
 func (m *MathVersionMutation) ResetURLReleaseNote() {
 	m.url_release_note = nil
+	delete(m.clearedFields, mathversion.FieldURLReleaseNote)
 }
 
 // SetDeprecated sets the "deprecated" field.
@@ -7601,9 +7841,22 @@ func (m *MathVersionMutation) OldCanAnteBet(ctx context.Context) (v bool, err er
 	return oldValue.CanAnteBet, nil
 }
 
+// ClearCanAnteBet clears the value of the "can_ante_bet" field.
+func (m *MathVersionMutation) ClearCanAnteBet() {
+	m.can_ante_bet = nil
+	m.clearedFields[mathversion.FieldCanAnteBet] = struct{}{}
+}
+
+// CanAnteBetCleared returns if the "can_ante_bet" field was cleared in this mutation.
+func (m *MathVersionMutation) CanAnteBetCleared() bool {
+	_, ok := m.clearedFields[mathversion.FieldCanAnteBet]
+	return ok
+}
+
 // ResetCanAnteBet resets all changes to the "can_ante_bet" field.
 func (m *MathVersionMutation) ResetCanAnteBet() {
 	m.can_ante_bet = nil
+	delete(m.clearedFields, mathversion.FieldCanAnteBet)
 }
 
 // AddSessionIDs adds the "sessions" edge to the Session entity by ids.
@@ -7969,7 +8222,26 @@ func (m *MathVersionMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *MathVersionMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(mathversion.FieldVolatility) {
+		fields = append(fields, mathversion.FieldVolatility)
+	}
+	if m.FieldCleared(mathversion.FieldRtp) {
+		fields = append(fields, mathversion.FieldRtp)
+	}
+	if m.FieldCleared(mathversion.FieldMaxWin) {
+		fields = append(fields, mathversion.FieldMaxWin)
+	}
+	if m.FieldCleared(mathversion.FieldCanBuyBonus) {
+		fields = append(fields, mathversion.FieldCanBuyBonus)
+	}
+	if m.FieldCleared(mathversion.FieldURLReleaseNote) {
+		fields = append(fields, mathversion.FieldURLReleaseNote)
+	}
+	if m.FieldCleared(mathversion.FieldCanAnteBet) {
+		fields = append(fields, mathversion.FieldCanAnteBet)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -7982,6 +8254,26 @@ func (m *MathVersionMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *MathVersionMutation) ClearField(name string) error {
+	switch name {
+	case mathversion.FieldVolatility:
+		m.ClearVolatility()
+		return nil
+	case mathversion.FieldRtp:
+		m.ClearRtp()
+		return nil
+	case mathversion.FieldMaxWin:
+		m.ClearMaxWin()
+		return nil
+	case mathversion.FieldCanBuyBonus:
+		m.ClearCanBuyBonus()
+		return nil
+	case mathversion.FieldURLReleaseNote:
+		m.ClearURLReleaseNote()
+		return nil
+	case mathversion.FieldCanAnteBet:
+		m.ClearCanAnteBet()
+		return nil
+	}
 	return fmt.Errorf("unknown MathVersion nullable field %s", name)
 }
 
@@ -10614,7 +10906,6 @@ type SessionMutation struct {
 	op                       Op
 	typ                      string
 	id                       *int
-	can_demo                 *bool
 	token                    *string
 	client_id                *string
 	demo                     *bool
@@ -10732,42 +11023,6 @@ func (m *SessionMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
-}
-
-// SetCanDemo sets the "can_demo" field.
-func (m *SessionMutation) SetCanDemo(b bool) {
-	m.can_demo = &b
-}
-
-// CanDemo returns the value of the "can_demo" field in the mutation.
-func (m *SessionMutation) CanDemo() (r bool, exists bool) {
-	v := m.can_demo
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCanDemo returns the old "can_demo" field's value of the Session entity.
-// If the Session object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SessionMutation) OldCanDemo(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCanDemo is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCanDemo requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCanDemo: %w", err)
-	}
-	return oldValue.CanDemo, nil
-}
-
-// ResetCanDemo resets all changes to the "can_demo" field.
-func (m *SessionMutation) ResetCanDemo() {
-	m.can_demo = nil
 }
 
 // SetToken sets the "token" field.
@@ -11192,10 +11447,7 @@ func (m *SessionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SessionMutation) Fields() []string {
-	fields := make([]string, 0, 6)
-	if m.can_demo != nil {
-		fields = append(fields, session.FieldCanDemo)
-	}
+	fields := make([]string, 0, 5)
 	if m.token != nil {
 		fields = append(fields, session.FieldToken)
 	}
@@ -11219,8 +11471,6 @@ func (m *SessionMutation) Fields() []string {
 // schema.
 func (m *SessionMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case session.FieldCanDemo:
-		return m.CanDemo()
 	case session.FieldToken:
 		return m.Token()
 	case session.FieldClientID:
@@ -11240,8 +11490,6 @@ func (m *SessionMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *SessionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case session.FieldCanDemo:
-		return m.OldCanDemo(ctx)
 	case session.FieldToken:
 		return m.OldToken(ctx)
 	case session.FieldClientID:
@@ -11261,13 +11509,6 @@ func (m *SessionMutation) OldField(ctx context.Context, name string) (ent.Value,
 // type.
 func (m *SessionMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case session.FieldCanDemo:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCanDemo(v)
-		return nil
 	case session.FieldToken:
 		v, ok := value.(string)
 		if !ok {
@@ -11361,9 +11602,6 @@ func (m *SessionMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *SessionMutation) ResetField(name string) error {
 	switch name {
-	case session.FieldCanDemo:
-		m.ResetCanDemo()
-		return nil
 	case session.FieldToken:
 		m.ResetToken()
 		return nil

@@ -268,6 +268,16 @@ func VolatilityLTE(v int) predicate.MathVersion {
 	return predicate.MathVersion(sql.FieldLTE(FieldVolatility, v))
 }
 
+// VolatilityIsNil applies the IsNil predicate on the "volatility" field.
+func VolatilityIsNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldIsNull(FieldVolatility))
+}
+
+// VolatilityNotNil applies the NotNil predicate on the "volatility" field.
+func VolatilityNotNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldNotNull(FieldVolatility))
+}
+
 // RtpEQ applies the EQ predicate on the "rtp" field.
 func RtpEQ(v int) predicate.MathVersion {
 	return predicate.MathVersion(sql.FieldEQ(FieldRtp, v))
@@ -306,6 +316,16 @@ func RtpLT(v int) predicate.MathVersion {
 // RtpLTE applies the LTE predicate on the "rtp" field.
 func RtpLTE(v int) predicate.MathVersion {
 	return predicate.MathVersion(sql.FieldLTE(FieldRtp, v))
+}
+
+// RtpIsNil applies the IsNil predicate on the "rtp" field.
+func RtpIsNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldIsNull(FieldRtp))
+}
+
+// RtpNotNil applies the NotNil predicate on the "rtp" field.
+func RtpNotNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldNotNull(FieldRtp))
 }
 
 // MaxWinEQ applies the EQ predicate on the "max_win" field.
@@ -348,6 +368,16 @@ func MaxWinLTE(v int) predicate.MathVersion {
 	return predicate.MathVersion(sql.FieldLTE(FieldMaxWin, v))
 }
 
+// MaxWinIsNil applies the IsNil predicate on the "max_win" field.
+func MaxWinIsNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldIsNull(FieldMaxWin))
+}
+
+// MaxWinNotNil applies the NotNil predicate on the "max_win" field.
+func MaxWinNotNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldNotNull(FieldMaxWin))
+}
+
 // CanBuyBonusEQ applies the EQ predicate on the "can_buy_bonus" field.
 func CanBuyBonusEQ(v bool) predicate.MathVersion {
 	return predicate.MathVersion(sql.FieldEQ(FieldCanBuyBonus, v))
@@ -356,6 +386,16 @@ func CanBuyBonusEQ(v bool) predicate.MathVersion {
 // CanBuyBonusNEQ applies the NEQ predicate on the "can_buy_bonus" field.
 func CanBuyBonusNEQ(v bool) predicate.MathVersion {
 	return predicate.MathVersion(sql.FieldNEQ(FieldCanBuyBonus, v))
+}
+
+// CanBuyBonusIsNil applies the IsNil predicate on the "can_buy_bonus" field.
+func CanBuyBonusIsNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldIsNull(FieldCanBuyBonus))
+}
+
+// CanBuyBonusNotNil applies the NotNil predicate on the "can_buy_bonus" field.
+func CanBuyBonusNotNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldNotNull(FieldCanBuyBonus))
 }
 
 // URLReleaseNoteEQ applies the EQ predicate on the "url_release_note" field.
@@ -413,6 +453,16 @@ func URLReleaseNoteHasSuffix(v string) predicate.MathVersion {
 	return predicate.MathVersion(sql.FieldHasSuffix(FieldURLReleaseNote, v))
 }
 
+// URLReleaseNoteIsNil applies the IsNil predicate on the "url_release_note" field.
+func URLReleaseNoteIsNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldIsNull(FieldURLReleaseNote))
+}
+
+// URLReleaseNoteNotNil applies the NotNil predicate on the "url_release_note" field.
+func URLReleaseNoteNotNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldNotNull(FieldURLReleaseNote))
+}
+
 // URLReleaseNoteEqualFold applies the EqualFold predicate on the "url_release_note" field.
 func URLReleaseNoteEqualFold(v string) predicate.MathVersion {
 	return predicate.MathVersion(sql.FieldEqualFold(FieldURLReleaseNote, v))
@@ -441,6 +491,16 @@ func CanAnteBetEQ(v bool) predicate.MathVersion {
 // CanAnteBetNEQ applies the NEQ predicate on the "can_ante_bet" field.
 func CanAnteBetNEQ(v bool) predicate.MathVersion {
 	return predicate.MathVersion(sql.FieldNEQ(FieldCanAnteBet, v))
+}
+
+// CanAnteBetIsNil applies the IsNil predicate on the "can_ante_bet" field.
+func CanAnteBetIsNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldIsNull(FieldCanAnteBet))
+}
+
+// CanAnteBetNotNil applies the NotNil predicate on the "can_ante_bet" field.
+func CanAnteBetNotNil() predicate.MathVersion {
+	return predicate.MathVersion(sql.FieldNotNull(FieldCanAnteBet))
 }
 
 // HasSessions applies the HasEdge predicate on the "sessions" edge.

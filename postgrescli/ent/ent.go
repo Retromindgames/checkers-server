@@ -12,7 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/currencyversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/feature"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/game"
@@ -87,7 +87,7 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			currencie.Table:       currencie.ValidColumn,
+			currency.Table:        currency.ValidColumn,
 			currencyversion.Table: currencyversion.ValidColumn,
 			feature.Table:         feature.ValidColumn,
 			game.Table:            game.ValidColumn,

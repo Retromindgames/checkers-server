@@ -16,7 +16,7 @@ func (Game) Fields() []ent.Field {
 	return []ent.Field{
 
 		field.String("name"),
-		field.String("external_id"),
+		field.String("external_id").Optional(),
 		field.String("trademark_name"),
 	}
 }

@@ -23,10 +23,10 @@ func (r *RedisClient) AddSession(session *models.Session) error {
 		return fmt.Errorf("[RedisClient] (Session) - failed to serialize session: %v", err)
 	}
 
-	operatorIdentifierData, err := json.Marshal(session.OperatorIdentifier)
-	if err != nil {
-		return fmt.Errorf("[RedisClient] (Session) - failed to serialize operator identifier: %v", err)
-	}
+	//operatorIdentifierData, err := json.Marshal(session.OperatorIdentifier)
+	//if err != nil {
+	//	return fmt.Errorf("[RedisClient] (Session) - failed to serialize operator identifier: %v", err)
+	//}
 
 	// Use consistent hash tag for all keys to avoid CROSSSLOT errors
 	hashTag := fmt.Sprintf("{%s}", session.ID) // or use operator for operator index
@@ -35,7 +35,7 @@ func (r *RedisClient) AddSession(session *models.Session) error {
 	tokenKey := fmt.Sprintf("session_token:%s:%s", hashTag, session.Token)
 	indexKey := fmt.Sprintf("session_index:%s:%s:%s:%s",
 		hashTag, // hash tag for index key
-		session.OperatorIdentifier.OperatorName,
+		//session.OperatorIdentifier.OperatorName,
 		session.PlayerName,
 		session.Currency,
 	)
@@ -43,14 +43,14 @@ func (r *RedisClient) AddSession(session *models.Session) error {
 	pipe := r.Client.TxPipeline()
 
 	pipe.HSet(ctx, sessionKey, map[string]interface{}{
-		"id":                  session.ID,
-		"token":               session.Token,
-		"player_name":         session.PlayerName,
-		"currency":            session.Currency,
-		"operator_identifier": string(operatorIdentifierData),
-		"operator_base_url":   session.OperatorBaseUrl,
-		"created_at":          session.CreatedAt.Format(time.RFC3339),
-		"data":                string(data),
+		"id":          session.ID,
+		"token":       session.Token,
+		"player_name": session.PlayerName,
+		"currency":    session.Currency,
+		//"operator_identifier": string(operatorIdentifierData),
+		"operator_base_url": session.OperatorBaseUrl,
+		"created_at":        session.CreatedAt.Format(time.RFC3339),
+		"data":              string(data),
 	})
 	pipe.Expire(ctx, sessionKey, ttl)
 	pipe.Set(ctx, tokenKey, session.ID, ttl)
@@ -85,19 +85,19 @@ func (r *RedisClient) RemoveSession(sessionID string) error {
 	}
 
 	token := fields[0].(string)
-	opIdJSON := fields[1].(string)
+	//opIdJSON := fields[1].(string)
 	playerName := fields[2].(string)
 	currency := fields[3].(string)
 
-	var opIdentifier models.OperatorIdentifier
-	if err := json.Unmarshal([]byte(opIdJSON), &opIdentifier); err != nil {
-		return fmt.Errorf("[RedisClient] - failed to unmarshal operator identifier: %v", err)
-	}
+	//var opIdentifier models.OperatorIdentifier
+	//if err := json.Unmarshal([]byte(opIdJSON), &opIdentifier); err != nil {
+	//	return fmt.Errorf("[RedisClient] - failed to unmarshal operator identifier: %v", err)
+	//}
 
 	tokenKey := fmt.Sprintf("session_token:%s:%s", hashTag, token)
 	indexKey := fmt.Sprintf("session_index:%s:%s:%s:%s",
 		hashTag,
-		opIdentifier.OperatorName,
+		//opIdentifier.OperatorName,
 		playerName,
 		currency,
 	)
@@ -200,7 +200,7 @@ func (r *RedisClient) RefreshSessionTTL(session *models.Session, ttl time.Durati
 	tokenKey := fmt.Sprintf("session_token:%s:%s", hashTag, session.Token)
 	indexKey := fmt.Sprintf("session_index:%s:%s:%s:%s",
 		hashTag,
-		session.OperatorIdentifier.OperatorName,
+		//session.OperatorIdentifier.OperatorName,
 		session.PlayerName,
 		session.Currency,
 	)

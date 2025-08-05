@@ -12,57 +12,57 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/currencyversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/predicate"
 )
 
-// CurrencieQuery is the builder for querying Currencie entities.
-type CurrencieQuery struct {
+// CurrencyQuery is the builder for querying Currency entities.
+type CurrencyQuery struct {
 	config
 	ctx                  *QueryContext
-	order                []currencie.OrderOption
+	order                []currency.OrderOption
 	inters               []Interceptor
-	predicates           []predicate.Currencie
+	predicates           []predicate.Currency
 	withCurrencyVersions *CurrencyVersionQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the CurrencieQuery builder.
-func (cq *CurrencieQuery) Where(ps ...predicate.Currencie) *CurrencieQuery {
+// Where adds a new predicate for the CurrencyQuery builder.
+func (cq *CurrencyQuery) Where(ps ...predicate.Currency) *CurrencyQuery {
 	cq.predicates = append(cq.predicates, ps...)
 	return cq
 }
 
 // Limit the number of records to be returned by this query.
-func (cq *CurrencieQuery) Limit(limit int) *CurrencieQuery {
+func (cq *CurrencyQuery) Limit(limit int) *CurrencyQuery {
 	cq.ctx.Limit = &limit
 	return cq
 }
 
 // Offset to start from.
-func (cq *CurrencieQuery) Offset(offset int) *CurrencieQuery {
+func (cq *CurrencyQuery) Offset(offset int) *CurrencyQuery {
 	cq.ctx.Offset = &offset
 	return cq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (cq *CurrencieQuery) Unique(unique bool) *CurrencieQuery {
+func (cq *CurrencyQuery) Unique(unique bool) *CurrencyQuery {
 	cq.ctx.Unique = &unique
 	return cq
 }
 
 // Order specifies how the records should be ordered.
-func (cq *CurrencieQuery) Order(o ...currencie.OrderOption) *CurrencieQuery {
+func (cq *CurrencyQuery) Order(o ...currency.OrderOption) *CurrencyQuery {
 	cq.order = append(cq.order, o...)
 	return cq
 }
 
 // QueryCurrencyVersions chains the current query on the "currency_versions" edge.
-func (cq *CurrencieQuery) QueryCurrencyVersions() *CurrencyVersionQuery {
+func (cq *CurrencyQuery) QueryCurrencyVersions() *CurrencyVersionQuery {
 	query := (&CurrencyVersionClient{config: cq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := cq.prepareQuery(ctx); err != nil {
@@ -73,9 +73,9 @@ func (cq *CurrencieQuery) QueryCurrencyVersions() *CurrencyVersionQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(currencie.Table, currencie.FieldID, selector),
+			sqlgraph.From(currency.Table, currency.FieldID, selector),
 			sqlgraph.To(currencyversion.Table, currencyversion.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, currencie.CurrencyVersionsTable, currencie.CurrencyVersionsColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, currency.CurrencyVersionsTable, currency.CurrencyVersionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
 		return fromU, nil
@@ -83,21 +83,21 @@ func (cq *CurrencieQuery) QueryCurrencyVersions() *CurrencyVersionQuery {
 	return query
 }
 
-// First returns the first Currencie entity from the query.
-// Returns a *NotFoundError when no Currencie was found.
-func (cq *CurrencieQuery) First(ctx context.Context) (*Currencie, error) {
+// First returns the first Currency entity from the query.
+// Returns a *NotFoundError when no Currency was found.
+func (cq *CurrencyQuery) First(ctx context.Context) (*Currency, error) {
 	nodes, err := cq.Limit(1).All(setContextOp(ctx, cq.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{currencie.Label}
+		return nil, &NotFoundError{currency.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (cq *CurrencieQuery) FirstX(ctx context.Context) *Currencie {
+func (cq *CurrencyQuery) FirstX(ctx context.Context) *Currency {
 	node, err := cq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -105,22 +105,22 @@ func (cq *CurrencieQuery) FirstX(ctx context.Context) *Currencie {
 	return node
 }
 
-// FirstID returns the first Currencie ID from the query.
-// Returns a *NotFoundError when no Currencie ID was found.
-func (cq *CurrencieQuery) FirstID(ctx context.Context) (id int, err error) {
+// FirstID returns the first Currency ID from the query.
+// Returns a *NotFoundError when no Currency ID was found.
+func (cq *CurrencyQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = cq.Limit(1).IDs(setContextOp(ctx, cq.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{currencie.Label}
+		err = &NotFoundError{currency.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (cq *CurrencieQuery) FirstIDX(ctx context.Context) int {
+func (cq *CurrencyQuery) FirstIDX(ctx context.Context) int {
 	id, err := cq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -128,10 +128,10 @@ func (cq *CurrencieQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single Currencie entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Currencie entity is found.
-// Returns a *NotFoundError when no Currencie entities are found.
-func (cq *CurrencieQuery) Only(ctx context.Context) (*Currencie, error) {
+// Only returns a single Currency entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one Currency entity is found.
+// Returns a *NotFoundError when no Currency entities are found.
+func (cq *CurrencyQuery) Only(ctx context.Context) (*Currency, error) {
 	nodes, err := cq.Limit(2).All(setContextOp(ctx, cq.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -140,14 +140,14 @@ func (cq *CurrencieQuery) Only(ctx context.Context) (*Currencie, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{currencie.Label}
+		return nil, &NotFoundError{currency.Label}
 	default:
-		return nil, &NotSingularError{currencie.Label}
+		return nil, &NotSingularError{currency.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (cq *CurrencieQuery) OnlyX(ctx context.Context) *Currencie {
+func (cq *CurrencyQuery) OnlyX(ctx context.Context) *Currency {
 	node, err := cq.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -155,10 +155,10 @@ func (cq *CurrencieQuery) OnlyX(ctx context.Context) *Currencie {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Currencie ID in the query.
-// Returns a *NotSingularError when more than one Currencie ID is found.
+// OnlyID is like Only, but returns the only Currency ID in the query.
+// Returns a *NotSingularError when more than one Currency ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (cq *CurrencieQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (cq *CurrencyQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = cq.Limit(2).IDs(setContextOp(ctx, cq.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -167,15 +167,15 @@ func (cq *CurrencieQuery) OnlyID(ctx context.Context) (id int, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{currencie.Label}
+		err = &NotFoundError{currency.Label}
 	default:
-		err = &NotSingularError{currencie.Label}
+		err = &NotSingularError{currency.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (cq *CurrencieQuery) OnlyIDX(ctx context.Context) int {
+func (cq *CurrencyQuery) OnlyIDX(ctx context.Context) int {
 	id, err := cq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -184,17 +184,17 @@ func (cq *CurrencieQuery) OnlyIDX(ctx context.Context) int {
 }
 
 // All executes the query and returns a list of Currencies.
-func (cq *CurrencieQuery) All(ctx context.Context) ([]*Currencie, error) {
+func (cq *CurrencyQuery) All(ctx context.Context) ([]*Currency, error) {
 	ctx = setContextOp(ctx, cq.ctx, ent.OpQueryAll)
 	if err := cq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Currencie, *CurrencieQuery]()
-	return withInterceptors[[]*Currencie](ctx, cq, qr, cq.inters)
+	qr := querierAll[[]*Currency, *CurrencyQuery]()
+	return withInterceptors[[]*Currency](ctx, cq, qr, cq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (cq *CurrencieQuery) AllX(ctx context.Context) []*Currencie {
+func (cq *CurrencyQuery) AllX(ctx context.Context) []*Currency {
 	nodes, err := cq.All(ctx)
 	if err != nil {
 		panic(err)
@@ -202,20 +202,20 @@ func (cq *CurrencieQuery) AllX(ctx context.Context) []*Currencie {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Currencie IDs.
-func (cq *CurrencieQuery) IDs(ctx context.Context) (ids []int, err error) {
+// IDs executes the query and returns a list of Currency IDs.
+func (cq *CurrencyQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if cq.ctx.Unique == nil && cq.path != nil {
 		cq.Unique(true)
 	}
 	ctx = setContextOp(ctx, cq.ctx, ent.OpQueryIDs)
-	if err = cq.Select(currencie.FieldID).Scan(ctx, &ids); err != nil {
+	if err = cq.Select(currency.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (cq *CurrencieQuery) IDsX(ctx context.Context) []int {
+func (cq *CurrencyQuery) IDsX(ctx context.Context) []int {
 	ids, err := cq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -224,16 +224,16 @@ func (cq *CurrencieQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (cq *CurrencieQuery) Count(ctx context.Context) (int, error) {
+func (cq *CurrencyQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, cq.ctx, ent.OpQueryCount)
 	if err := cq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, cq, querierCount[*CurrencieQuery](), cq.inters)
+	return withInterceptors[int](ctx, cq, querierCount[*CurrencyQuery](), cq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (cq *CurrencieQuery) CountX(ctx context.Context) int {
+func (cq *CurrencyQuery) CountX(ctx context.Context) int {
 	count, err := cq.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -242,7 +242,7 @@ func (cq *CurrencieQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (cq *CurrencieQuery) Exist(ctx context.Context) (bool, error) {
+func (cq *CurrencyQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, cq.ctx, ent.OpQueryExist)
 	switch _, err := cq.FirstID(ctx); {
 	case IsNotFound(err):
@@ -255,7 +255,7 @@ func (cq *CurrencieQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (cq *CurrencieQuery) ExistX(ctx context.Context) bool {
+func (cq *CurrencyQuery) ExistX(ctx context.Context) bool {
 	exist, err := cq.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -263,18 +263,18 @@ func (cq *CurrencieQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the CurrencieQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the CurrencyQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (cq *CurrencieQuery) Clone() *CurrencieQuery {
+func (cq *CurrencyQuery) Clone() *CurrencyQuery {
 	if cq == nil {
 		return nil
 	}
-	return &CurrencieQuery{
+	return &CurrencyQuery{
 		config:               cq.config,
 		ctx:                  cq.ctx.Clone(),
-		order:                append([]currencie.OrderOption{}, cq.order...),
+		order:                append([]currency.OrderOption{}, cq.order...),
 		inters:               append([]Interceptor{}, cq.inters...),
-		predicates:           append([]predicate.Currencie{}, cq.predicates...),
+		predicates:           append([]predicate.Currency{}, cq.predicates...),
 		withCurrencyVersions: cq.withCurrencyVersions.Clone(),
 		// clone intermediate query.
 		sql:  cq.sql.Clone(),
@@ -284,7 +284,7 @@ func (cq *CurrencieQuery) Clone() *CurrencieQuery {
 
 // WithCurrencyVersions tells the query-builder to eager-load the nodes that are connected to
 // the "currency_versions" edge. The optional arguments are used to configure the query builder of the edge.
-func (cq *CurrencieQuery) WithCurrencyVersions(opts ...func(*CurrencyVersionQuery)) *CurrencieQuery {
+func (cq *CurrencyQuery) WithCurrencyVersions(opts ...func(*CurrencyVersionQuery)) *CurrencyQuery {
 	query := (&CurrencyVersionClient{config: cq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -303,15 +303,15 @@ func (cq *CurrencieQuery) WithCurrencyVersions(opts ...func(*CurrencyVersionQuer
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Currencie.Query().
-//		GroupBy(currencie.FieldName).
+//	client.Currency.Query().
+//		GroupBy(currency.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (cq *CurrencieQuery) GroupBy(field string, fields ...string) *CurrencieGroupBy {
+func (cq *CurrencyQuery) GroupBy(field string, fields ...string) *CurrencyGroupBy {
 	cq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &CurrencieGroupBy{build: cq}
+	grbuild := &CurrencyGroupBy{build: cq}
 	grbuild.flds = &cq.ctx.Fields
-	grbuild.label = currencie.Label
+	grbuild.label = currency.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -325,23 +325,23 @@ func (cq *CurrencieQuery) GroupBy(field string, fields ...string) *CurrencieGrou
 //		Name string `json:"name,omitempty"`
 //	}
 //
-//	client.Currencie.Query().
-//		Select(currencie.FieldName).
+//	client.Currency.Query().
+//		Select(currency.FieldName).
 //		Scan(ctx, &v)
-func (cq *CurrencieQuery) Select(fields ...string) *CurrencieSelect {
+func (cq *CurrencyQuery) Select(fields ...string) *CurrencySelect {
 	cq.ctx.Fields = append(cq.ctx.Fields, fields...)
-	sbuild := &CurrencieSelect{CurrencieQuery: cq}
-	sbuild.label = currencie.Label
+	sbuild := &CurrencySelect{CurrencyQuery: cq}
+	sbuild.label = currency.Label
 	sbuild.flds, sbuild.scan = &cq.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a CurrencieSelect configured with the given aggregations.
-func (cq *CurrencieQuery) Aggregate(fns ...AggregateFunc) *CurrencieSelect {
+// Aggregate returns a CurrencySelect configured with the given aggregations.
+func (cq *CurrencyQuery) Aggregate(fns ...AggregateFunc) *CurrencySelect {
 	return cq.Select().Aggregate(fns...)
 }
 
-func (cq *CurrencieQuery) prepareQuery(ctx context.Context) error {
+func (cq *CurrencyQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range cq.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -353,7 +353,7 @@ func (cq *CurrencieQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range cq.ctx.Fields {
-		if !currencie.ValidColumn(f) {
+		if !currency.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -367,19 +367,19 @@ func (cq *CurrencieQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (cq *CurrencieQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Currencie, error) {
+func (cq *CurrencyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Currency, error) {
 	var (
-		nodes       = []*Currencie{}
+		nodes       = []*Currency{}
 		_spec       = cq.querySpec()
 		loadedTypes = [1]bool{
 			cq.withCurrencyVersions != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Currencie).scanValues(nil, columns)
+		return (*Currency).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Currencie{config: cq.config}
+		node := &Currency{config: cq.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -395,17 +395,17 @@ func (cq *CurrencieQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Cu
 	}
 	if query := cq.withCurrencyVersions; query != nil {
 		if err := cq.loadCurrencyVersions(ctx, query, nodes,
-			func(n *Currencie) { n.Edges.CurrencyVersions = []*CurrencyVersion{} },
-			func(n *Currencie, e *CurrencyVersion) { n.Edges.CurrencyVersions = append(n.Edges.CurrencyVersions, e) }); err != nil {
+			func(n *Currency) { n.Edges.CurrencyVersions = []*CurrencyVersion{} },
+			func(n *Currency, e *CurrencyVersion) { n.Edges.CurrencyVersions = append(n.Edges.CurrencyVersions, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (cq *CurrencieQuery) loadCurrencyVersions(ctx context.Context, query *CurrencyVersionQuery, nodes []*Currencie, init func(*Currencie), assign func(*Currencie, *CurrencyVersion)) error {
+func (cq *CurrencyQuery) loadCurrencyVersions(ctx context.Context, query *CurrencyVersionQuery, nodes []*Currency, init func(*Currency), assign func(*Currency, *CurrencyVersion)) error {
 	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*Currencie)
+	nodeids := make(map[int]*Currency)
 	for i := range nodes {
 		fks = append(fks, nodes[i].ID)
 		nodeids[nodes[i].ID] = nodes[i]
@@ -415,27 +415,27 @@ func (cq *CurrencieQuery) loadCurrencyVersions(ctx context.Context, query *Curre
 	}
 	query.withFKs = true
 	query.Where(predicate.CurrencyVersion(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(currencie.CurrencyVersionsColumn), fks...))
+		s.Where(sql.InValues(s.C(currency.CurrencyVersionsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.currencie_currency_versions
+		fk := n.currency_currency_versions
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "currencie_currency_versions" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "currency_currency_versions" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "currencie_currency_versions" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "currency_currency_versions" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
 	return nil
 }
 
-func (cq *CurrencieQuery) sqlCount(ctx context.Context) (int, error) {
+func (cq *CurrencyQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := cq.querySpec()
 	_spec.Node.Columns = cq.ctx.Fields
 	if len(cq.ctx.Fields) > 0 {
@@ -444,8 +444,8 @@ func (cq *CurrencieQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, cq.driver, _spec)
 }
 
-func (cq *CurrencieQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(currencie.Table, currencie.Columns, sqlgraph.NewFieldSpec(currencie.FieldID, field.TypeInt))
+func (cq *CurrencyQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(currency.Table, currency.Columns, sqlgraph.NewFieldSpec(currency.FieldID, field.TypeInt))
 	_spec.From = cq.sql
 	if unique := cq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -454,9 +454,9 @@ func (cq *CurrencieQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := cq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, currencie.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, currency.FieldID)
 		for i := range fields {
-			if fields[i] != currencie.FieldID {
+			if fields[i] != currency.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
@@ -484,12 +484,12 @@ func (cq *CurrencieQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (cq *CurrencieQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (cq *CurrencyQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(cq.driver.Dialect())
-	t1 := builder.Table(currencie.Table)
+	t1 := builder.Table(currency.Table)
 	columns := cq.ctx.Fields
 	if len(columns) == 0 {
-		columns = currencie.Columns
+		columns = currency.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if cq.sql != nil {
@@ -516,28 +516,28 @@ func (cq *CurrencieQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// CurrencieGroupBy is the group-by builder for Currencie entities.
-type CurrencieGroupBy struct {
+// CurrencyGroupBy is the group-by builder for Currency entities.
+type CurrencyGroupBy struct {
 	selector
-	build *CurrencieQuery
+	build *CurrencyQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (cgb *CurrencieGroupBy) Aggregate(fns ...AggregateFunc) *CurrencieGroupBy {
+func (cgb *CurrencyGroupBy) Aggregate(fns ...AggregateFunc) *CurrencyGroupBy {
 	cgb.fns = append(cgb.fns, fns...)
 	return cgb
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (cgb *CurrencieGroupBy) Scan(ctx context.Context, v any) error {
+func (cgb *CurrencyGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, cgb.build.ctx, ent.OpQueryGroupBy)
 	if err := cgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*CurrencieQuery, *CurrencieGroupBy](ctx, cgb.build, cgb, cgb.build.inters, v)
+	return scanWithInterceptors[*CurrencyQuery, *CurrencyGroupBy](ctx, cgb.build, cgb, cgb.build.inters, v)
 }
 
-func (cgb *CurrencieGroupBy) sqlScan(ctx context.Context, root *CurrencieQuery, v any) error {
+func (cgb *CurrencyGroupBy) sqlScan(ctx context.Context, root *CurrencyQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(cgb.fns))
 	for _, fn := range cgb.fns {
@@ -564,28 +564,28 @@ func (cgb *CurrencieGroupBy) sqlScan(ctx context.Context, root *CurrencieQuery, 
 	return sql.ScanSlice(rows, v)
 }
 
-// CurrencieSelect is the builder for selecting fields of Currencie entities.
-type CurrencieSelect struct {
-	*CurrencieQuery
+// CurrencySelect is the builder for selecting fields of Currency entities.
+type CurrencySelect struct {
+	*CurrencyQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (cs *CurrencieSelect) Aggregate(fns ...AggregateFunc) *CurrencieSelect {
+func (cs *CurrencySelect) Aggregate(fns ...AggregateFunc) *CurrencySelect {
 	cs.fns = append(cs.fns, fns...)
 	return cs
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (cs *CurrencieSelect) Scan(ctx context.Context, v any) error {
+func (cs *CurrencySelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, cs.ctx, ent.OpQuerySelect)
 	if err := cs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*CurrencieQuery, *CurrencieSelect](ctx, cs.CurrencieQuery, cs, cs.inters, v)
+	return scanWithInterceptors[*CurrencyQuery, *CurrencySelect](ctx, cs.CurrencyQuery, cs, cs.inters, v)
 }
 
-func (cs *CurrencieSelect) sqlScan(ctx context.Context, root *CurrencieQuery, v any) error {
+func (cs *CurrencySelect) sqlScan(ctx context.Context, root *CurrencyQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(cs.fns))
 	for _, fn := range cs.fns {

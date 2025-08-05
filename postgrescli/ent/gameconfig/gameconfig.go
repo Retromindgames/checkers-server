@@ -20,6 +20,8 @@ const (
 	FieldCanFreeBets = "can_free_bets"
 	// FieldCanDropAndWins holds the string denoting the can_drop_and_wins field in the database.
 	FieldCanDropAndWins = "can_drop_and_wins"
+	// FieldCanBuyBonus holds the string denoting the can_buy_bonus field in the database.
+	FieldCanBuyBonus = "can_buy_bonus"
 	// FieldCanTurbo holds the string denoting the can_turbo field in the database.
 	FieldCanTurbo = "can_turbo"
 	// FieldIsActive holds the string denoting the is_active field in the database.
@@ -88,6 +90,7 @@ var Columns = []string{
 	FieldCanTournament,
 	FieldCanFreeBets,
 	FieldCanDropAndWins,
+	FieldCanBuyBonus,
 	FieldCanTurbo,
 	FieldIsActive,
 	FieldCanAutoBet,
@@ -121,6 +124,31 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// DefaultCanDemo holds the default value on creation for the "can_demo" field.
+	DefaultCanDemo bool
+	// DefaultCanTournament holds the default value on creation for the "can_tournament" field.
+	DefaultCanTournament bool
+	// DefaultCanFreeBets holds the default value on creation for the "can_free_bets" field.
+	DefaultCanFreeBets bool
+	// DefaultCanDropAndWins holds the default value on creation for the "can_drop_and_wins" field.
+	DefaultCanDropAndWins bool
+	// DefaultCanBuyBonus holds the default value on creation for the "can_buy_bonus" field.
+	DefaultCanBuyBonus bool
+	// DefaultCanTurbo holds the default value on creation for the "can_turbo" field.
+	DefaultCanTurbo bool
+	// DefaultIsActive holds the default value on creation for the "is_active" field.
+	DefaultIsActive bool
+	// DefaultCanAutoBet holds the default value on creation for the "can_auto_bet" field.
+	DefaultCanAutoBet bool
+	// DefaultCanAutoCashout holds the default value on creation for the "can_auto_cashout" field.
+	DefaultCanAutoCashout bool
+	// DefaultCanAnteBet holds the default value on creation for the "can_ante_bet" field.
+	DefaultCanAnteBet bool
+	// DefaultCanHomeButton holds the default value on creation for the "can_home_button" field.
+	DefaultCanHomeButton bool
+)
+
 // OrderOption defines the ordering options for the GameConfig queries.
 type OrderOption func(*sql.Selector)
 
@@ -147,6 +175,11 @@ func ByCanFreeBets(opts ...sql.OrderTermOption) OrderOption {
 // ByCanDropAndWins orders the results by the can_drop_and_wins field.
 func ByCanDropAndWins(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCanDropAndWins, opts...).ToFunc()
+}
+
+// ByCanBuyBonus orders the results by the can_buy_bonus field.
+func ByCanBuyBonus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCanBuyBonus, opts...).ToFunc()
 }
 
 // ByCanTurbo orders the results by the can_turbo field.

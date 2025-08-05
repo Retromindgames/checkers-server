@@ -10,32 +10,32 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/currencyversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/predicate"
 )
 
-// CurrencieUpdate is the builder for updating Currencie entities.
-type CurrencieUpdate struct {
+// CurrencyUpdate is the builder for updating Currency entities.
+type CurrencyUpdate struct {
 	config
 	hooks    []Hook
-	mutation *CurrencieMutation
+	mutation *CurrencyMutation
 }
 
-// Where appends a list predicates to the CurrencieUpdate builder.
-func (cu *CurrencieUpdate) Where(ps ...predicate.Currencie) *CurrencieUpdate {
+// Where appends a list predicates to the CurrencyUpdate builder.
+func (cu *CurrencyUpdate) Where(ps ...predicate.Currency) *CurrencyUpdate {
 	cu.mutation.Where(ps...)
 	return cu
 }
 
 // SetName sets the "name" field.
-func (cu *CurrencieUpdate) SetName(s string) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetName(s string) *CurrencyUpdate {
 	cu.mutation.SetName(s)
 	return cu
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (cu *CurrencieUpdate) SetNillableName(s *string) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetNillableName(s *string) *CurrencyUpdate {
 	if s != nil {
 		cu.SetName(*s)
 	}
@@ -43,13 +43,13 @@ func (cu *CurrencieUpdate) SetNillableName(s *string) *CurrencieUpdate {
 }
 
 // SetSymbol sets the "symbol" field.
-func (cu *CurrencieUpdate) SetSymbol(s string) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetSymbol(s string) *CurrencyUpdate {
 	cu.mutation.SetSymbol(s)
 	return cu
 }
 
 // SetNillableSymbol sets the "symbol" field if the given value is not nil.
-func (cu *CurrencieUpdate) SetNillableSymbol(s *string) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetNillableSymbol(s *string) *CurrencyUpdate {
 	if s != nil {
 		cu.SetSymbol(*s)
 	}
@@ -57,13 +57,13 @@ func (cu *CurrencieUpdate) SetNillableSymbol(s *string) *CurrencieUpdate {
 }
 
 // SetThousandsSeparator sets the "thousands_separator" field.
-func (cu *CurrencieUpdate) SetThousandsSeparator(s string) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetThousandsSeparator(s string) *CurrencyUpdate {
 	cu.mutation.SetThousandsSeparator(s)
 	return cu
 }
 
 // SetNillableThousandsSeparator sets the "thousands_separator" field if the given value is not nil.
-func (cu *CurrencieUpdate) SetNillableThousandsSeparator(s *string) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetNillableThousandsSeparator(s *string) *CurrencyUpdate {
 	if s != nil {
 		cu.SetThousandsSeparator(*s)
 	}
@@ -71,13 +71,13 @@ func (cu *CurrencieUpdate) SetNillableThousandsSeparator(s *string) *CurrencieUp
 }
 
 // SetUnitsSeparator sets the "units_separator" field.
-func (cu *CurrencieUpdate) SetUnitsSeparator(s string) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetUnitsSeparator(s string) *CurrencyUpdate {
 	cu.mutation.SetUnitsSeparator(s)
 	return cu
 }
 
 // SetNillableUnitsSeparator sets the "units_separator" field if the given value is not nil.
-func (cu *CurrencieUpdate) SetNillableUnitsSeparator(s *string) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetNillableUnitsSeparator(s *string) *CurrencyUpdate {
 	if s != nil {
 		cu.SetUnitsSeparator(*s)
 	}
@@ -85,13 +85,13 @@ func (cu *CurrencieUpdate) SetNillableUnitsSeparator(s *string) *CurrencieUpdate
 }
 
 // SetSymbolPosition sets the "symbol_position" field.
-func (cu *CurrencieUpdate) SetSymbolPosition(s string) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetSymbolPosition(s string) *CurrencyUpdate {
 	cu.mutation.SetSymbolPosition(s)
 	return cu
 }
 
 // SetNillableSymbolPosition sets the "symbol_position" field if the given value is not nil.
-func (cu *CurrencieUpdate) SetNillableSymbolPosition(s *string) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetNillableSymbolPosition(s *string) *CurrencyUpdate {
 	if s != nil {
 		cu.SetSymbolPosition(*s)
 	}
@@ -99,14 +99,14 @@ func (cu *CurrencieUpdate) SetNillableSymbolPosition(s *string) *CurrencieUpdate
 }
 
 // SetDenominator sets the "denominator" field.
-func (cu *CurrencieUpdate) SetDenominator(i int) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetDenominator(i int) *CurrencyUpdate {
 	cu.mutation.ResetDenominator()
 	cu.mutation.SetDenominator(i)
 	return cu
 }
 
 // SetNillableDenominator sets the "denominator" field if the given value is not nil.
-func (cu *CurrencieUpdate) SetNillableDenominator(i *int) *CurrencieUpdate {
+func (cu *CurrencyUpdate) SetNillableDenominator(i *int) *CurrencyUpdate {
 	if i != nil {
 		cu.SetDenominator(*i)
 	}
@@ -114,19 +114,19 @@ func (cu *CurrencieUpdate) SetNillableDenominator(i *int) *CurrencieUpdate {
 }
 
 // AddDenominator adds i to the "denominator" field.
-func (cu *CurrencieUpdate) AddDenominator(i int) *CurrencieUpdate {
+func (cu *CurrencyUpdate) AddDenominator(i int) *CurrencyUpdate {
 	cu.mutation.AddDenominator(i)
 	return cu
 }
 
 // AddCurrencyVersionIDs adds the "currency_versions" edge to the CurrencyVersion entity by IDs.
-func (cu *CurrencieUpdate) AddCurrencyVersionIDs(ids ...int) *CurrencieUpdate {
+func (cu *CurrencyUpdate) AddCurrencyVersionIDs(ids ...int) *CurrencyUpdate {
 	cu.mutation.AddCurrencyVersionIDs(ids...)
 	return cu
 }
 
 // AddCurrencyVersions adds the "currency_versions" edges to the CurrencyVersion entity.
-func (cu *CurrencieUpdate) AddCurrencyVersions(c ...*CurrencyVersion) *CurrencieUpdate {
+func (cu *CurrencyUpdate) AddCurrencyVersions(c ...*CurrencyVersion) *CurrencyUpdate {
 	ids := make([]int, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
@@ -134,25 +134,25 @@ func (cu *CurrencieUpdate) AddCurrencyVersions(c ...*CurrencyVersion) *Currencie
 	return cu.AddCurrencyVersionIDs(ids...)
 }
 
-// Mutation returns the CurrencieMutation object of the builder.
-func (cu *CurrencieUpdate) Mutation() *CurrencieMutation {
+// Mutation returns the CurrencyMutation object of the builder.
+func (cu *CurrencyUpdate) Mutation() *CurrencyMutation {
 	return cu.mutation
 }
 
 // ClearCurrencyVersions clears all "currency_versions" edges to the CurrencyVersion entity.
-func (cu *CurrencieUpdate) ClearCurrencyVersions() *CurrencieUpdate {
+func (cu *CurrencyUpdate) ClearCurrencyVersions() *CurrencyUpdate {
 	cu.mutation.ClearCurrencyVersions()
 	return cu
 }
 
 // RemoveCurrencyVersionIDs removes the "currency_versions" edge to CurrencyVersion entities by IDs.
-func (cu *CurrencieUpdate) RemoveCurrencyVersionIDs(ids ...int) *CurrencieUpdate {
+func (cu *CurrencyUpdate) RemoveCurrencyVersionIDs(ids ...int) *CurrencyUpdate {
 	cu.mutation.RemoveCurrencyVersionIDs(ids...)
 	return cu
 }
 
 // RemoveCurrencyVersions removes "currency_versions" edges to CurrencyVersion entities.
-func (cu *CurrencieUpdate) RemoveCurrencyVersions(c ...*CurrencyVersion) *CurrencieUpdate {
+func (cu *CurrencyUpdate) RemoveCurrencyVersions(c ...*CurrencyVersion) *CurrencyUpdate {
 	ids := make([]int, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
@@ -161,12 +161,12 @@ func (cu *CurrencieUpdate) RemoveCurrencyVersions(c ...*CurrencyVersion) *Curren
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
-func (cu *CurrencieUpdate) Save(ctx context.Context) (int, error) {
+func (cu *CurrencyUpdate) Save(ctx context.Context) (int, error) {
 	return withHooks(ctx, cu.sqlSave, cu.mutation, cu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cu *CurrencieUpdate) SaveX(ctx context.Context) int {
+func (cu *CurrencyUpdate) SaveX(ctx context.Context) int {
 	affected, err := cu.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -175,20 +175,20 @@ func (cu *CurrencieUpdate) SaveX(ctx context.Context) int {
 }
 
 // Exec executes the query.
-func (cu *CurrencieUpdate) Exec(ctx context.Context) error {
+func (cu *CurrencyUpdate) Exec(ctx context.Context) error {
 	_, err := cu.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cu *CurrencieUpdate) ExecX(ctx context.Context) {
+func (cu *CurrencyUpdate) ExecX(ctx context.Context) {
 	if err := cu.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
-func (cu *CurrencieUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := sqlgraph.NewUpdateSpec(currencie.Table, currencie.Columns, sqlgraph.NewFieldSpec(currencie.FieldID, field.TypeInt))
+func (cu *CurrencyUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	_spec := sqlgraph.NewUpdateSpec(currency.Table, currency.Columns, sqlgraph.NewFieldSpec(currency.FieldID, field.TypeInt))
 	if ps := cu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -197,32 +197,32 @@ func (cu *CurrencieUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := cu.mutation.Name(); ok {
-		_spec.SetField(currencie.FieldName, field.TypeString, value)
+		_spec.SetField(currency.FieldName, field.TypeString, value)
 	}
 	if value, ok := cu.mutation.Symbol(); ok {
-		_spec.SetField(currencie.FieldSymbol, field.TypeString, value)
+		_spec.SetField(currency.FieldSymbol, field.TypeString, value)
 	}
 	if value, ok := cu.mutation.ThousandsSeparator(); ok {
-		_spec.SetField(currencie.FieldThousandsSeparator, field.TypeString, value)
+		_spec.SetField(currency.FieldThousandsSeparator, field.TypeString, value)
 	}
 	if value, ok := cu.mutation.UnitsSeparator(); ok {
-		_spec.SetField(currencie.FieldUnitsSeparator, field.TypeString, value)
+		_spec.SetField(currency.FieldUnitsSeparator, field.TypeString, value)
 	}
 	if value, ok := cu.mutation.SymbolPosition(); ok {
-		_spec.SetField(currencie.FieldSymbolPosition, field.TypeString, value)
+		_spec.SetField(currency.FieldSymbolPosition, field.TypeString, value)
 	}
 	if value, ok := cu.mutation.Denominator(); ok {
-		_spec.SetField(currencie.FieldDenominator, field.TypeInt, value)
+		_spec.SetField(currency.FieldDenominator, field.TypeInt, value)
 	}
 	if value, ok := cu.mutation.AddedDenominator(); ok {
-		_spec.AddField(currencie.FieldDenominator, field.TypeInt, value)
+		_spec.AddField(currency.FieldDenominator, field.TypeInt, value)
 	}
 	if cu.mutation.CurrencyVersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   currencie.CurrencyVersionsTable,
-			Columns: []string{currencie.CurrencyVersionsColumn},
+			Table:   currency.CurrencyVersionsTable,
+			Columns: []string{currency.CurrencyVersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(currencyversion.FieldID, field.TypeInt),
@@ -234,8 +234,8 @@ func (cu *CurrencieUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   currencie.CurrencyVersionsTable,
-			Columns: []string{currencie.CurrencyVersionsColumn},
+			Table:   currency.CurrencyVersionsTable,
+			Columns: []string{currency.CurrencyVersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(currencyversion.FieldID, field.TypeInt),
@@ -250,8 +250,8 @@ func (cu *CurrencieUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   currencie.CurrencyVersionsTable,
-			Columns: []string{currencie.CurrencyVersionsColumn},
+			Table:   currency.CurrencyVersionsTable,
+			Columns: []string{currency.CurrencyVersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(currencyversion.FieldID, field.TypeInt),
@@ -264,7 +264,7 @@ func (cu *CurrencieUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{currencie.Label}
+			err = &NotFoundError{currency.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}
@@ -274,22 +274,22 @@ func (cu *CurrencieUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	return n, nil
 }
 
-// CurrencieUpdateOne is the builder for updating a single Currencie entity.
-type CurrencieUpdateOne struct {
+// CurrencyUpdateOne is the builder for updating a single Currency entity.
+type CurrencyUpdateOne struct {
 	config
 	fields   []string
 	hooks    []Hook
-	mutation *CurrencieMutation
+	mutation *CurrencyMutation
 }
 
 // SetName sets the "name" field.
-func (cuo *CurrencieUpdateOne) SetName(s string) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetName(s string) *CurrencyUpdateOne {
 	cuo.mutation.SetName(s)
 	return cuo
 }
 
 // SetNillableName sets the "name" field if the given value is not nil.
-func (cuo *CurrencieUpdateOne) SetNillableName(s *string) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetNillableName(s *string) *CurrencyUpdateOne {
 	if s != nil {
 		cuo.SetName(*s)
 	}
@@ -297,13 +297,13 @@ func (cuo *CurrencieUpdateOne) SetNillableName(s *string) *CurrencieUpdateOne {
 }
 
 // SetSymbol sets the "symbol" field.
-func (cuo *CurrencieUpdateOne) SetSymbol(s string) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetSymbol(s string) *CurrencyUpdateOne {
 	cuo.mutation.SetSymbol(s)
 	return cuo
 }
 
 // SetNillableSymbol sets the "symbol" field if the given value is not nil.
-func (cuo *CurrencieUpdateOne) SetNillableSymbol(s *string) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetNillableSymbol(s *string) *CurrencyUpdateOne {
 	if s != nil {
 		cuo.SetSymbol(*s)
 	}
@@ -311,13 +311,13 @@ func (cuo *CurrencieUpdateOne) SetNillableSymbol(s *string) *CurrencieUpdateOne 
 }
 
 // SetThousandsSeparator sets the "thousands_separator" field.
-func (cuo *CurrencieUpdateOne) SetThousandsSeparator(s string) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetThousandsSeparator(s string) *CurrencyUpdateOne {
 	cuo.mutation.SetThousandsSeparator(s)
 	return cuo
 }
 
 // SetNillableThousandsSeparator sets the "thousands_separator" field if the given value is not nil.
-func (cuo *CurrencieUpdateOne) SetNillableThousandsSeparator(s *string) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetNillableThousandsSeparator(s *string) *CurrencyUpdateOne {
 	if s != nil {
 		cuo.SetThousandsSeparator(*s)
 	}
@@ -325,13 +325,13 @@ func (cuo *CurrencieUpdateOne) SetNillableThousandsSeparator(s *string) *Currenc
 }
 
 // SetUnitsSeparator sets the "units_separator" field.
-func (cuo *CurrencieUpdateOne) SetUnitsSeparator(s string) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetUnitsSeparator(s string) *CurrencyUpdateOne {
 	cuo.mutation.SetUnitsSeparator(s)
 	return cuo
 }
 
 // SetNillableUnitsSeparator sets the "units_separator" field if the given value is not nil.
-func (cuo *CurrencieUpdateOne) SetNillableUnitsSeparator(s *string) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetNillableUnitsSeparator(s *string) *CurrencyUpdateOne {
 	if s != nil {
 		cuo.SetUnitsSeparator(*s)
 	}
@@ -339,13 +339,13 @@ func (cuo *CurrencieUpdateOne) SetNillableUnitsSeparator(s *string) *CurrencieUp
 }
 
 // SetSymbolPosition sets the "symbol_position" field.
-func (cuo *CurrencieUpdateOne) SetSymbolPosition(s string) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetSymbolPosition(s string) *CurrencyUpdateOne {
 	cuo.mutation.SetSymbolPosition(s)
 	return cuo
 }
 
 // SetNillableSymbolPosition sets the "symbol_position" field if the given value is not nil.
-func (cuo *CurrencieUpdateOne) SetNillableSymbolPosition(s *string) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetNillableSymbolPosition(s *string) *CurrencyUpdateOne {
 	if s != nil {
 		cuo.SetSymbolPosition(*s)
 	}
@@ -353,14 +353,14 @@ func (cuo *CurrencieUpdateOne) SetNillableSymbolPosition(s *string) *CurrencieUp
 }
 
 // SetDenominator sets the "denominator" field.
-func (cuo *CurrencieUpdateOne) SetDenominator(i int) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetDenominator(i int) *CurrencyUpdateOne {
 	cuo.mutation.ResetDenominator()
 	cuo.mutation.SetDenominator(i)
 	return cuo
 }
 
 // SetNillableDenominator sets the "denominator" field if the given value is not nil.
-func (cuo *CurrencieUpdateOne) SetNillableDenominator(i *int) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) SetNillableDenominator(i *int) *CurrencyUpdateOne {
 	if i != nil {
 		cuo.SetDenominator(*i)
 	}
@@ -368,19 +368,19 @@ func (cuo *CurrencieUpdateOne) SetNillableDenominator(i *int) *CurrencieUpdateOn
 }
 
 // AddDenominator adds i to the "denominator" field.
-func (cuo *CurrencieUpdateOne) AddDenominator(i int) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) AddDenominator(i int) *CurrencyUpdateOne {
 	cuo.mutation.AddDenominator(i)
 	return cuo
 }
 
 // AddCurrencyVersionIDs adds the "currency_versions" edge to the CurrencyVersion entity by IDs.
-func (cuo *CurrencieUpdateOne) AddCurrencyVersionIDs(ids ...int) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) AddCurrencyVersionIDs(ids ...int) *CurrencyUpdateOne {
 	cuo.mutation.AddCurrencyVersionIDs(ids...)
 	return cuo
 }
 
 // AddCurrencyVersions adds the "currency_versions" edges to the CurrencyVersion entity.
-func (cuo *CurrencieUpdateOne) AddCurrencyVersions(c ...*CurrencyVersion) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) AddCurrencyVersions(c ...*CurrencyVersion) *CurrencyUpdateOne {
 	ids := make([]int, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
@@ -388,25 +388,25 @@ func (cuo *CurrencieUpdateOne) AddCurrencyVersions(c ...*CurrencyVersion) *Curre
 	return cuo.AddCurrencyVersionIDs(ids...)
 }
 
-// Mutation returns the CurrencieMutation object of the builder.
-func (cuo *CurrencieUpdateOne) Mutation() *CurrencieMutation {
+// Mutation returns the CurrencyMutation object of the builder.
+func (cuo *CurrencyUpdateOne) Mutation() *CurrencyMutation {
 	return cuo.mutation
 }
 
 // ClearCurrencyVersions clears all "currency_versions" edges to the CurrencyVersion entity.
-func (cuo *CurrencieUpdateOne) ClearCurrencyVersions() *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) ClearCurrencyVersions() *CurrencyUpdateOne {
 	cuo.mutation.ClearCurrencyVersions()
 	return cuo
 }
 
 // RemoveCurrencyVersionIDs removes the "currency_versions" edge to CurrencyVersion entities by IDs.
-func (cuo *CurrencieUpdateOne) RemoveCurrencyVersionIDs(ids ...int) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) RemoveCurrencyVersionIDs(ids ...int) *CurrencyUpdateOne {
 	cuo.mutation.RemoveCurrencyVersionIDs(ids...)
 	return cuo
 }
 
 // RemoveCurrencyVersions removes "currency_versions" edges to CurrencyVersion entities.
-func (cuo *CurrencieUpdateOne) RemoveCurrencyVersions(c ...*CurrencyVersion) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) RemoveCurrencyVersions(c ...*CurrencyVersion) *CurrencyUpdateOne {
 	ids := make([]int, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
@@ -414,26 +414,26 @@ func (cuo *CurrencieUpdateOne) RemoveCurrencyVersions(c ...*CurrencyVersion) *Cu
 	return cuo.RemoveCurrencyVersionIDs(ids...)
 }
 
-// Where appends a list predicates to the CurrencieUpdate builder.
-func (cuo *CurrencieUpdateOne) Where(ps ...predicate.Currencie) *CurrencieUpdateOne {
+// Where appends a list predicates to the CurrencyUpdate builder.
+func (cuo *CurrencyUpdateOne) Where(ps ...predicate.Currency) *CurrencyUpdateOne {
 	cuo.mutation.Where(ps...)
 	return cuo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
-func (cuo *CurrencieUpdateOne) Select(field string, fields ...string) *CurrencieUpdateOne {
+func (cuo *CurrencyUpdateOne) Select(field string, fields ...string) *CurrencyUpdateOne {
 	cuo.fields = append([]string{field}, fields...)
 	return cuo
 }
 
-// Save executes the query and returns the updated Currencie entity.
-func (cuo *CurrencieUpdateOne) Save(ctx context.Context) (*Currencie, error) {
+// Save executes the query and returns the updated Currency entity.
+func (cuo *CurrencyUpdateOne) Save(ctx context.Context) (*Currency, error) {
 	return withHooks(ctx, cuo.sqlSave, cuo.mutation, cuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (cuo *CurrencieUpdateOne) SaveX(ctx context.Context) *Currencie {
+func (cuo *CurrencyUpdateOne) SaveX(ctx context.Context) *Currency {
 	node, err := cuo.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -442,33 +442,33 @@ func (cuo *CurrencieUpdateOne) SaveX(ctx context.Context) *Currencie {
 }
 
 // Exec executes the query on the entity.
-func (cuo *CurrencieUpdateOne) Exec(ctx context.Context) error {
+func (cuo *CurrencyUpdateOne) Exec(ctx context.Context) error {
 	_, err := cuo.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cuo *CurrencieUpdateOne) ExecX(ctx context.Context) {
+func (cuo *CurrencyUpdateOne) ExecX(ctx context.Context) {
 	if err := cuo.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
-func (cuo *CurrencieUpdateOne) sqlSave(ctx context.Context) (_node *Currencie, err error) {
-	_spec := sqlgraph.NewUpdateSpec(currencie.Table, currencie.Columns, sqlgraph.NewFieldSpec(currencie.FieldID, field.TypeInt))
+func (cuo *CurrencyUpdateOne) sqlSave(ctx context.Context) (_node *Currency, err error) {
+	_spec := sqlgraph.NewUpdateSpec(currency.Table, currency.Columns, sqlgraph.NewFieldSpec(currency.FieldID, field.TypeInt))
 	id, ok := cuo.mutation.ID()
 	if !ok {
-		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Currencie.id" for update`)}
+		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Currency.id" for update`)}
 	}
 	_spec.Node.ID.Value = id
 	if fields := cuo.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, currencie.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, currency.FieldID)
 		for _, f := range fields {
-			if !currencie.ValidColumn(f) {
+			if !currency.ValidColumn(f) {
 				return nil, &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 			}
-			if f != currencie.FieldID {
+			if f != currency.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, f)
 			}
 		}
@@ -481,32 +481,32 @@ func (cuo *CurrencieUpdateOne) sqlSave(ctx context.Context) (_node *Currencie, e
 		}
 	}
 	if value, ok := cuo.mutation.Name(); ok {
-		_spec.SetField(currencie.FieldName, field.TypeString, value)
+		_spec.SetField(currency.FieldName, field.TypeString, value)
 	}
 	if value, ok := cuo.mutation.Symbol(); ok {
-		_spec.SetField(currencie.FieldSymbol, field.TypeString, value)
+		_spec.SetField(currency.FieldSymbol, field.TypeString, value)
 	}
 	if value, ok := cuo.mutation.ThousandsSeparator(); ok {
-		_spec.SetField(currencie.FieldThousandsSeparator, field.TypeString, value)
+		_spec.SetField(currency.FieldThousandsSeparator, field.TypeString, value)
 	}
 	if value, ok := cuo.mutation.UnitsSeparator(); ok {
-		_spec.SetField(currencie.FieldUnitsSeparator, field.TypeString, value)
+		_spec.SetField(currency.FieldUnitsSeparator, field.TypeString, value)
 	}
 	if value, ok := cuo.mutation.SymbolPosition(); ok {
-		_spec.SetField(currencie.FieldSymbolPosition, field.TypeString, value)
+		_spec.SetField(currency.FieldSymbolPosition, field.TypeString, value)
 	}
 	if value, ok := cuo.mutation.Denominator(); ok {
-		_spec.SetField(currencie.FieldDenominator, field.TypeInt, value)
+		_spec.SetField(currency.FieldDenominator, field.TypeInt, value)
 	}
 	if value, ok := cuo.mutation.AddedDenominator(); ok {
-		_spec.AddField(currencie.FieldDenominator, field.TypeInt, value)
+		_spec.AddField(currency.FieldDenominator, field.TypeInt, value)
 	}
 	if cuo.mutation.CurrencyVersionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   currencie.CurrencyVersionsTable,
-			Columns: []string{currencie.CurrencyVersionsColumn},
+			Table:   currency.CurrencyVersionsTable,
+			Columns: []string{currency.CurrencyVersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(currencyversion.FieldID, field.TypeInt),
@@ -518,8 +518,8 @@ func (cuo *CurrencieUpdateOne) sqlSave(ctx context.Context) (_node *Currencie, e
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   currencie.CurrencyVersionsTable,
-			Columns: []string{currencie.CurrencyVersionsColumn},
+			Table:   currency.CurrencyVersionsTable,
+			Columns: []string{currency.CurrencyVersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(currencyversion.FieldID, field.TypeInt),
@@ -534,8 +534,8 @@ func (cuo *CurrencieUpdateOne) sqlSave(ctx context.Context) (_node *Currencie, e
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   currencie.CurrencyVersionsTable,
-			Columns: []string{currencie.CurrencyVersionsColumn},
+			Table:   currency.CurrencyVersionsTable,
+			Columns: []string{currency.CurrencyVersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(currencyversion.FieldID, field.TypeInt),
@@ -546,12 +546,12 @@ func (cuo *CurrencieUpdateOne) sqlSave(ctx context.Context) (_node *Currencie, e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	_node = &Currencie{config: cuo.config}
+	_node = &Currency{config: cuo.config}
 	_spec.Assign = _node.assignValues
 	_spec.ScanValues = _node.scanValues
 	if err = sqlgraph.UpdateNode(ctx, cuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
-			err = &NotFoundError{currencie.Label}
+			err = &NotFoundError{currency.Label}
 		} else if sqlgraph.IsConstraintError(err) {
 			err = &ConstraintError{msg: err.Error(), wrap: err}
 		}

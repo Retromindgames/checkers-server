@@ -62,6 +62,12 @@ func (gu *GameUpdate) SetNillableExternalID(s *string) *GameUpdate {
 	return gu
 }
 
+// ClearExternalID clears the value of the "external_id" field.
+func (gu *GameUpdate) ClearExternalID() *GameUpdate {
+	gu.mutation.ClearExternalID()
+	return gu
+}
+
 // SetTrademarkName sets the "trademark_name" field.
 func (gu *GameUpdate) SetTrademarkName(s string) *GameUpdate {
 	gu.mutation.SetTrademarkName(s)
@@ -341,6 +347,9 @@ func (gu *GameUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := gu.mutation.ExternalID(); ok {
 		_spec.SetField(game.FieldExternalID, field.TypeString, value)
+	}
+	if gu.mutation.ExternalIDCleared() {
+		_spec.ClearField(game.FieldExternalID, field.TypeString)
 	}
 	if value, ok := gu.mutation.TrademarkName(); ok {
 		_spec.SetField(game.FieldTrademarkName, field.TypeString, value)
@@ -660,6 +669,12 @@ func (guo *GameUpdateOne) SetNillableExternalID(s *string) *GameUpdateOne {
 	return guo
 }
 
+// ClearExternalID clears the value of the "external_id" field.
+func (guo *GameUpdateOne) ClearExternalID() *GameUpdateOne {
+	guo.mutation.ClearExternalID()
+	return guo
+}
+
 // SetTrademarkName sets the "trademark_name" field.
 func (guo *GameUpdateOne) SetTrademarkName(s string) *GameUpdateOne {
 	guo.mutation.SetTrademarkName(s)
@@ -969,6 +984,9 @@ func (guo *GameUpdateOne) sqlSave(ctx context.Context) (_node *Game, err error) 
 	}
 	if value, ok := guo.mutation.ExternalID(); ok {
 		_spec.SetField(game.FieldExternalID, field.TypeString, value)
+	}
+	if guo.mutation.ExternalIDCleared() {
+		_spec.ClearField(game.FieldExternalID, field.TypeString)
 	}
 	if value, ok := guo.mutation.TrademarkName(); ok {
 		_spec.SetField(game.FieldTrademarkName, field.TypeString, value)

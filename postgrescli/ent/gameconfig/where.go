@@ -73,6 +73,11 @@ func CanDropAndWins(v bool) predicate.GameConfig {
 	return predicate.GameConfig(sql.FieldEQ(FieldCanDropAndWins, v))
 }
 
+// CanBuyBonus applies equality check predicate on the "can_buy_bonus" field. It's identical to CanBuyBonusEQ.
+func CanBuyBonus(v bool) predicate.GameConfig {
+	return predicate.GameConfig(sql.FieldEQ(FieldCanBuyBonus, v))
+}
+
 // CanTurbo applies equality check predicate on the "can_turbo" field. It's identical to CanTurboEQ.
 func CanTurbo(v bool) predicate.GameConfig {
 	return predicate.GameConfig(sql.FieldEQ(FieldCanTurbo, v))
@@ -141,6 +146,16 @@ func CanDropAndWinsEQ(v bool) predicate.GameConfig {
 // CanDropAndWinsNEQ applies the NEQ predicate on the "can_drop_and_wins" field.
 func CanDropAndWinsNEQ(v bool) predicate.GameConfig {
 	return predicate.GameConfig(sql.FieldNEQ(FieldCanDropAndWins, v))
+}
+
+// CanBuyBonusEQ applies the EQ predicate on the "can_buy_bonus" field.
+func CanBuyBonusEQ(v bool) predicate.GameConfig {
+	return predicate.GameConfig(sql.FieldEQ(FieldCanBuyBonus, v))
+}
+
+// CanBuyBonusNEQ applies the NEQ predicate on the "can_buy_bonus" field.
+func CanBuyBonusNEQ(v bool) predicate.GameConfig {
+	return predicate.GameConfig(sql.FieldNEQ(FieldCanBuyBonus, v))
 }
 
 // CanTurboEQ applies the EQ predicate on the "can_turbo" field.

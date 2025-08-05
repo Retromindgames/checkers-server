@@ -14,8 +14,6 @@ const (
 	Label = "session"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldCanDemo holds the string denoting the can_demo field in the database.
-	FieldCanDemo = "can_demo"
 	// FieldToken holds the string denoting the token field in the database.
 	FieldToken = "token"
 	// FieldClientID holds the string denoting the client_id field in the database.
@@ -78,7 +76,6 @@ const (
 // Columns holds all SQL columns for session fields.
 var Columns = []string{
 	FieldID,
-	FieldCanDemo,
 	FieldToken,
 	FieldClientID,
 	FieldDemo,
@@ -122,11 +119,6 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
-}
-
-// ByCanDemo orders the results by the can_demo field.
-func ByCanDemo(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCanDemo, opts...).ToFunc()
 }
 
 // ByToken orders the results by the token field.

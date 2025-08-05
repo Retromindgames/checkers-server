@@ -6,13 +6,13 @@ import (
 	"entgo.io/ent/schema/field"
 )
 
-// Currencie holds the schema definition for the Currencie entity.
-type Currencie struct {
+// Currency holds the schema definition for the Currency entity.
+type Currency struct {
 	ent.Schema
 }
 
-// Fields of the Currencie.
-func (Currencie) Fields() []ent.Field {
+// Fields of the Currency.
+func (Currency) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name"),
 		field.String("symbol"),
@@ -23,7 +23,7 @@ func (Currencie) Fields() []ent.Field {
 	}
 }
 
-func (Currencie) Edges() []ent.Edge {
+func (Currency) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("currency_versions", CurrencyVersion.Type),
 	}

@@ -29,6 +29,8 @@ type GameConfig struct {
 	CanFreeBets bool `json:"can_free_bets,omitempty"`
 	// CanDropAndWins holds the value of the "can_drop_and_wins" field.
 	CanDropAndWins bool `json:"can_drop_and_wins,omitempty"`
+	// CanBuyBonus holds the value of the "can_buy_bonus" field.
+	CanBuyBonus bool `json:"can_buy_bonus,omitempty"`
 	// CanTurbo holds the value of the "can_turbo" field.
 	CanTurbo bool `json:"can_turbo,omitempty"`
 	// IsActive holds the value of the "is_active" field.
@@ -129,7 +131,7 @@ func (*GameConfig) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case gameconfig.FieldCanDemo, gameconfig.FieldCanTournament, gameconfig.FieldCanFreeBets, gameconfig.FieldCanDropAndWins, gameconfig.FieldCanTurbo, gameconfig.FieldIsActive, gameconfig.FieldCanAutoBet, gameconfig.FieldCanAutoCashout, gameconfig.FieldCanAnteBet, gameconfig.FieldCanHomeButton:
+		case gameconfig.FieldCanDemo, gameconfig.FieldCanTournament, gameconfig.FieldCanFreeBets, gameconfig.FieldCanDropAndWins, gameconfig.FieldCanBuyBonus, gameconfig.FieldCanTurbo, gameconfig.FieldIsActive, gameconfig.FieldCanAutoBet, gameconfig.FieldCanAutoCashout, gameconfig.FieldCanAnteBet, gameconfig.FieldCanHomeButton:
 			values[i] = new(sql.NullBool)
 		case gameconfig.FieldID:
 			values[i] = new(sql.NullInt64)
@@ -187,6 +189,12 @@ func (gc *GameConfig) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field can_drop_and_wins", values[i])
 			} else if value.Valid {
 				gc.CanDropAndWins = value.Bool
+			}
+		case gameconfig.FieldCanBuyBonus:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field can_buy_bonus", values[i])
+			} else if value.Valid {
+				gc.CanBuyBonus = value.Bool
 			}
 		case gameconfig.FieldCanTurbo:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -331,6 +339,9 @@ func (gc *GameConfig) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("can_drop_and_wins=")
 	builder.WriteString(fmt.Sprintf("%v", gc.CanDropAndWins))
+	builder.WriteString(", ")
+	builder.WriteString("can_buy_bonus=")
+	builder.WriteString(fmt.Sprintf("%v", gc.CanBuyBonus))
 	builder.WriteString(", ")
 	builder.WriteString("can_turbo=")
 	builder.WriteString(fmt.Sprintf("%v", gc.CanTurbo))

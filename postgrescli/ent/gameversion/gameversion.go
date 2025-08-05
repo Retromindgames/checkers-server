@@ -124,6 +124,29 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// DefaultCanDemo holds the default value on creation for the "can_demo" field.
+	DefaultCanDemo bool
+	// DefaultCanTournament holds the default value on creation for the "can_tournament" field.
+	DefaultCanTournament bool
+	// DefaultCanFreeBets holds the default value on creation for the "can_free_bets" field.
+	DefaultCanFreeBets bool
+	// DefaultCanDropAndWins holds the default value on creation for the "can_drop_and_wins" field.
+	DefaultCanDropAndWins bool
+	// DefaultCanTurbo holds the default value on creation for the "can_turbo" field.
+	DefaultCanTurbo bool
+	// DefaultDeprecated holds the default value on creation for the "deprecated" field.
+	DefaultDeprecated bool
+	// DefaultCanAutoBet holds the default value on creation for the "can_auto_bet" field.
+	DefaultCanAutoBet bool
+	// DefaultCanAutoCashout holds the default value on creation for the "can_auto_cashout" field.
+	DefaultCanAutoCashout bool
+	// DefaultCanBuyBonus holds the default value on creation for the "can_buy_bonus" field.
+	DefaultCanBuyBonus bool
+	// DefaultCanAnteBet holds the default value on creation for the "can_ante_bet" field.
+	DefaultCanAnteBet bool
+)
+
 // OrderOption defines the ordering options for the GameVersion queries.
 type OrderOption func(*sql.Selector)
 

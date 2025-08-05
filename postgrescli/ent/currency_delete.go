@@ -8,30 +8,30 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/predicate"
 )
 
-// CurrencieDelete is the builder for deleting a Currencie entity.
-type CurrencieDelete struct {
+// CurrencyDelete is the builder for deleting a Currency entity.
+type CurrencyDelete struct {
 	config
 	hooks    []Hook
-	mutation *CurrencieMutation
+	mutation *CurrencyMutation
 }
 
-// Where appends a list predicates to the CurrencieDelete builder.
-func (cd *CurrencieDelete) Where(ps ...predicate.Currencie) *CurrencieDelete {
+// Where appends a list predicates to the CurrencyDelete builder.
+func (cd *CurrencyDelete) Where(ps ...predicate.Currency) *CurrencyDelete {
 	cd.mutation.Where(ps...)
 	return cd
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (cd *CurrencieDelete) Exec(ctx context.Context) (int, error) {
+func (cd *CurrencyDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, cd.sqlExec, cd.mutation, cd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cd *CurrencieDelete) ExecX(ctx context.Context) int {
+func (cd *CurrencyDelete) ExecX(ctx context.Context) int {
 	n, err := cd.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -39,8 +39,8 @@ func (cd *CurrencieDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (cd *CurrencieDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(currencie.Table, sqlgraph.NewFieldSpec(currencie.FieldID, field.TypeInt))
+func (cd *CurrencyDelete) sqlExec(ctx context.Context) (int, error) {
+	_spec := sqlgraph.NewDeleteSpec(currency.Table, sqlgraph.NewFieldSpec(currency.FieldID, field.TypeInt))
 	if ps := cd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -56,32 +56,32 @@ func (cd *CurrencieDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// CurrencieDeleteOne is the builder for deleting a single Currencie entity.
-type CurrencieDeleteOne struct {
-	cd *CurrencieDelete
+// CurrencyDeleteOne is the builder for deleting a single Currency entity.
+type CurrencyDeleteOne struct {
+	cd *CurrencyDelete
 }
 
-// Where appends a list predicates to the CurrencieDelete builder.
-func (cdo *CurrencieDeleteOne) Where(ps ...predicate.Currencie) *CurrencieDeleteOne {
+// Where appends a list predicates to the CurrencyDelete builder.
+func (cdo *CurrencyDeleteOne) Where(ps ...predicate.Currency) *CurrencyDeleteOne {
 	cdo.cd.mutation.Where(ps...)
 	return cdo
 }
 
 // Exec executes the deletion query.
-func (cdo *CurrencieDeleteOne) Exec(ctx context.Context) error {
+func (cdo *CurrencyDeleteOne) Exec(ctx context.Context) error {
 	n, err := cdo.cd.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
 	case n == 0:
-		return &NotFoundError{currencie.Label}
+		return &NotFoundError{currency.Label}
 	default:
 		return nil
 	}
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cdo *CurrencieDeleteOne) ExecX(ctx context.Context) {
+func (cdo *CurrencyDeleteOne) ExecX(ctx context.Context) {
 	if err := cdo.Exec(ctx); err != nil {
 		panic(err)
 	}

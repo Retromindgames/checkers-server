@@ -35,9 +35,25 @@ func (gvc *GameVersionCreate) SetCanDemo(b bool) *GameVersionCreate {
 	return gvc
 }
 
+// SetNillableCanDemo sets the "can_demo" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableCanDemo(b *bool) *GameVersionCreate {
+	if b != nil {
+		gvc.SetCanDemo(*b)
+	}
+	return gvc
+}
+
 // SetCanTournament sets the "can_tournament" field.
 func (gvc *GameVersionCreate) SetCanTournament(b bool) *GameVersionCreate {
 	gvc.mutation.SetCanTournament(b)
+	return gvc
+}
+
+// SetNillableCanTournament sets the "can_tournament" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableCanTournament(b *bool) *GameVersionCreate {
+	if b != nil {
+		gvc.SetCanTournament(*b)
+	}
 	return gvc
 }
 
@@ -47,9 +63,25 @@ func (gvc *GameVersionCreate) SetCanFreeBets(b bool) *GameVersionCreate {
 	return gvc
 }
 
+// SetNillableCanFreeBets sets the "can_free_bets" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableCanFreeBets(b *bool) *GameVersionCreate {
+	if b != nil {
+		gvc.SetCanFreeBets(*b)
+	}
+	return gvc
+}
+
 // SetCanDropAndWins sets the "can_drop_and_wins" field.
 func (gvc *GameVersionCreate) SetCanDropAndWins(b bool) *GameVersionCreate {
 	gvc.mutation.SetCanDropAndWins(b)
+	return gvc
+}
+
+// SetNillableCanDropAndWins sets the "can_drop_and_wins" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableCanDropAndWins(b *bool) *GameVersionCreate {
+	if b != nil {
+		gvc.SetCanDropAndWins(*b)
+	}
 	return gvc
 }
 
@@ -59,9 +91,25 @@ func (gvc *GameVersionCreate) SetCanTurbo(b bool) *GameVersionCreate {
 	return gvc
 }
 
+// SetNillableCanTurbo sets the "can_turbo" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableCanTurbo(b *bool) *GameVersionCreate {
+	if b != nil {
+		gvc.SetCanTurbo(*b)
+	}
+	return gvc
+}
+
 // SetURLMediaPack sets the "url_media_pack" field.
 func (gvc *GameVersionCreate) SetURLMediaPack(s string) *GameVersionCreate {
 	gvc.mutation.SetURLMediaPack(s)
+	return gvc
+}
+
+// SetNillableURLMediaPack sets the "url_media_pack" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableURLMediaPack(s *string) *GameVersionCreate {
+	if s != nil {
+		gvc.SetURLMediaPack(*s)
+	}
 	return gvc
 }
 
@@ -71,9 +119,25 @@ func (gvc *GameVersionCreate) SetURLReleaseNote(s string) *GameVersionCreate {
 	return gvc
 }
 
+// SetNillableURLReleaseNote sets the "url_release_note" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableURLReleaseNote(s *string) *GameVersionCreate {
+	if s != nil {
+		gvc.SetURLReleaseNote(*s)
+	}
+	return gvc
+}
+
 // SetDeprecated sets the "deprecated" field.
 func (gvc *GameVersionCreate) SetDeprecated(b bool) *GameVersionCreate {
 	gvc.mutation.SetDeprecated(b)
+	return gvc
+}
+
+// SetNillableDeprecated sets the "deprecated" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableDeprecated(b *bool) *GameVersionCreate {
+	if b != nil {
+		gvc.SetDeprecated(*b)
+	}
 	return gvc
 }
 
@@ -89,9 +153,25 @@ func (gvc *GameVersionCreate) SetCanAutoBet(b bool) *GameVersionCreate {
 	return gvc
 }
 
+// SetNillableCanAutoBet sets the "can_auto_bet" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableCanAutoBet(b *bool) *GameVersionCreate {
+	if b != nil {
+		gvc.SetCanAutoBet(*b)
+	}
+	return gvc
+}
+
 // SetURLGameManual sets the "url_game_manual" field.
 func (gvc *GameVersionCreate) SetURLGameManual(s string) *GameVersionCreate {
 	gvc.mutation.SetURLGameManual(s)
+	return gvc
+}
+
+// SetNillableURLGameManual sets the "url_game_manual" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableURLGameManual(s *string) *GameVersionCreate {
+	if s != nil {
+		gvc.SetURLGameManual(*s)
+	}
 	return gvc
 }
 
@@ -101,15 +181,39 @@ func (gvc *GameVersionCreate) SetCanAutoCashout(b bool) *GameVersionCreate {
 	return gvc
 }
 
+// SetNillableCanAutoCashout sets the "can_auto_cashout" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableCanAutoCashout(b *bool) *GameVersionCreate {
+	if b != nil {
+		gvc.SetCanAutoCashout(*b)
+	}
+	return gvc
+}
+
 // SetCanBuyBonus sets the "can_buy_bonus" field.
 func (gvc *GameVersionCreate) SetCanBuyBonus(b bool) *GameVersionCreate {
 	gvc.mutation.SetCanBuyBonus(b)
 	return gvc
 }
 
+// SetNillableCanBuyBonus sets the "can_buy_bonus" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableCanBuyBonus(b *bool) *GameVersionCreate {
+	if b != nil {
+		gvc.SetCanBuyBonus(*b)
+	}
+	return gvc
+}
+
 // SetCanAnteBet sets the "can_ante_bet" field.
 func (gvc *GameVersionCreate) SetCanAnteBet(b bool) *GameVersionCreate {
 	gvc.mutation.SetCanAnteBet(b)
+	return gvc
+}
+
+// SetNillableCanAnteBet sets the "can_ante_bet" field if the given value is not nil.
+func (gvc *GameVersionCreate) SetNillableCanAnteBet(b *bool) *GameVersionCreate {
+	if b != nil {
+		gvc.SetCanAnteBet(*b)
+	}
 	return gvc
 }
 
@@ -188,6 +292,7 @@ func (gvc *GameVersionCreate) Mutation() *GameVersionMutation {
 
 // Save creates the GameVersion in the database.
 func (gvc *GameVersionCreate) Save(ctx context.Context) (*GameVersion, error) {
+	gvc.defaults()
 	return withHooks(ctx, gvc.sqlSave, gvc.mutation, gvc.hooks)
 }
 
@@ -213,6 +318,50 @@ func (gvc *GameVersionCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (gvc *GameVersionCreate) defaults() {
+	if _, ok := gvc.mutation.CanDemo(); !ok {
+		v := gameversion.DefaultCanDemo
+		gvc.mutation.SetCanDemo(v)
+	}
+	if _, ok := gvc.mutation.CanTournament(); !ok {
+		v := gameversion.DefaultCanTournament
+		gvc.mutation.SetCanTournament(v)
+	}
+	if _, ok := gvc.mutation.CanFreeBets(); !ok {
+		v := gameversion.DefaultCanFreeBets
+		gvc.mutation.SetCanFreeBets(v)
+	}
+	if _, ok := gvc.mutation.CanDropAndWins(); !ok {
+		v := gameversion.DefaultCanDropAndWins
+		gvc.mutation.SetCanDropAndWins(v)
+	}
+	if _, ok := gvc.mutation.CanTurbo(); !ok {
+		v := gameversion.DefaultCanTurbo
+		gvc.mutation.SetCanTurbo(v)
+	}
+	if _, ok := gvc.mutation.Deprecated(); !ok {
+		v := gameversion.DefaultDeprecated
+		gvc.mutation.SetDeprecated(v)
+	}
+	if _, ok := gvc.mutation.CanAutoBet(); !ok {
+		v := gameversion.DefaultCanAutoBet
+		gvc.mutation.SetCanAutoBet(v)
+	}
+	if _, ok := gvc.mutation.CanAutoCashout(); !ok {
+		v := gameversion.DefaultCanAutoCashout
+		gvc.mutation.SetCanAutoCashout(v)
+	}
+	if _, ok := gvc.mutation.CanBuyBonus(); !ok {
+		v := gameversion.DefaultCanBuyBonus
+		gvc.mutation.SetCanBuyBonus(v)
+	}
+	if _, ok := gvc.mutation.CanAnteBet(); !ok {
+		v := gameversion.DefaultCanAnteBet
+		gvc.mutation.SetCanAnteBet(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (gvc *GameVersionCreate) check() error {
 	if _, ok := gvc.mutation.Version(); !ok {
@@ -233,23 +382,11 @@ func (gvc *GameVersionCreate) check() error {
 	if _, ok := gvc.mutation.CanTurbo(); !ok {
 		return &ValidationError{Name: "can_turbo", err: errors.New(`ent: missing required field "GameVersion.can_turbo"`)}
 	}
-	if _, ok := gvc.mutation.URLMediaPack(); !ok {
-		return &ValidationError{Name: "url_media_pack", err: errors.New(`ent: missing required field "GameVersion.url_media_pack"`)}
-	}
-	if _, ok := gvc.mutation.URLReleaseNote(); !ok {
-		return &ValidationError{Name: "url_release_note", err: errors.New(`ent: missing required field "GameVersion.url_release_note"`)}
-	}
 	if _, ok := gvc.mutation.Deprecated(); !ok {
 		return &ValidationError{Name: "deprecated", err: errors.New(`ent: missing required field "GameVersion.deprecated"`)}
 	}
-	if _, ok := gvc.mutation.AvailableMathVersions(); !ok {
-		return &ValidationError{Name: "available_math_versions", err: errors.New(`ent: missing required field "GameVersion.available_math_versions"`)}
-	}
 	if _, ok := gvc.mutation.CanAutoBet(); !ok {
 		return &ValidationError{Name: "can_auto_bet", err: errors.New(`ent: missing required field "GameVersion.can_auto_bet"`)}
-	}
-	if _, ok := gvc.mutation.URLGameManual(); !ok {
-		return &ValidationError{Name: "url_game_manual", err: errors.New(`ent: missing required field "GameVersion.url_game_manual"`)}
 	}
 	if _, ok := gvc.mutation.CanAutoCashout(); !ok {
 		return &ValidationError{Name: "can_auto_cashout", err: errors.New(`ent: missing required field "GameVersion.can_auto_cashout"`)}
@@ -433,6 +570,7 @@ func (gvcb *GameVersionCreateBulk) Save(ctx context.Context) ([]*GameVersion, er
 	for i := range gvcb.builders {
 		func(i int, root context.Context) {
 			builder := gvcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*GameVersionMutation)
 				if !ok {

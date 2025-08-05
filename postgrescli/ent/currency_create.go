@@ -9,61 +9,61 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/currencyversion"
 )
 
-// CurrencieCreate is the builder for creating a Currencie entity.
-type CurrencieCreate struct {
+// CurrencyCreate is the builder for creating a Currency entity.
+type CurrencyCreate struct {
 	config
-	mutation *CurrencieMutation
+	mutation *CurrencyMutation
 	hooks    []Hook
 }
 
 // SetName sets the "name" field.
-func (cc *CurrencieCreate) SetName(s string) *CurrencieCreate {
+func (cc *CurrencyCreate) SetName(s string) *CurrencyCreate {
 	cc.mutation.SetName(s)
 	return cc
 }
 
 // SetSymbol sets the "symbol" field.
-func (cc *CurrencieCreate) SetSymbol(s string) *CurrencieCreate {
+func (cc *CurrencyCreate) SetSymbol(s string) *CurrencyCreate {
 	cc.mutation.SetSymbol(s)
 	return cc
 }
 
 // SetThousandsSeparator sets the "thousands_separator" field.
-func (cc *CurrencieCreate) SetThousandsSeparator(s string) *CurrencieCreate {
+func (cc *CurrencyCreate) SetThousandsSeparator(s string) *CurrencyCreate {
 	cc.mutation.SetThousandsSeparator(s)
 	return cc
 }
 
 // SetUnitsSeparator sets the "units_separator" field.
-func (cc *CurrencieCreate) SetUnitsSeparator(s string) *CurrencieCreate {
+func (cc *CurrencyCreate) SetUnitsSeparator(s string) *CurrencyCreate {
 	cc.mutation.SetUnitsSeparator(s)
 	return cc
 }
 
 // SetSymbolPosition sets the "symbol_position" field.
-func (cc *CurrencieCreate) SetSymbolPosition(s string) *CurrencieCreate {
+func (cc *CurrencyCreate) SetSymbolPosition(s string) *CurrencyCreate {
 	cc.mutation.SetSymbolPosition(s)
 	return cc
 }
 
 // SetDenominator sets the "denominator" field.
-func (cc *CurrencieCreate) SetDenominator(i int) *CurrencieCreate {
+func (cc *CurrencyCreate) SetDenominator(i int) *CurrencyCreate {
 	cc.mutation.SetDenominator(i)
 	return cc
 }
 
 // AddCurrencyVersionIDs adds the "currency_versions" edge to the CurrencyVersion entity by IDs.
-func (cc *CurrencieCreate) AddCurrencyVersionIDs(ids ...int) *CurrencieCreate {
+func (cc *CurrencyCreate) AddCurrencyVersionIDs(ids ...int) *CurrencyCreate {
 	cc.mutation.AddCurrencyVersionIDs(ids...)
 	return cc
 }
 
 // AddCurrencyVersions adds the "currency_versions" edges to the CurrencyVersion entity.
-func (cc *CurrencieCreate) AddCurrencyVersions(c ...*CurrencyVersion) *CurrencieCreate {
+func (cc *CurrencyCreate) AddCurrencyVersions(c ...*CurrencyVersion) *CurrencyCreate {
 	ids := make([]int, len(c))
 	for i := range c {
 		ids[i] = c[i].ID
@@ -71,18 +71,18 @@ func (cc *CurrencieCreate) AddCurrencyVersions(c ...*CurrencyVersion) *Currencie
 	return cc.AddCurrencyVersionIDs(ids...)
 }
 
-// Mutation returns the CurrencieMutation object of the builder.
-func (cc *CurrencieCreate) Mutation() *CurrencieMutation {
+// Mutation returns the CurrencyMutation object of the builder.
+func (cc *CurrencyCreate) Mutation() *CurrencyMutation {
 	return cc.mutation
 }
 
-// Save creates the Currencie in the database.
-func (cc *CurrencieCreate) Save(ctx context.Context) (*Currencie, error) {
+// Save creates the Currency in the database.
+func (cc *CurrencyCreate) Save(ctx context.Context) (*Currency, error) {
 	return withHooks(ctx, cc.sqlSave, cc.mutation, cc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (cc *CurrencieCreate) SaveX(ctx context.Context) *Currencie {
+func (cc *CurrencyCreate) SaveX(ctx context.Context) *Currency {
 	v, err := cc.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -91,42 +91,42 @@ func (cc *CurrencieCreate) SaveX(ctx context.Context) *Currencie {
 }
 
 // Exec executes the query.
-func (cc *CurrencieCreate) Exec(ctx context.Context) error {
+func (cc *CurrencyCreate) Exec(ctx context.Context) error {
 	_, err := cc.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (cc *CurrencieCreate) ExecX(ctx context.Context) {
+func (cc *CurrencyCreate) ExecX(ctx context.Context) {
 	if err := cc.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (cc *CurrencieCreate) check() error {
+func (cc *CurrencyCreate) check() error {
 	if _, ok := cc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Currencie.name"`)}
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Currency.name"`)}
 	}
 	if _, ok := cc.mutation.Symbol(); !ok {
-		return &ValidationError{Name: "symbol", err: errors.New(`ent: missing required field "Currencie.symbol"`)}
+		return &ValidationError{Name: "symbol", err: errors.New(`ent: missing required field "Currency.symbol"`)}
 	}
 	if _, ok := cc.mutation.ThousandsSeparator(); !ok {
-		return &ValidationError{Name: "thousands_separator", err: errors.New(`ent: missing required field "Currencie.thousands_separator"`)}
+		return &ValidationError{Name: "thousands_separator", err: errors.New(`ent: missing required field "Currency.thousands_separator"`)}
 	}
 	if _, ok := cc.mutation.UnitsSeparator(); !ok {
-		return &ValidationError{Name: "units_separator", err: errors.New(`ent: missing required field "Currencie.units_separator"`)}
+		return &ValidationError{Name: "units_separator", err: errors.New(`ent: missing required field "Currency.units_separator"`)}
 	}
 	if _, ok := cc.mutation.SymbolPosition(); !ok {
-		return &ValidationError{Name: "symbol_position", err: errors.New(`ent: missing required field "Currencie.symbol_position"`)}
+		return &ValidationError{Name: "symbol_position", err: errors.New(`ent: missing required field "Currency.symbol_position"`)}
 	}
 	if _, ok := cc.mutation.Denominator(); !ok {
-		return &ValidationError{Name: "denominator", err: errors.New(`ent: missing required field "Currencie.denominator"`)}
+		return &ValidationError{Name: "denominator", err: errors.New(`ent: missing required field "Currency.denominator"`)}
 	}
 	return nil
 }
 
-func (cc *CurrencieCreate) sqlSave(ctx context.Context) (*Currencie, error) {
+func (cc *CurrencyCreate) sqlSave(ctx context.Context) (*Currency, error) {
 	if err := cc.check(); err != nil {
 		return nil, err
 	}
@@ -144,41 +144,41 @@ func (cc *CurrencieCreate) sqlSave(ctx context.Context) (*Currencie, error) {
 	return _node, nil
 }
 
-func (cc *CurrencieCreate) createSpec() (*Currencie, *sqlgraph.CreateSpec) {
+func (cc *CurrencyCreate) createSpec() (*Currency, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Currencie{config: cc.config}
-		_spec = sqlgraph.NewCreateSpec(currencie.Table, sqlgraph.NewFieldSpec(currencie.FieldID, field.TypeInt))
+		_node = &Currency{config: cc.config}
+		_spec = sqlgraph.NewCreateSpec(currency.Table, sqlgraph.NewFieldSpec(currency.FieldID, field.TypeInt))
 	)
 	if value, ok := cc.mutation.Name(); ok {
-		_spec.SetField(currencie.FieldName, field.TypeString, value)
+		_spec.SetField(currency.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
 	if value, ok := cc.mutation.Symbol(); ok {
-		_spec.SetField(currencie.FieldSymbol, field.TypeString, value)
+		_spec.SetField(currency.FieldSymbol, field.TypeString, value)
 		_node.Symbol = value
 	}
 	if value, ok := cc.mutation.ThousandsSeparator(); ok {
-		_spec.SetField(currencie.FieldThousandsSeparator, field.TypeString, value)
+		_spec.SetField(currency.FieldThousandsSeparator, field.TypeString, value)
 		_node.ThousandsSeparator = value
 	}
 	if value, ok := cc.mutation.UnitsSeparator(); ok {
-		_spec.SetField(currencie.FieldUnitsSeparator, field.TypeString, value)
+		_spec.SetField(currency.FieldUnitsSeparator, field.TypeString, value)
 		_node.UnitsSeparator = value
 	}
 	if value, ok := cc.mutation.SymbolPosition(); ok {
-		_spec.SetField(currencie.FieldSymbolPosition, field.TypeString, value)
+		_spec.SetField(currency.FieldSymbolPosition, field.TypeString, value)
 		_node.SymbolPosition = value
 	}
 	if value, ok := cc.mutation.Denominator(); ok {
-		_spec.SetField(currencie.FieldDenominator, field.TypeInt, value)
+		_spec.SetField(currency.FieldDenominator, field.TypeInt, value)
 		_node.Denominator = value
 	}
 	if nodes := cc.mutation.CurrencyVersionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   currencie.CurrencyVersionsTable,
-			Columns: []string{currencie.CurrencyVersionsColumn},
+			Table:   currency.CurrencyVersionsTable,
+			Columns: []string{currency.CurrencyVersionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(currencyversion.FieldID, field.TypeInt),
@@ -192,26 +192,26 @@ func (cc *CurrencieCreate) createSpec() (*Currencie, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
-// CurrencieCreateBulk is the builder for creating many Currencie entities in bulk.
-type CurrencieCreateBulk struct {
+// CurrencyCreateBulk is the builder for creating many Currency entities in bulk.
+type CurrencyCreateBulk struct {
 	config
 	err      error
-	builders []*CurrencieCreate
+	builders []*CurrencyCreate
 }
 
-// Save creates the Currencie entities in the database.
-func (ccb *CurrencieCreateBulk) Save(ctx context.Context) ([]*Currencie, error) {
+// Save creates the Currency entities in the database.
+func (ccb *CurrencyCreateBulk) Save(ctx context.Context) ([]*Currency, error) {
 	if ccb.err != nil {
 		return nil, ccb.err
 	}
 	specs := make([]*sqlgraph.CreateSpec, len(ccb.builders))
-	nodes := make([]*Currencie, len(ccb.builders))
+	nodes := make([]*Currency, len(ccb.builders))
 	mutators := make([]Mutator, len(ccb.builders))
 	for i := range ccb.builders {
 		func(i int, root context.Context) {
 			builder := ccb.builders[i]
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*CurrencieMutation)
+				mutation, ok := m.(*CurrencyMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -258,7 +258,7 @@ func (ccb *CurrencieCreateBulk) Save(ctx context.Context) ([]*Currencie, error) 
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (ccb *CurrencieCreateBulk) SaveX(ctx context.Context) []*Currencie {
+func (ccb *CurrencyCreateBulk) SaveX(ctx context.Context) []*Currency {
 	v, err := ccb.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -267,13 +267,13 @@ func (ccb *CurrencieCreateBulk) SaveX(ctx context.Context) []*Currencie {
 }
 
 // Exec executes the query.
-func (ccb *CurrencieCreateBulk) Exec(ctx context.Context) error {
+func (ccb *CurrencyCreateBulk) Exec(ctx context.Context) error {
 	_, err := ccb.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (ccb *CurrencieCreateBulk) ExecX(ctx context.Context) {
+func (ccb *CurrencyCreateBulk) ExecX(ctx context.Context) {
 	if err := ccb.Exec(ctx); err != nil {
 		panic(err)
 	}

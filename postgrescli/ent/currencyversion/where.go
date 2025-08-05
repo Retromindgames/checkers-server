@@ -73,11 +73,6 @@ func Denominator(v int) predicate.CurrencyVersion {
 	return predicate.CurrencyVersion(sql.FieldEQ(FieldDenominator, v))
 }
 
-// CurrencyID applies equality check predicate on the "currency_id" field. It's identical to CurrencyIDEQ.
-func CurrencyID(v int) predicate.CurrencyVersion {
-	return predicate.CurrencyVersion(sql.FieldEQ(FieldCurrencyID, v))
-}
-
 // DefaultMultiplier applies equality check predicate on the "default_multiplier" field. It's identical to DefaultMultiplierEQ.
 func DefaultMultiplier(v int) predicate.CurrencyVersion {
 	return predicate.CurrencyVersion(sql.FieldEQ(FieldDefaultMultiplier, v))
@@ -198,6 +193,16 @@ func MinBetLTE(v int) predicate.CurrencyVersion {
 	return predicate.CurrencyVersion(sql.FieldLTE(FieldMinBet, v))
 }
 
+// MinBetIsNil applies the IsNil predicate on the "min_bet" field.
+func MinBetIsNil() predicate.CurrencyVersion {
+	return predicate.CurrencyVersion(sql.FieldIsNull(FieldMinBet))
+}
+
+// MinBetNotNil applies the NotNil predicate on the "min_bet" field.
+func MinBetNotNil() predicate.CurrencyVersion {
+	return predicate.CurrencyVersion(sql.FieldNotNull(FieldMinBet))
+}
+
 // MaxExpEQ applies the EQ predicate on the "max_exp" field.
 func MaxExpEQ(v int) predicate.CurrencyVersion {
 	return predicate.CurrencyVersion(sql.FieldEQ(FieldMaxExp, v))
@@ -236,6 +241,16 @@ func MaxExpLT(v int) predicate.CurrencyVersion {
 // MaxExpLTE applies the LTE predicate on the "max_exp" field.
 func MaxExpLTE(v int) predicate.CurrencyVersion {
 	return predicate.CurrencyVersion(sql.FieldLTE(FieldMaxExp, v))
+}
+
+// MaxExpIsNil applies the IsNil predicate on the "max_exp" field.
+func MaxExpIsNil() predicate.CurrencyVersion {
+	return predicate.CurrencyVersion(sql.FieldIsNull(FieldMaxExp))
+}
+
+// MaxExpNotNil applies the NotNil predicate on the "max_exp" field.
+func MaxExpNotNil() predicate.CurrencyVersion {
+	return predicate.CurrencyVersion(sql.FieldNotNull(FieldMaxExp))
 }
 
 // DenominatorEQ applies the EQ predicate on the "denominator" field.
@@ -278,46 +293,6 @@ func DenominatorLTE(v int) predicate.CurrencyVersion {
 	return predicate.CurrencyVersion(sql.FieldLTE(FieldDenominator, v))
 }
 
-// CurrencyIDEQ applies the EQ predicate on the "currency_id" field.
-func CurrencyIDEQ(v int) predicate.CurrencyVersion {
-	return predicate.CurrencyVersion(sql.FieldEQ(FieldCurrencyID, v))
-}
-
-// CurrencyIDNEQ applies the NEQ predicate on the "currency_id" field.
-func CurrencyIDNEQ(v int) predicate.CurrencyVersion {
-	return predicate.CurrencyVersion(sql.FieldNEQ(FieldCurrencyID, v))
-}
-
-// CurrencyIDIn applies the In predicate on the "currency_id" field.
-func CurrencyIDIn(vs ...int) predicate.CurrencyVersion {
-	return predicate.CurrencyVersion(sql.FieldIn(FieldCurrencyID, vs...))
-}
-
-// CurrencyIDNotIn applies the NotIn predicate on the "currency_id" field.
-func CurrencyIDNotIn(vs ...int) predicate.CurrencyVersion {
-	return predicate.CurrencyVersion(sql.FieldNotIn(FieldCurrencyID, vs...))
-}
-
-// CurrencyIDGT applies the GT predicate on the "currency_id" field.
-func CurrencyIDGT(v int) predicate.CurrencyVersion {
-	return predicate.CurrencyVersion(sql.FieldGT(FieldCurrencyID, v))
-}
-
-// CurrencyIDGTE applies the GTE predicate on the "currency_id" field.
-func CurrencyIDGTE(v int) predicate.CurrencyVersion {
-	return predicate.CurrencyVersion(sql.FieldGTE(FieldCurrencyID, v))
-}
-
-// CurrencyIDLT applies the LT predicate on the "currency_id" field.
-func CurrencyIDLT(v int) predicate.CurrencyVersion {
-	return predicate.CurrencyVersion(sql.FieldLT(FieldCurrencyID, v))
-}
-
-// CurrencyIDLTE applies the LTE predicate on the "currency_id" field.
-func CurrencyIDLTE(v int) predicate.CurrencyVersion {
-	return predicate.CurrencyVersion(sql.FieldLTE(FieldCurrencyID, v))
-}
-
 // DefaultMultiplierEQ applies the EQ predicate on the "default_multiplier" field.
 func DefaultMultiplierEQ(v int) predicate.CurrencyVersion {
 	return predicate.CurrencyVersion(sql.FieldEQ(FieldDefaultMultiplier, v))
@@ -356,6 +331,16 @@ func DefaultMultiplierLT(v int) predicate.CurrencyVersion {
 // DefaultMultiplierLTE applies the LTE predicate on the "default_multiplier" field.
 func DefaultMultiplierLTE(v int) predicate.CurrencyVersion {
 	return predicate.CurrencyVersion(sql.FieldLTE(FieldDefaultMultiplier, v))
+}
+
+// DefaultMultiplierIsNil applies the IsNil predicate on the "default_multiplier" field.
+func DefaultMultiplierIsNil() predicate.CurrencyVersion {
+	return predicate.CurrencyVersion(sql.FieldIsNull(FieldDefaultMultiplier))
+}
+
+// DefaultMultiplierNotNil applies the NotNil predicate on the "default_multiplier" field.
+func DefaultMultiplierNotNil() predicate.CurrencyVersion {
+	return predicate.CurrencyVersion(sql.FieldNotNull(FieldDefaultMultiplier))
 }
 
 // DeprecatedEQ applies the EQ predicate on the "deprecated" field.
@@ -408,21 +393,41 @@ func CrashBetIncrementLTE(v int) predicate.CurrencyVersion {
 	return predicate.CurrencyVersion(sql.FieldLTE(FieldCrashBetIncrement, v))
 }
 
-// HasCurrencie applies the HasEdge predicate on the "Currencie" edge.
-func HasCurrencie() predicate.CurrencyVersion {
+// CrashBetIncrementIsNil applies the IsNil predicate on the "crash_bet_increment" field.
+func CrashBetIncrementIsNil() predicate.CurrencyVersion {
+	return predicate.CurrencyVersion(sql.FieldIsNull(FieldCrashBetIncrement))
+}
+
+// CrashBetIncrementNotNil applies the NotNil predicate on the "crash_bet_increment" field.
+func CrashBetIncrementNotNil() predicate.CurrencyVersion {
+	return predicate.CurrencyVersion(sql.FieldNotNull(FieldCrashBetIncrement))
+}
+
+// SlotsBetMultipliersIsNil applies the IsNil predicate on the "slots_bet_multipliers" field.
+func SlotsBetMultipliersIsNil() predicate.CurrencyVersion {
+	return predicate.CurrencyVersion(sql.FieldIsNull(FieldSlotsBetMultipliers))
+}
+
+// SlotsBetMultipliersNotNil applies the NotNil predicate on the "slots_bet_multipliers" field.
+func SlotsBetMultipliersNotNil() predicate.CurrencyVersion {
+	return predicate.CurrencyVersion(sql.FieldNotNull(FieldSlotsBetMultipliers))
+}
+
+// HasCurrency applies the HasEdge predicate on the "Currency" edge.
+func HasCurrency() predicate.CurrencyVersion {
 	return predicate.CurrencyVersion(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, CurrencieTable, CurrencieColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, CurrencyTable, CurrencyColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasCurrencieWith applies the HasEdge predicate on the "Currencie" edge with a given conditions (other predicates).
-func HasCurrencieWith(preds ...predicate.Currencie) predicate.CurrencyVersion {
+// HasCurrencyWith applies the HasEdge predicate on the "Currency" edge with a given conditions (other predicates).
+func HasCurrencyWith(preds ...predicate.Currency) predicate.CurrencyVersion {
 	return predicate.CurrencyVersion(func(s *sql.Selector) {
-		step := newCurrencieStep()
+		step := newCurrencyStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

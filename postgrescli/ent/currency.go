@@ -8,11 +8,11 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 )
 
-// Currencie is the model entity for the Currencie schema.
-type Currencie struct {
+// Currency is the model entity for the Currency schema.
+type Currency struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
@@ -29,13 +29,13 @@ type Currencie struct {
 	// Denominator holds the value of the "denominator" field.
 	Denominator int `json:"denominator,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the CurrencieQuery when eager-loading is set.
-	Edges        CurrencieEdges `json:"edges"`
+	// The values are being populated by the CurrencyQuery when eager-loading is set.
+	Edges        CurrencyEdges `json:"edges"`
 	selectValues sql.SelectValues
 }
 
-// CurrencieEdges holds the relations/edges for other nodes in the graph.
-type CurrencieEdges struct {
+// CurrencyEdges holds the relations/edges for other nodes in the graph.
+type CurrencyEdges struct {
 	// CurrencyVersions holds the value of the currency_versions edge.
 	CurrencyVersions []*CurrencyVersion `json:"currency_versions,omitempty"`
 	// loadedTypes holds the information for reporting if a
@@ -45,7 +45,7 @@ type CurrencieEdges struct {
 
 // CurrencyVersionsOrErr returns the CurrencyVersions value or an error if the edge
 // was not loaded in eager-loading.
-func (e CurrencieEdges) CurrencyVersionsOrErr() ([]*CurrencyVersion, error) {
+func (e CurrencyEdges) CurrencyVersionsOrErr() ([]*CurrencyVersion, error) {
 	if e.loadedTypes[0] {
 		return e.CurrencyVersions, nil
 	}
@@ -53,13 +53,13 @@ func (e CurrencieEdges) CurrencyVersionsOrErr() ([]*CurrencyVersion, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Currencie) scanValues(columns []string) ([]any, error) {
+func (*Currency) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case currencie.FieldID, currencie.FieldDenominator:
+		case currency.FieldID, currency.FieldDenominator:
 			values[i] = new(sql.NullInt64)
-		case currencie.FieldName, currencie.FieldSymbol, currencie.FieldThousandsSeparator, currencie.FieldUnitsSeparator, currencie.FieldSymbolPosition:
+		case currency.FieldName, currency.FieldSymbol, currency.FieldThousandsSeparator, currency.FieldUnitsSeparator, currency.FieldSymbolPosition:
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -69,50 +69,50 @@ func (*Currencie) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Currencie fields.
-func (c *Currencie) assignValues(columns []string, values []any) error {
+// to the Currency fields.
+func (c *Currency) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case currencie.FieldID:
+		case currency.FieldID:
 			value, ok := values[i].(*sql.NullInt64)
 			if !ok {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			c.ID = int(value.Int64)
-		case currencie.FieldName:
+		case currency.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				c.Name = value.String
 			}
-		case currencie.FieldSymbol:
+		case currency.FieldSymbol:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field symbol", values[i])
 			} else if value.Valid {
 				c.Symbol = value.String
 			}
-		case currencie.FieldThousandsSeparator:
+		case currency.FieldThousandsSeparator:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field thousands_separator", values[i])
 			} else if value.Valid {
 				c.ThousandsSeparator = value.String
 			}
-		case currencie.FieldUnitsSeparator:
+		case currency.FieldUnitsSeparator:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field units_separator", values[i])
 			} else if value.Valid {
 				c.UnitsSeparator = value.String
 			}
-		case currencie.FieldSymbolPosition:
+		case currency.FieldSymbolPosition:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field symbol_position", values[i])
 			} else if value.Valid {
 				c.SymbolPosition = value.String
 			}
-		case currencie.FieldDenominator:
+		case currency.FieldDenominator:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field denominator", values[i])
 			} else if value.Valid {
@@ -125,39 +125,39 @@ func (c *Currencie) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the Currencie.
+// Value returns the ent.Value that was dynamically selected and assigned to the Currency.
 // This includes values selected through modifiers, order, etc.
-func (c *Currencie) Value(name string) (ent.Value, error) {
+func (c *Currency) Value(name string) (ent.Value, error) {
 	return c.selectValues.Get(name)
 }
 
-// QueryCurrencyVersions queries the "currency_versions" edge of the Currencie entity.
-func (c *Currencie) QueryCurrencyVersions() *CurrencyVersionQuery {
-	return NewCurrencieClient(c.config).QueryCurrencyVersions(c)
+// QueryCurrencyVersions queries the "currency_versions" edge of the Currency entity.
+func (c *Currency) QueryCurrencyVersions() *CurrencyVersionQuery {
+	return NewCurrencyClient(c.config).QueryCurrencyVersions(c)
 }
 
-// Update returns a builder for updating this Currencie.
-// Note that you need to call Currencie.Unwrap() before calling this method if this Currencie
+// Update returns a builder for updating this Currency.
+// Note that you need to call Currency.Unwrap() before calling this method if this Currency
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (c *Currencie) Update() *CurrencieUpdateOne {
-	return NewCurrencieClient(c.config).UpdateOne(c)
+func (c *Currency) Update() *CurrencyUpdateOne {
+	return NewCurrencyClient(c.config).UpdateOne(c)
 }
 
-// Unwrap unwraps the Currencie entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the Currency entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (c *Currencie) Unwrap() *Currencie {
+func (c *Currency) Unwrap() *Currency {
 	_tx, ok := c.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Currencie is not a transactional entity")
+		panic("ent: Currency is not a transactional entity")
 	}
 	c.config.driver = _tx.drv
 	return c
 }
 
 // String implements the fmt.Stringer.
-func (c *Currencie) String() string {
+func (c *Currency) String() string {
 	var builder strings.Builder
-	builder.WriteString("Currencie(")
+	builder.WriteString("Currency(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", c.ID))
 	builder.WriteString("name=")
 	builder.WriteString(c.Name)
@@ -180,5 +180,5 @@ func (c *Currencie) String() string {
 	return builder.String()
 }
 
-// Currencies is a parsable slice of Currencie.
-type Currencies []*Currencie
+// Currencies is a parsable slice of Currency.
+type Currencies []*Currency

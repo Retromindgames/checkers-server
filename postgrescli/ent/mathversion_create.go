@@ -39,9 +39,25 @@ func (mvc *MathVersionCreate) SetVolatility(i int) *MathVersionCreate {
 	return mvc
 }
 
+// SetNillableVolatility sets the "volatility" field if the given value is not nil.
+func (mvc *MathVersionCreate) SetNillableVolatility(i *int) *MathVersionCreate {
+	if i != nil {
+		mvc.SetVolatility(*i)
+	}
+	return mvc
+}
+
 // SetRtp sets the "rtp" field.
 func (mvc *MathVersionCreate) SetRtp(i int) *MathVersionCreate {
 	mvc.mutation.SetRtp(i)
+	return mvc
+}
+
+// SetNillableRtp sets the "rtp" field if the given value is not nil.
+func (mvc *MathVersionCreate) SetNillableRtp(i *int) *MathVersionCreate {
+	if i != nil {
+		mvc.SetRtp(*i)
+	}
 	return mvc
 }
 
@@ -51,9 +67,25 @@ func (mvc *MathVersionCreate) SetMaxWin(i int) *MathVersionCreate {
 	return mvc
 }
 
+// SetNillableMaxWin sets the "max_win" field if the given value is not nil.
+func (mvc *MathVersionCreate) SetNillableMaxWin(i *int) *MathVersionCreate {
+	if i != nil {
+		mvc.SetMaxWin(*i)
+	}
+	return mvc
+}
+
 // SetCanBuyBonus sets the "can_buy_bonus" field.
 func (mvc *MathVersionCreate) SetCanBuyBonus(b bool) *MathVersionCreate {
 	mvc.mutation.SetCanBuyBonus(b)
+	return mvc
+}
+
+// SetNillableCanBuyBonus sets the "can_buy_bonus" field if the given value is not nil.
+func (mvc *MathVersionCreate) SetNillableCanBuyBonus(b *bool) *MathVersionCreate {
+	if b != nil {
+		mvc.SetCanBuyBonus(*b)
+	}
 	return mvc
 }
 
@@ -63,15 +95,39 @@ func (mvc *MathVersionCreate) SetURLReleaseNote(s string) *MathVersionCreate {
 	return mvc
 }
 
+// SetNillableURLReleaseNote sets the "url_release_note" field if the given value is not nil.
+func (mvc *MathVersionCreate) SetNillableURLReleaseNote(s *string) *MathVersionCreate {
+	if s != nil {
+		mvc.SetURLReleaseNote(*s)
+	}
+	return mvc
+}
+
 // SetDeprecated sets the "deprecated" field.
 func (mvc *MathVersionCreate) SetDeprecated(b bool) *MathVersionCreate {
 	mvc.mutation.SetDeprecated(b)
 	return mvc
 }
 
+// SetNillableDeprecated sets the "deprecated" field if the given value is not nil.
+func (mvc *MathVersionCreate) SetNillableDeprecated(b *bool) *MathVersionCreate {
+	if b != nil {
+		mvc.SetDeprecated(*b)
+	}
+	return mvc
+}
+
 // SetCanAnteBet sets the "can_ante_bet" field.
 func (mvc *MathVersionCreate) SetCanAnteBet(b bool) *MathVersionCreate {
 	mvc.mutation.SetCanAnteBet(b)
+	return mvc
+}
+
+// SetNillableCanAnteBet sets the "can_ante_bet" field if the given value is not nil.
+func (mvc *MathVersionCreate) SetNillableCanAnteBet(b *bool) *MathVersionCreate {
+	if b != nil {
+		mvc.SetCanAnteBet(*b)
+	}
 	return mvc
 }
 
@@ -112,6 +168,7 @@ func (mvc *MathVersionCreate) Mutation() *MathVersionMutation {
 
 // Save creates the MathVersion in the database.
 func (mvc *MathVersionCreate) Save(ctx context.Context) (*MathVersion, error) {
+	mvc.defaults()
 	return withHooks(ctx, mvc.sqlSave, mvc.mutation, mvc.hooks)
 }
 
@@ -137,6 +194,14 @@ func (mvc *MathVersionCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (mvc *MathVersionCreate) defaults() {
+	if _, ok := mvc.mutation.Deprecated(); !ok {
+		v := mathversion.DefaultDeprecated
+		mvc.mutation.SetDeprecated(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (mvc *MathVersionCreate) check() error {
 	if _, ok := mvc.mutation.Name(); !ok {
@@ -145,26 +210,8 @@ func (mvc *MathVersionCreate) check() error {
 	if _, ok := mvc.mutation.Version(); !ok {
 		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "MathVersion.version"`)}
 	}
-	if _, ok := mvc.mutation.Volatility(); !ok {
-		return &ValidationError{Name: "volatility", err: errors.New(`ent: missing required field "MathVersion.volatility"`)}
-	}
-	if _, ok := mvc.mutation.Rtp(); !ok {
-		return &ValidationError{Name: "rtp", err: errors.New(`ent: missing required field "MathVersion.rtp"`)}
-	}
-	if _, ok := mvc.mutation.MaxWin(); !ok {
-		return &ValidationError{Name: "max_win", err: errors.New(`ent: missing required field "MathVersion.max_win"`)}
-	}
-	if _, ok := mvc.mutation.CanBuyBonus(); !ok {
-		return &ValidationError{Name: "can_buy_bonus", err: errors.New(`ent: missing required field "MathVersion.can_buy_bonus"`)}
-	}
-	if _, ok := mvc.mutation.URLReleaseNote(); !ok {
-		return &ValidationError{Name: "url_release_note", err: errors.New(`ent: missing required field "MathVersion.url_release_note"`)}
-	}
 	if _, ok := mvc.mutation.Deprecated(); !ok {
 		return &ValidationError{Name: "deprecated", err: errors.New(`ent: missing required field "MathVersion.deprecated"`)}
-	}
-	if _, ok := mvc.mutation.CanAnteBet(); !ok {
-		return &ValidationError{Name: "can_ante_bet", err: errors.New(`ent: missing required field "MathVersion.can_ante_bet"`)}
 	}
 	return nil
 }
@@ -281,6 +328,7 @@ func (mvcb *MathVersionCreateBulk) Save(ctx context.Context) ([]*MathVersion, er
 	for i := range mvcb.builders {
 		func(i int, root context.Context) {
 			builder := mvcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*MathVersionMutation)
 				if !ok {

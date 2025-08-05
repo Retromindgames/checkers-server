@@ -9,16 +9,16 @@ import (
 	"github.com/Lavizord/checkers-server/postgrescli/ent"
 )
 
-// The CurrencieFunc type is an adapter to allow the use of ordinary
-// function as Currencie mutator.
-type CurrencieFunc func(context.Context, *ent.CurrencieMutation) (ent.Value, error)
+// The CurrencyFunc type is an adapter to allow the use of ordinary
+// function as Currency mutator.
+type CurrencyFunc func(context.Context, *ent.CurrencyMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f CurrencieFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.CurrencieMutation); ok {
+func (f CurrencyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CurrencyMutation); ok {
 		return f(ctx, mv)
 	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CurrencieMutation", m)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CurrencyMutation", m)
 }
 
 // The CurrencyVersionFunc type is an adapter to allow the use of ordinary

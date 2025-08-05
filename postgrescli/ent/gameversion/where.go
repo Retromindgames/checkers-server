@@ -293,6 +293,16 @@ func URLMediaPackHasSuffix(v string) predicate.GameVersion {
 	return predicate.GameVersion(sql.FieldHasSuffix(FieldURLMediaPack, v))
 }
 
+// URLMediaPackIsNil applies the IsNil predicate on the "url_media_pack" field.
+func URLMediaPackIsNil() predicate.GameVersion {
+	return predicate.GameVersion(sql.FieldIsNull(FieldURLMediaPack))
+}
+
+// URLMediaPackNotNil applies the NotNil predicate on the "url_media_pack" field.
+func URLMediaPackNotNil() predicate.GameVersion {
+	return predicate.GameVersion(sql.FieldNotNull(FieldURLMediaPack))
+}
+
 // URLMediaPackEqualFold applies the EqualFold predicate on the "url_media_pack" field.
 func URLMediaPackEqualFold(v string) predicate.GameVersion {
 	return predicate.GameVersion(sql.FieldEqualFold(FieldURLMediaPack, v))
@@ -358,6 +368,16 @@ func URLReleaseNoteHasSuffix(v string) predicate.GameVersion {
 	return predicate.GameVersion(sql.FieldHasSuffix(FieldURLReleaseNote, v))
 }
 
+// URLReleaseNoteIsNil applies the IsNil predicate on the "url_release_note" field.
+func URLReleaseNoteIsNil() predicate.GameVersion {
+	return predicate.GameVersion(sql.FieldIsNull(FieldURLReleaseNote))
+}
+
+// URLReleaseNoteNotNil applies the NotNil predicate on the "url_release_note" field.
+func URLReleaseNoteNotNil() predicate.GameVersion {
+	return predicate.GameVersion(sql.FieldNotNull(FieldURLReleaseNote))
+}
+
 // URLReleaseNoteEqualFold applies the EqualFold predicate on the "url_release_note" field.
 func URLReleaseNoteEqualFold(v string) predicate.GameVersion {
 	return predicate.GameVersion(sql.FieldEqualFold(FieldURLReleaseNote, v))
@@ -376,6 +396,16 @@ func DeprecatedEQ(v bool) predicate.GameVersion {
 // DeprecatedNEQ applies the NEQ predicate on the "deprecated" field.
 func DeprecatedNEQ(v bool) predicate.GameVersion {
 	return predicate.GameVersion(sql.FieldNEQ(FieldDeprecated, v))
+}
+
+// AvailableMathVersionsIsNil applies the IsNil predicate on the "available_math_versions" field.
+func AvailableMathVersionsIsNil() predicate.GameVersion {
+	return predicate.GameVersion(sql.FieldIsNull(FieldAvailableMathVersions))
+}
+
+// AvailableMathVersionsNotNil applies the NotNil predicate on the "available_math_versions" field.
+func AvailableMathVersionsNotNil() predicate.GameVersion {
+	return predicate.GameVersion(sql.FieldNotNull(FieldAvailableMathVersions))
 }
 
 // CanAutoBetEQ applies the EQ predicate on the "can_auto_bet" field.
@@ -441,6 +471,16 @@ func URLGameManualHasPrefix(v string) predicate.GameVersion {
 // URLGameManualHasSuffix applies the HasSuffix predicate on the "url_game_manual" field.
 func URLGameManualHasSuffix(v string) predicate.GameVersion {
 	return predicate.GameVersion(sql.FieldHasSuffix(FieldURLGameManual, v))
+}
+
+// URLGameManualIsNil applies the IsNil predicate on the "url_game_manual" field.
+func URLGameManualIsNil() predicate.GameVersion {
+	return predicate.GameVersion(sql.FieldIsNull(FieldURLGameManual))
+}
+
+// URLGameManualNotNil applies the NotNil predicate on the "url_game_manual" field.
+func URLGameManualNotNil() predicate.GameVersion {
+	return predicate.GameVersion(sql.FieldNotNull(FieldURLGameManual))
 }
 
 // URLGameManualEqualFold applies the EqualFold predicate on the "url_game_manual" field.

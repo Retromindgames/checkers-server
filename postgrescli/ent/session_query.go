@@ -443,12 +443,12 @@ func (sq *SessionQuery) WithMathVersions(opts ...func(*MathVersionQuery)) *Sessi
 // Example:
 //
 //	var v []struct {
-//		CanDemo bool `json:"can_demo,omitempty"`
+//		Token string `json:"token,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Session.Query().
-//		GroupBy(session.FieldCanDemo).
+//		GroupBy(session.FieldToken).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (sq *SessionQuery) GroupBy(field string, fields ...string) *SessionGroupBy {
@@ -466,11 +466,11 @@ func (sq *SessionQuery) GroupBy(field string, fields ...string) *SessionGroupBy 
 // Example:
 //
 //	var v []struct {
-//		CanDemo bool `json:"can_demo,omitempty"`
+//		Token string `json:"token,omitempty"`
 //	}
 //
 //	client.Session.Query().
-//		Select(session.FieldCanDemo).
+//		Select(session.FieldToken).
 //		Scan(ctx, &v)
 func (sq *SessionQuery) Select(fields ...string) *SessionSelect {
 	sq.ctx.Fields = append(sq.ctx.Fields, fields...)

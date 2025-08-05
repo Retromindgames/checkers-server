@@ -16,22 +16,22 @@ func (GameVersion) Fields() []ent.Field {
 	return []ent.Field{
 
 		field.String("version"),
-		field.Bool("can_demo"),
-		field.Bool("can_tournament"),
-		field.Bool("can_free_bets"),
-		field.Bool("can_drop_and_wins"),
-		field.Bool("can_turbo"),
-		field.String("url_media_pack"),
-		field.String("url_release_note"),
+		field.Bool("can_demo").Default(false),
+		field.Bool("can_tournament").Default(false),
+		field.Bool("can_free_bets").Default(false),
+		field.Bool("can_drop_and_wins").Default(false),
+		field.Bool("can_turbo").Default(false),
+		field.String("url_media_pack").Optional(),
+		field.String("url_release_note").Optional(),
 
-		field.Bool("deprecated"),
-		field.Ints("available_math_versions"),
-		field.Bool("can_auto_bet"),
+		field.Bool("deprecated").Default(false),
+		field.Ints("available_math_versions").Optional(),
+		field.Bool("can_auto_bet").Default(false),
 
-		field.String("url_game_manual"),
-		field.Bool("can_auto_cashout"),
-		field.Bool("can_buy_bonus"),
-		field.Bool("can_ante_bet"),
+		field.String("url_game_manual").Optional(),
+		field.Bool("can_auto_cashout").Default(false),
+		field.Bool("can_buy_bonus").Default(false),
+		field.Bool("can_ante_bet").Default(false),
 	}
 }
 

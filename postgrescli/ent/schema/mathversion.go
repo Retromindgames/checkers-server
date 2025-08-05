@@ -17,14 +17,14 @@ func (MathVersion) Fields() []ent.Field {
 		field.String("name"),
 		field.String("version"),
 
-		field.Int("volatility"),
-		field.Int("rtp"),
-		field.Int("max_win"),
+		field.Int("volatility").Optional(),
+		field.Int("rtp").Optional(),
+		field.Int("max_win").Optional(),
 
-		field.Bool("can_buy_bonus"),
-		field.String("url_release_note"),
-		field.Bool("deprecated"),
-		field.Bool("can_ante_bet"),
+		field.Bool("can_buy_bonus").Optional(),
+		field.String("url_release_note").Optional(),
+		field.Bool("deprecated").Default(false),
+		field.Bool("can_ante_bet").Optional(),
 	}
 }
 

@@ -9,7 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Lavizord/checkers-server/postgrescli/ent/currencie"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currency"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/currencyversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/gametype"
 )
@@ -27,8 +27,6 @@ type CurrencyVersion struct {
 	MaxExp int `json:"max_exp,omitempty"`
 	// Denominator holds the value of the "denominator" field.
 	Denominator int `json:"denominator,omitempty"`
-	// CurrencyID holds the value of the "currency_id" field.
-	CurrencyID int `json:"currency_id,omitempty"`
 	// DefaultMultiplier holds the value of the "default_multiplier" field.
 	DefaultMultiplier int `json:"default_multiplier,omitempty"`
 	// Deprecated holds the value of the "deprecated" field.
@@ -40,15 +38,15 @@ type CurrencyVersion struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CurrencyVersionQuery when eager-loading is set.
 	Edges                       CurrencyVersionEdges `json:"edges"`
-	currencie_currency_versions *int
+	currency_currency_versions  *int
 	game_type_currency_versions *int
 	selectValues                sql.SelectValues
 }
 
 // CurrencyVersionEdges holds the relations/edges for other nodes in the graph.
 type CurrencyVersionEdges struct {
-	// Currencie holds the value of the Currencie edge.
-	Currencie *Currencie `json:"Currencie,omitempty"`
+	// Currency holds the value of the Currency edge.
+	Currency *Currency `json:"Currency,omitempty"`
 	// GameTypes holds the value of the game_types edge.
 	GameTypes *GameType `json:"game_types,omitempty"`
 	// Sessions holds the value of the sessions edge.
@@ -60,15 +58,15 @@ type CurrencyVersionEdges struct {
 	loadedTypes [4]bool
 }
 
-// CurrencieOrErr returns the Currencie value or an error if the edge
+// CurrencyOrErr returns the Currency value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e CurrencyVersionEdges) CurrencieOrErr() (*Currencie, error) {
-	if e.Currencie != nil {
-		return e.Currencie, nil
+func (e CurrencyVersionEdges) CurrencyOrErr() (*Currency, error) {
+	if e.Currency != nil {
+		return e.Currency, nil
 	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: currencie.Label}
+		return nil, &NotFoundError{label: currency.Label}
 	}
-	return nil, &NotLoadedError{edge: "Currencie"}
+	return nil, &NotLoadedError{edge: "Currency"}
 }
 
 // GameTypesOrErr returns the GameTypes value or an error if the edge
@@ -109,11 +107,11 @@ func (*CurrencyVersion) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case currencyversion.FieldDeprecated:
 			values[i] = new(sql.NullBool)
-		case currencyversion.FieldID, currencyversion.FieldMinBet, currencyversion.FieldMaxExp, currencyversion.FieldDenominator, currencyversion.FieldCurrencyID, currencyversion.FieldDefaultMultiplier, currencyversion.FieldCrashBetIncrement:
+		case currencyversion.FieldID, currencyversion.FieldMinBet, currencyversion.FieldMaxExp, currencyversion.FieldDenominator, currencyversion.FieldDefaultMultiplier, currencyversion.FieldCrashBetIncrement:
 			values[i] = new(sql.NullInt64)
 		case currencyversion.FieldName:
 			values[i] = new(sql.NullString)
-		case currencyversion.ForeignKeys[0]: // currencie_currency_versions
+		case currencyversion.ForeignKeys[0]: // currency_currency_versions
 			values[i] = new(sql.NullInt64)
 		case currencyversion.ForeignKeys[1]: // game_type_currency_versions
 			values[i] = new(sql.NullInt64)
@@ -162,12 +160,6 @@ func (cv *CurrencyVersion) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				cv.Denominator = int(value.Int64)
 			}
-		case currencyversion.FieldCurrencyID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field currency_id", values[i])
-			} else if value.Valid {
-				cv.CurrencyID = int(value.Int64)
-			}
 		case currencyversion.FieldDefaultMultiplier:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field default_multiplier", values[i])
@@ -196,10 +188,10 @@ func (cv *CurrencyVersion) assignValues(columns []string, values []any) error {
 			}
 		case currencyversion.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field currencie_currency_versions", value)
+				return fmt.Errorf("unexpected type %T for edge-field currency_currency_versions", value)
 			} else if value.Valid {
-				cv.currencie_currency_versions = new(int)
-				*cv.currencie_currency_versions = int(value.Int64)
+				cv.currency_currency_versions = new(int)
+				*cv.currency_currency_versions = int(value.Int64)
 			}
 		case currencyversion.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -221,9 +213,9 @@ func (cv *CurrencyVersion) Value(name string) (ent.Value, error) {
 	return cv.selectValues.Get(name)
 }
 
-// QueryCurrencie queries the "Currencie" edge of the CurrencyVersion entity.
-func (cv *CurrencyVersion) QueryCurrencie() *CurrencieQuery {
-	return NewCurrencyVersionClient(cv.config).QueryCurrencie(cv)
+// QueryCurrency queries the "Currency" edge of the CurrencyVersion entity.
+func (cv *CurrencyVersion) QueryCurrency() *CurrencyQuery {
+	return NewCurrencyVersionClient(cv.config).QueryCurrency(cv)
 }
 
 // QueryGameTypes queries the "game_types" edge of the CurrencyVersion entity.
@@ -275,9 +267,6 @@ func (cv *CurrencyVersion) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("denominator=")
 	builder.WriteString(fmt.Sprintf("%v", cv.Denominator))
-	builder.WriteString(", ")
-	builder.WriteString("currency_id=")
-	builder.WriteString(fmt.Sprintf("%v", cv.CurrencyID))
 	builder.WriteString(", ")
 	builder.WriteString("default_multiplier=")
 	builder.WriteString(fmt.Sprintf("%v", cv.DefaultMultiplier))

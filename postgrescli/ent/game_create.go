@@ -38,6 +38,14 @@ func (gc *GameCreate) SetExternalID(s string) *GameCreate {
 	return gc
 }
 
+// SetNillableExternalID sets the "external_id" field if the given value is not nil.
+func (gc *GameCreate) SetNillableExternalID(s *string) *GameCreate {
+	if s != nil {
+		gc.SetExternalID(*s)
+	}
+	return gc
+}
+
 // SetTrademarkName sets the "trademark_name" field.
 func (gc *GameCreate) SetTrademarkName(s string) *GameCreate {
 	gc.mutation.SetTrademarkName(s)
@@ -197,9 +205,6 @@ func (gc *GameCreate) ExecX(ctx context.Context) {
 func (gc *GameCreate) check() error {
 	if _, ok := gc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Game.name"`)}
-	}
-	if _, ok := gc.mutation.ExternalID(); !ok {
-		return &ValidationError{Name: "external_id", err: errors.New(`ent: missing required field "Game.external_id"`)}
 	}
 	if _, ok := gc.mutation.TrademarkName(); !ok {
 		return &ValidationError{Name: "trademark_name", err: errors.New(`ent: missing required field "Game.trademark_name"`)}

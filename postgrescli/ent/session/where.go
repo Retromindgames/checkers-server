@@ -55,11 +55,6 @@ func IDLTE(id int) predicate.Session {
 	return predicate.Session(sql.FieldLTE(FieldID, id))
 }
 
-// CanDemo applies equality check predicate on the "can_demo" field. It's identical to CanDemoEQ.
-func CanDemo(v bool) predicate.Session {
-	return predicate.Session(sql.FieldEQ(FieldCanDemo, v))
-}
-
 // Token applies equality check predicate on the "token" field. It's identical to TokenEQ.
 func Token(v string) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldToken, v))
@@ -83,16 +78,6 @@ func CreatedAt(v time.Time) predicate.Session {
 // DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
 func DeletedAt(v time.Time) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldDeletedAt, v))
-}
-
-// CanDemoEQ applies the EQ predicate on the "can_demo" field.
-func CanDemoEQ(v bool) predicate.Session {
-	return predicate.Session(sql.FieldEQ(FieldCanDemo, v))
-}
-
-// CanDemoNEQ applies the NEQ predicate on the "can_demo" field.
-func CanDemoNEQ(v bool) predicate.Session {
-	return predicate.Session(sql.FieldNEQ(FieldCanDemo, v))
 }
 
 // TokenEQ applies the EQ predicate on the "token" field.

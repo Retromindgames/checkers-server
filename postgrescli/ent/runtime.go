@@ -5,6 +5,10 @@ package ent
 import (
 	"time"
 
+	"github.com/Lavizord/checkers-server/postgrescli/ent/currencyversion"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/gameconfig"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/gameversion"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/mathversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/operator"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/platform"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/schema"
@@ -17,6 +21,106 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	currencyversionFields := schema.CurrencyVersion{}.Fields()
+	_ = currencyversionFields
+	// currencyversionDescDeprecated is the schema descriptor for deprecated field.
+	currencyversionDescDeprecated := currencyversionFields[5].Descriptor()
+	// currencyversion.DefaultDeprecated holds the default value on creation for the deprecated field.
+	currencyversion.DefaultDeprecated = currencyversionDescDeprecated.Default.(bool)
+	gameconfigFields := schema.GameConfig{}.Fields()
+	_ = gameconfigFields
+	// gameconfigDescCanDemo is the schema descriptor for can_demo field.
+	gameconfigDescCanDemo := gameconfigFields[0].Descriptor()
+	// gameconfig.DefaultCanDemo holds the default value on creation for the can_demo field.
+	gameconfig.DefaultCanDemo = gameconfigDescCanDemo.Default.(bool)
+	// gameconfigDescCanTournament is the schema descriptor for can_tournament field.
+	gameconfigDescCanTournament := gameconfigFields[1].Descriptor()
+	// gameconfig.DefaultCanTournament holds the default value on creation for the can_tournament field.
+	gameconfig.DefaultCanTournament = gameconfigDescCanTournament.Default.(bool)
+	// gameconfigDescCanFreeBets is the schema descriptor for can_free_bets field.
+	gameconfigDescCanFreeBets := gameconfigFields[2].Descriptor()
+	// gameconfig.DefaultCanFreeBets holds the default value on creation for the can_free_bets field.
+	gameconfig.DefaultCanFreeBets = gameconfigDescCanFreeBets.Default.(bool)
+	// gameconfigDescCanDropAndWins is the schema descriptor for can_drop_and_wins field.
+	gameconfigDescCanDropAndWins := gameconfigFields[3].Descriptor()
+	// gameconfig.DefaultCanDropAndWins holds the default value on creation for the can_drop_and_wins field.
+	gameconfig.DefaultCanDropAndWins = gameconfigDescCanDropAndWins.Default.(bool)
+	// gameconfigDescCanBuyBonus is the schema descriptor for can_buy_bonus field.
+	gameconfigDescCanBuyBonus := gameconfigFields[4].Descriptor()
+	// gameconfig.DefaultCanBuyBonus holds the default value on creation for the can_buy_bonus field.
+	gameconfig.DefaultCanBuyBonus = gameconfigDescCanBuyBonus.Default.(bool)
+	// gameconfigDescCanTurbo is the schema descriptor for can_turbo field.
+	gameconfigDescCanTurbo := gameconfigFields[5].Descriptor()
+	// gameconfig.DefaultCanTurbo holds the default value on creation for the can_turbo field.
+	gameconfig.DefaultCanTurbo = gameconfigDescCanTurbo.Default.(bool)
+	// gameconfigDescIsActive is the schema descriptor for is_active field.
+	gameconfigDescIsActive := gameconfigFields[6].Descriptor()
+	// gameconfig.DefaultIsActive holds the default value on creation for the is_active field.
+	gameconfig.DefaultIsActive = gameconfigDescIsActive.Default.(bool)
+	// gameconfigDescCanAutoBet is the schema descriptor for can_auto_bet field.
+	gameconfigDescCanAutoBet := gameconfigFields[7].Descriptor()
+	// gameconfig.DefaultCanAutoBet holds the default value on creation for the can_auto_bet field.
+	gameconfig.DefaultCanAutoBet = gameconfigDescCanAutoBet.Default.(bool)
+	// gameconfigDescCanAutoCashout is the schema descriptor for can_auto_cashout field.
+	gameconfigDescCanAutoCashout := gameconfigFields[8].Descriptor()
+	// gameconfig.DefaultCanAutoCashout holds the default value on creation for the can_auto_cashout field.
+	gameconfig.DefaultCanAutoCashout = gameconfigDescCanAutoCashout.Default.(bool)
+	// gameconfigDescCanAnteBet is the schema descriptor for can_ante_bet field.
+	gameconfigDescCanAnteBet := gameconfigFields[9].Descriptor()
+	// gameconfig.DefaultCanAnteBet holds the default value on creation for the can_ante_bet field.
+	gameconfig.DefaultCanAnteBet = gameconfigDescCanAnteBet.Default.(bool)
+	// gameconfigDescCanHomeButton is the schema descriptor for can_home_button field.
+	gameconfigDescCanHomeButton := gameconfigFields[10].Descriptor()
+	// gameconfig.DefaultCanHomeButton holds the default value on creation for the can_home_button field.
+	gameconfig.DefaultCanHomeButton = gameconfigDescCanHomeButton.Default.(bool)
+	gameversionFields := schema.GameVersion{}.Fields()
+	_ = gameversionFields
+	// gameversionDescCanDemo is the schema descriptor for can_demo field.
+	gameversionDescCanDemo := gameversionFields[1].Descriptor()
+	// gameversion.DefaultCanDemo holds the default value on creation for the can_demo field.
+	gameversion.DefaultCanDemo = gameversionDescCanDemo.Default.(bool)
+	// gameversionDescCanTournament is the schema descriptor for can_tournament field.
+	gameversionDescCanTournament := gameversionFields[2].Descriptor()
+	// gameversion.DefaultCanTournament holds the default value on creation for the can_tournament field.
+	gameversion.DefaultCanTournament = gameversionDescCanTournament.Default.(bool)
+	// gameversionDescCanFreeBets is the schema descriptor for can_free_bets field.
+	gameversionDescCanFreeBets := gameversionFields[3].Descriptor()
+	// gameversion.DefaultCanFreeBets holds the default value on creation for the can_free_bets field.
+	gameversion.DefaultCanFreeBets = gameversionDescCanFreeBets.Default.(bool)
+	// gameversionDescCanDropAndWins is the schema descriptor for can_drop_and_wins field.
+	gameversionDescCanDropAndWins := gameversionFields[4].Descriptor()
+	// gameversion.DefaultCanDropAndWins holds the default value on creation for the can_drop_and_wins field.
+	gameversion.DefaultCanDropAndWins = gameversionDescCanDropAndWins.Default.(bool)
+	// gameversionDescCanTurbo is the schema descriptor for can_turbo field.
+	gameversionDescCanTurbo := gameversionFields[5].Descriptor()
+	// gameversion.DefaultCanTurbo holds the default value on creation for the can_turbo field.
+	gameversion.DefaultCanTurbo = gameversionDescCanTurbo.Default.(bool)
+	// gameversionDescDeprecated is the schema descriptor for deprecated field.
+	gameversionDescDeprecated := gameversionFields[8].Descriptor()
+	// gameversion.DefaultDeprecated holds the default value on creation for the deprecated field.
+	gameversion.DefaultDeprecated = gameversionDescDeprecated.Default.(bool)
+	// gameversionDescCanAutoBet is the schema descriptor for can_auto_bet field.
+	gameversionDescCanAutoBet := gameversionFields[10].Descriptor()
+	// gameversion.DefaultCanAutoBet holds the default value on creation for the can_auto_bet field.
+	gameversion.DefaultCanAutoBet = gameversionDescCanAutoBet.Default.(bool)
+	// gameversionDescCanAutoCashout is the schema descriptor for can_auto_cashout field.
+	gameversionDescCanAutoCashout := gameversionFields[12].Descriptor()
+	// gameversion.DefaultCanAutoCashout holds the default value on creation for the can_auto_cashout field.
+	gameversion.DefaultCanAutoCashout = gameversionDescCanAutoCashout.Default.(bool)
+	// gameversionDescCanBuyBonus is the schema descriptor for can_buy_bonus field.
+	gameversionDescCanBuyBonus := gameversionFields[13].Descriptor()
+	// gameversion.DefaultCanBuyBonus holds the default value on creation for the can_buy_bonus field.
+	gameversion.DefaultCanBuyBonus = gameversionDescCanBuyBonus.Default.(bool)
+	// gameversionDescCanAnteBet is the schema descriptor for can_ante_bet field.
+	gameversionDescCanAnteBet := gameversionFields[14].Descriptor()
+	// gameversion.DefaultCanAnteBet holds the default value on creation for the can_ante_bet field.
+	gameversion.DefaultCanAnteBet = gameversionDescCanAnteBet.Default.(bool)
+	mathversionFields := schema.MathVersion{}.Fields()
+	_ = mathversionFields
+	// mathversionDescDeprecated is the schema descriptor for deprecated field.
+	mathversionDescDeprecated := mathversionFields[7].Descriptor()
+	// mathversion.DefaultDeprecated holds the default value on creation for the deprecated field.
+	mathversion.DefaultDeprecated = mathversionDescDeprecated.Default.(bool)
 	operatorFields := schema.Operator{}.Fields()
 	_ = operatorFields
 	// operatorDescCreatedAt is the schema descriptor for created_at field.
@@ -38,7 +142,7 @@ func init() {
 	sessionFields := schema.Session{}.Fields()
 	_ = sessionFields
 	// sessionDescCreatedAt is the schema descriptor for created_at field.
-	sessionDescCreatedAt := sessionFields[4].Descriptor()
+	sessionDescCreatedAt := sessionFields[3].Descriptor()
 	// session.DefaultCreatedAt holds the default value on creation for the created_at field.
 	session.DefaultCreatedAt = sessionDescCreatedAt.Default.(func() time.Time)
 	studioFields := schema.Studio{}.Fields()

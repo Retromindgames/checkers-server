@@ -16,17 +16,17 @@ const (
 )
 
 type Player struct {
-	ID                 string             `json:"id"`
-	Token              string             `json:"token"`
-	RoomID             string             `json:"room_id"`
-	GameID             string             `json:"game_id"`
-	SessionID          string             `json:"session_id"`
-	Currency           string             `json:"currency"`
-	Status             PlayerStatus       `json:"status"`
-	SelectedBet        float64            `json:"selected_bet"`
-	Name               string             `json:"name"`
-	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
-	DisconnectedAt     int64              `json:"disconnected_at"` // Unix timestamp
+	ID          string       `json:"id"`
+	Token       string       `json:"token"`
+	RoomID      string       `json:"room_id"`
+	GameID      string       `json:"game_id"`
+	SessionID   string       `json:"session_id"`
+	Currency    string       `json:"currency"`
+	Status      PlayerStatus `json:"status"`
+	SelectedBet float64      `json:"selected_bet"`
+	Name        string       `json:"name"`
+	//OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
+	DisconnectedAt int64 `json:"disconnected_at"` // Unix timestamp
 }
 
 var DamasValidBetAmounts = []float64{0.5, 1, 3, 5, 10, 25, 50, 100}
