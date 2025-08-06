@@ -6,4 +6,5 @@ type GameLaunchRequest struct {
 	GameID       string `json:"gameid"`
 	Language     string `json:"language"`
 	Token        string `json:"token"`
+	Demo         bool   `json:"demo, omitempty"`
 }

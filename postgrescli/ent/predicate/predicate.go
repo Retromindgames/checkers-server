@@ -39,6 +39,9 @@ type Operator func(*sql.Selector)
 // Platform is the predicate function for platform builders.
 type Platform func(*sql.Selector)
 
+// Round is the predicate function for round builders.
+type Round func(*sql.Selector)
+
 // Serie is the predicate function for serie builders.
 type Serie func(*sql.Selector)
 
@@ -50,3 +53,6 @@ type Session func(*sql.Selector)
 
 // Studio is the predicate function for studio builders.
 type Studio func(*sql.Selector)
+
+// Transaction is the predicate function for transaction builders.
+type Transaction func(*sql.Selector)

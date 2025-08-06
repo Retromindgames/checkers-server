@@ -26,10 +26,12 @@ import (
 	"github.com/Lavizord/checkers-server/postgrescli/ent/mathversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/operator"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/platform"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/round"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/serie"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/seriefeature"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/session"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/studio"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/transaction"
 )
 
 // Client is the client that holds all ent builders.
@@ -59,6 +61,8 @@ type Client struct {
 	Operator *OperatorClient
 	// Platform is the client for interacting with the Platform builders.
 	Platform *PlatformClient
+	// Round is the client for interacting with the Round builders.
+	Round *RoundClient
 	// Serie is the client for interacting with the Serie builders.
 	Serie *SerieClient
 	// SerieFeature is the client for interacting with the SerieFeature builders.
@@ -67,6 +71,8 @@ type Client struct {
 	Session *SessionClient
 	// Studio is the client for interacting with the Studio builders.
 	Studio *StudioClient
+	// Transaction is the client for interacting with the Transaction builders.
+	Transaction *TransactionClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -89,10 +95,12 @@ func (c *Client) init() {
 	c.MathVersion = NewMathVersionClient(c.config)
 	c.Operator = NewOperatorClient(c.config)
 	c.Platform = NewPlatformClient(c.config)
+	c.Round = NewRoundClient(c.config)
 	c.Serie = NewSerieClient(c.config)
 	c.SerieFeature = NewSerieFeatureClient(c.config)
 	c.Session = NewSessionClient(c.config)
 	c.Studio = NewStudioClient(c.config)
+	c.Transaction = NewTransactionClient(c.config)
 }
 
 type (
@@ -196,10 +204,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		MathVersion:     NewMathVersionClient(cfg),
 		Operator:        NewOperatorClient(cfg),
 		Platform:        NewPlatformClient(cfg),
+		Round:           NewRoundClient(cfg),
 		Serie:           NewSerieClient(cfg),
 		SerieFeature:    NewSerieFeatureClient(cfg),
 		Session:         NewSessionClient(cfg),
 		Studio:          NewStudioClient(cfg),
+		Transaction:     NewTransactionClient(cfg),
 	}, nil
 }
 
@@ -230,10 +240,12 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		MathVersion:     NewMathVersionClient(cfg),
 		Operator:        NewOperatorClient(cfg),
 		Platform:        NewPlatformClient(cfg),
+		Round:           NewRoundClient(cfg),
 		Serie:           NewSerieClient(cfg),
 		SerieFeature:    NewSerieFeatureClient(cfg),
 		Session:         NewSessionClient(cfg),
 		Studio:          NewStudioClient(cfg),
+		Transaction:     NewTransactionClient(cfg),
 	}, nil
 }
 
@@ -264,8 +276,8 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.Currency, c.CurrencyVersion, c.Feature, c.Game, c.GameConfig, c.GameFeature,
-		c.GameType, c.GameVersion, c.MathVersion, c.Operator, c.Platform, c.Serie,
-		c.SerieFeature, c.Session, c.Studio,
+		c.GameType, c.GameVersion, c.MathVersion, c.Operator, c.Platform, c.Round,
+		c.Serie, c.SerieFeature, c.Session, c.Studio, c.Transaction,
 	} {
 		n.Use(hooks...)
 	}
@@ -276,8 +288,8 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.Currency, c.CurrencyVersion, c.Feature, c.Game, c.GameConfig, c.GameFeature,
-		c.GameType, c.GameVersion, c.MathVersion, c.Operator, c.Platform, c.Serie,
-		c.SerieFeature, c.Session, c.Studio,
+		c.GameType, c.GameVersion, c.MathVersion, c.Operator, c.Platform, c.Round,
+		c.Serie, c.SerieFeature, c.Session, c.Studio, c.Transaction,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -308,6 +320,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Operator.mutate(ctx, m)
 	case *PlatformMutation:
 		return c.Platform.mutate(ctx, m)
+	case *RoundMutation:
+		return c.Round.mutate(ctx, m)
 	case *SerieMutation:
 		return c.Serie.mutate(ctx, m)
 	case *SerieFeatureMutation:
@@ -316,6 +330,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Session.mutate(ctx, m)
 	case *StudioMutation:
 		return c.Studio.mutate(ctx, m)
+	case *TransactionMutation:
+		return c.Transaction.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
 	}
@@ -2328,6 +2344,155 @@ func (c *PlatformClient) mutate(ctx context.Context, m *PlatformMutation) (Value
 	}
 }
 
+// RoundClient is a client for the Round schema.
+type RoundClient struct {
+	config
+}
+
+// NewRoundClient returns a client for the Round from the given config.
+func NewRoundClient(c config) *RoundClient {
+	return &RoundClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `round.Hooks(f(g(h())))`.
+func (c *RoundClient) Use(hooks ...Hook) {
+	c.hooks.Round = append(c.hooks.Round, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `round.Intercept(f(g(h())))`.
+func (c *RoundClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Round = append(c.inters.Round, interceptors...)
+}
+
+// Create returns a builder for creating a Round entity.
+func (c *RoundClient) Create() *RoundCreate {
+	mutation := newRoundMutation(c.config, OpCreate)
+	return &RoundCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Round entities.
+func (c *RoundClient) CreateBulk(builders ...*RoundCreate) *RoundCreateBulk {
+	return &RoundCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RoundClient) MapCreateBulk(slice any, setFunc func(*RoundCreate, int)) *RoundCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RoundCreateBulk{err: fmt.Errorf("calling to RoundClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RoundCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RoundCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Round.
+func (c *RoundClient) Update() *RoundUpdate {
+	mutation := newRoundMutation(c.config, OpUpdate)
+	return &RoundUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RoundClient) UpdateOne(r *Round) *RoundUpdateOne {
+	mutation := newRoundMutation(c.config, OpUpdateOne, withRound(r))
+	return &RoundUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RoundClient) UpdateOneID(id int) *RoundUpdateOne {
+	mutation := newRoundMutation(c.config, OpUpdateOne, withRoundID(id))
+	return &RoundUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Round.
+func (c *RoundClient) Delete() *RoundDelete {
+	mutation := newRoundMutation(c.config, OpDelete)
+	return &RoundDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RoundClient) DeleteOne(r *Round) *RoundDeleteOne {
+	return c.DeleteOneID(r.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RoundClient) DeleteOneID(id int) *RoundDeleteOne {
+	builder := c.Delete().Where(round.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RoundDeleteOne{builder}
+}
+
+// Query returns a query builder for Round.
+func (c *RoundClient) Query() *RoundQuery {
+	return &RoundQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRound},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Round entity by its id.
+func (c *RoundClient) Get(ctx context.Context, id int) (*Round, error) {
+	return c.Query().Where(round.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RoundClient) GetX(ctx context.Context, id int) *Round {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTransactions queries the transactions edge of a Round.
+func (c *RoundClient) QueryTransactions(r *Round) *TransactionQuery {
+	query := (&TransactionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(round.Table, round.FieldID, id),
+			sqlgraph.To(transaction.Table, transaction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, round.TransactionsTable, round.TransactionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RoundClient) Hooks() []Hook {
+	return c.hooks.Round
+}
+
+// Interceptors returns the client interceptors.
+func (c *RoundClient) Interceptors() []Interceptor {
+	return c.inters.Round
+}
+
+func (c *RoundClient) mutate(ctx context.Context, m *RoundMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RoundCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RoundUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RoundUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RoundDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Round mutation op: %q", m.Op())
+	}
+}
+
 // SerieClient is a client for the Serie schema.
 type SerieClient struct {
 	config
@@ -3020,16 +3185,165 @@ func (c *StudioClient) mutate(ctx context.Context, m *StudioMutation) (Value, er
 	}
 }
 
+// TransactionClient is a client for the Transaction schema.
+type TransactionClient struct {
+	config
+}
+
+// NewTransactionClient returns a client for the Transaction from the given config.
+func NewTransactionClient(c config) *TransactionClient {
+	return &TransactionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `transaction.Hooks(f(g(h())))`.
+func (c *TransactionClient) Use(hooks ...Hook) {
+	c.hooks.Transaction = append(c.hooks.Transaction, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `transaction.Intercept(f(g(h())))`.
+func (c *TransactionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Transaction = append(c.inters.Transaction, interceptors...)
+}
+
+// Create returns a builder for creating a Transaction entity.
+func (c *TransactionClient) Create() *TransactionCreate {
+	mutation := newTransactionMutation(c.config, OpCreate)
+	return &TransactionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Transaction entities.
+func (c *TransactionClient) CreateBulk(builders ...*TransactionCreate) *TransactionCreateBulk {
+	return &TransactionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TransactionClient) MapCreateBulk(slice any, setFunc func(*TransactionCreate, int)) *TransactionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TransactionCreateBulk{err: fmt.Errorf("calling to TransactionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TransactionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TransactionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Transaction.
+func (c *TransactionClient) Update() *TransactionUpdate {
+	mutation := newTransactionMutation(c.config, OpUpdate)
+	return &TransactionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TransactionClient) UpdateOne(t *Transaction) *TransactionUpdateOne {
+	mutation := newTransactionMutation(c.config, OpUpdateOne, withTransaction(t))
+	return &TransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TransactionClient) UpdateOneID(id int) *TransactionUpdateOne {
+	mutation := newTransactionMutation(c.config, OpUpdateOne, withTransactionID(id))
+	return &TransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Transaction.
+func (c *TransactionClient) Delete() *TransactionDelete {
+	mutation := newTransactionMutation(c.config, OpDelete)
+	return &TransactionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TransactionClient) DeleteOne(t *Transaction) *TransactionDeleteOne {
+	return c.DeleteOneID(t.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TransactionClient) DeleteOneID(id int) *TransactionDeleteOne {
+	builder := c.Delete().Where(transaction.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TransactionDeleteOne{builder}
+}
+
+// Query returns a query builder for Transaction.
+func (c *TransactionClient) Query() *TransactionQuery {
+	return &TransactionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTransaction},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Transaction entity by its id.
+func (c *TransactionClient) Get(ctx context.Context, id int) (*Transaction, error) {
+	return c.Query().Where(transaction.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TransactionClient) GetX(ctx context.Context, id int) *Transaction {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRounds queries the rounds edge of a Transaction.
+func (c *TransactionClient) QueryRounds(t *Transaction) *RoundQuery {
+	query := (&RoundClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := t.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(transaction.Table, transaction.FieldID, id),
+			sqlgraph.To(round.Table, round.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, transaction.RoundsTable, transaction.RoundsColumn),
+		)
+		fromV = sqlgraph.Neighbors(t.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TransactionClient) Hooks() []Hook {
+	return c.hooks.Transaction
+}
+
+// Interceptors returns the client interceptors.
+func (c *TransactionClient) Interceptors() []Interceptor {
+	return c.inters.Transaction
+}
+
+func (c *TransactionClient) mutate(ctx context.Context, m *TransactionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TransactionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TransactionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TransactionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TransactionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Transaction mutation op: %q", m.Op())
+	}
+}
+
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
 		Currency, CurrencyVersion, Feature, Game, GameConfig, GameFeature, GameType,
-		GameVersion, MathVersion, Operator, Platform, Serie, SerieFeature, Session,
-		Studio []ent.Hook
+		GameVersion, MathVersion, Operator, Platform, Round, Serie, SerieFeature,
+		Session, Studio, Transaction []ent.Hook
 	}
 	inters struct {
 		Currency, CurrencyVersion, Feature, Game, GameConfig, GameFeature, GameType,
-		GameVersion, MathVersion, Operator, Platform, Serie, SerieFeature, Session,
-		Studio []ent.Interceptor
+		GameVersion, MathVersion, Operator, Platform, Round, Serie, SerieFeature,
+		Session, Studio, Transaction []ent.Interceptor
 	}
 )

@@ -69,38 +69,6 @@ func (pc *PostgresCli) CreateDb() error {
 	return nil
 }
 
-func (pc *PostgresCli) SaveSession(session models.Session) error {
-	query := `
-		INSERT INTO sessions (
-			SessionId, Token, PlayerName, Currency, OperatorBaseUrl, CreatedAt, OperatorName, OperatorGameName, GameName
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`
-	//start := time.Now()
-
-	stmt, err := pc.DB.Prepare(query)
-	if err != nil {
-		return fmt.Errorf("prepare session insert: %w", err)
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(
-		session.ID,
-		session.Token,
-		session.PlayerName,
-		session.Currency,
-		session.OperatorBaseUrl,
-		session.CreatedAt,
-	)
-	//duration := time.Since(start)
-	//log.Printf("[Postgres metric] - SaveSession Insert took %v", duration)
-
-	if err != nil {
-		log.Printf("[PostgresCli] - error saving session: %v", err)
-		return fmt.Errorf("exec session insert: %w", err)
-	}
-	return nil
-}
-
 func (pc *PostgresCli) SaveSessionNew(session models.Session) error {
 	ctx := context.Background()
 	_, err := pc.EntCli.Session.
@@ -117,6 +85,7 @@ func (pc *PostgresCli) SaveSessionNew(session models.Session) error {
 	return nil
 }
 
+/*
 func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 	query := `
 		INSERT INTO transactions (
@@ -151,6 +120,7 @@ func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 	}
 	return nil
 }
+*/
 
 func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
 	movesJSON, err := json.Marshal(game.Moves)

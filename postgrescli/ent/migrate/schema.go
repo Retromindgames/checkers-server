@@ -300,6 +300,33 @@ var (
 		Columns:    PlatformsColumns,
 		PrimaryKey: []*schema.Column{PlatformsColumns[0]},
 	}
+	// RoundsColumns holds the columns for the "rounds" table.
+	RoundsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "platform", Type: field.TypeString},
+		{Name: "operator", Type: field.TypeString},
+		{Name: "reels", Type: field.TypeJSON, Nullable: true},
+		{Name: "multipliers", Type: field.TypeJSON, Nullable: true},
+		{Name: "bonus_type", Type: field.TypeString, Nullable: true},
+		{Name: "bonus_symbol", Type: field.TypeInt, Nullable: true},
+		{Name: "bonus_multiplier", Type: field.TypeInt, Nullable: true},
+		{Name: "timestamp", Type: field.TypeTime},
+		{Name: "round_type", Type: field.TypeString, Nullable: true},
+		{Name: "play", Type: field.TypeJSON},
+		{Name: "free_spins_remaining", Type: field.TypeInt, Nullable: true},
+		{Name: "math_output", Type: field.TypeString, Nullable: true},
+		{Name: "game_service", Type: field.TypeJSON, Nullable: true},
+		{Name: "free_spins_count", Type: field.TypeInt, Nullable: true},
+		{Name: "ante_bet", Type: field.TypeBool, Nullable: true},
+		{Name: "buy_bonus", Type: field.TypeString, Nullable: true},
+		{Name: "character", Type: field.TypeInt, Nullable: true},
+	}
+	// RoundsTable holds the schema information for the "rounds" table.
+	RoundsTable = &schema.Table{
+		Name:       "rounds",
+		Columns:    RoundsColumns,
+		PrimaryKey: []*schema.Column{RoundsColumns[0]},
+	}
 	// SeriesColumns holds the columns for the "series" table.
 	SeriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -405,6 +432,44 @@ var (
 		Columns:    StudiosColumns,
 		PrimaryKey: []*schema.Column{StudiosColumns[0]},
 	}
+	// TransactionsColumns holds the columns for the "transactions" table.
+	TransactionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "type", Type: field.TypeString},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "amount", Type: field.TypeInt},
+		{Name: "currency", Type: field.TypeString},
+		{Name: "platform", Type: field.TypeString},
+		{Name: "operator", Type: field.TypeString},
+		{Name: "client", Type: field.TypeString},
+		{Name: "game", Type: field.TypeString},
+		{Name: "status", Type: field.TypeInt},
+		{Name: "description", Type: field.TypeString},
+		{Name: "timestamp", Type: field.TypeTime},
+		{Name: "math_profile", Type: field.TypeString, Nullable: true},
+		{Name: "denominator", Type: field.TypeInt},
+		{Name: "final_balance", Type: field.TypeInt},
+		{Name: "seq_id", Type: field.TypeInt, Nullable: true},
+		{Name: "multiplier", Type: field.TypeInt, Nullable: true},
+		{Name: "game_service", Type: field.TypeJSON, Nullable: true},
+		{Name: "token", Type: field.TypeString},
+		{Name: "original_amount", Type: field.TypeInt},
+		{Name: "round_transactions", Type: field.TypeInt, Nullable: true},
+	}
+	// TransactionsTable holds the schema information for the "transactions" table.
+	TransactionsTable = &schema.Table{
+		Name:       "transactions",
+		Columns:    TransactionsColumns,
+		PrimaryKey: []*schema.Column{TransactionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "transactions_rounds_transactions",
+				Columns:    []*schema.Column{TransactionsColumns[20]},
+				RefColumns: []*schema.Column{RoundsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		CurrenciesTable,
@@ -418,10 +483,12 @@ var (
 		MathVersionsTable,
 		OperatorsTable,
 		PlatformsTable,
+		RoundsTable,
 		SeriesTable,
 		SerieFeaturesTable,
 		SessionsTable,
 		StudiosTable,
+		TransactionsTable,
 	}
 )
 
@@ -448,4 +515,5 @@ func init() {
 	SessionsTable.ForeignKeys[2].RefTable = GameVersionsTable
 	SessionsTable.ForeignKeys[3].RefTable = MathVersionsTable
 	SessionsTable.ForeignKeys[4].RefTable = OperatorsTable
+	TransactionsTable.ForeignKeys[0].RefTable = RoundsTable
 }

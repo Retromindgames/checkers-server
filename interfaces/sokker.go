@@ -12,7 +12,7 @@ import (
 	"github.com/Lavizord/checkers-server/redisdb"
 )
 
-func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli) {
+func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, gc *models.GameConfigDTO, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli) {
 	// Fetch wallet information
 	logInResponse, err := walletrequests.SokkerDuelGetWallet(op.OperatorWalletBaseUrl, req.Token)
 	if err != nil {

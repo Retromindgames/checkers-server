@@ -16,6 +16,7 @@ type GameLaunchResponse struct {
 	Message string `json:"message"`
 }
 
+/*
 type Session struct {
 	ID              string      `json:"session_id"`
 	Token           string      `json:"token"`
@@ -25,6 +26,22 @@ type Session struct {
 	CreatedAt       time.Time   `json:"created_at"`
 	ExtractID       int64       `json:"extract_id"` // This was created to store the extract ID of a bet, so that we can later use it in the win post...
 	OperatorDTO     OperatorDTO `json:"operator"`
+}
+*/
+
+type Session struct {
+	ID                string    `json:"session_id"`
+	Token             string    `json:"token"`
+	ClientID          string    `json:"client_id"`
+	Demo              bool      `json:"demo"`
+	OperatorID        int       `json:"operator_id"`
+	GameID            int       `json:"game_id"`
+	GameVersionID     int       `json:"game_version_id"`
+	MathVersionID     int       `json:"math_version_id"`
+	CurrencyVersionID int       `json:"currency_version_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	DeletedAt         time.Time `json:"deleted_at"`
+	ExtractID         int64     `json:"extract_id"` // This was created to store the extract ID of a bet, so that we can later use it in the win post...
 }
 
 func (s *Session) IsTokenExpired() bool {
@@ -92,6 +109,7 @@ func OperatorsToDTO(ops []*ent.Operator) []OperatorDTO {
 // This will be stored in redis too avoid too many querys to the database.
 type GameConfigDTO struct {
 	// Operator
+	OperatorID    int
 	OperatorName  string
 	OperatorAlias string
 	// Platform
@@ -99,9 +117,11 @@ type GameConfigDTO struct {
 	PlatformHash              string
 	PlatformHomeButtonPayload string
 	// Game
+	GameID            int
 	GameName          string
 	GameTrademarkName string
 	// Game Versions
+	GameVersionID  int
 	GameVersion    string
 	UrlMediaPack   string
 	UrlReleaseNote string
@@ -117,6 +137,7 @@ type GameConfigDTO struct {
 	CanAutoCashout bool
 	CanAnteBet     bool
 	// Currency Versions
+	CurrencyVersionID          int
 	CurrencyName               string
 	CurrencySymbol             string
 	CurrencyThousandSeparator  string
@@ -129,6 +150,7 @@ type GameConfigDTO struct {
 	CurrencyCrashBetIncrement  int
 	CurrencySlotsBetMultiplier []int
 	// Math Versions
+	MathVersionID             int
 	MathName                  string
 	MathVersion               string
 	MathVersionUrlReleaseNote string
@@ -145,6 +167,7 @@ func GameConfigToDTO(gc *ent.GameConfig) GameConfigDTO {
 	fmt.Println(string(b))
 
 	if gc.Edges.Operator != nil {
+		dto.OperatorID = gc.Edges.Operator.ID
 		dto.OperatorName = gc.Edges.Operator.Name
 		dto.OperatorAlias = gc.Edges.Operator.Alias
 
@@ -156,6 +179,8 @@ func GameConfigToDTO(gc *ent.GameConfig) GameConfigDTO {
 	}
 
 	if gc.Edges.GameVersions != nil {
+		dto.GameVersionID = gc.Edges.GameVersions.ID
+		dto.GameID = gc.Edges.Games.ID
 		dto.GameName = gc.Edges.Games.Name
 		dto.GameTrademarkName = gc.Edges.Games.TrademarkName
 		dto.GameVersion = gc.Edges.GameVersions.Version
@@ -165,6 +190,7 @@ func GameConfigToDTO(gc *ent.GameConfig) GameConfigDTO {
 	}
 
 	if gc.Edges.CurrencyVersions != nil {
+		dto.CurrencyVersionID = gc.Edges.CurrencyVersions.ID
 		dto.CurrencyName = gc.Edges.CurrencyVersions.Name
 		dto.CurrencyDenominator = gc.Edges.CurrencyVersions.Denominator
 		dto.CurrencyMinBet = gc.Edges.CurrencyVersions.MinBet
@@ -182,6 +208,7 @@ func GameConfigToDTO(gc *ent.GameConfig) GameConfigDTO {
 	}
 
 	if gc.Edges.MathVersions != nil {
+		dto.MathVersionID = gc.Edges.MathVersions.ID
 		dto.MathName = gc.Edges.MathVersions.Name
 		dto.MathVersion = gc.Edges.MathVersions.Version
 		dto.MathVersionUrlReleaseNote = gc.Edges.MathVersions.URLReleaseNote

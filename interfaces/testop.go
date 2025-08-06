@@ -9,17 +9,11 @@ import (
 	"github.com/Lavizord/checkers-server/redisdb"
 )
 
-func (m *TestModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli) {
+func (m *TestModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, gc *models.GameConfigDTO, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli) {
 
-	session, err := checkExistingSession(req.Token, rc)
+	session, err := checkExistingSession(req.Token, rc) // TODO: This also needs to check for GameConfig?
 	if err != nil || session == nil {
-		session, err = generatePlayerSession( // then we generate a new session.
-			op,
-			req.Token,
-			models.GenerateUUID(),
-			req.Currency,
-			rc,
-		)
+		session, err = generatePlayerSession(req, gc, req.Token, rc)
 		if err != nil {
 			respondWithError(w, "Failed to generate session", err)
 			return

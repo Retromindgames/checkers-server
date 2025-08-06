@@ -11,10 +11,12 @@ import (
 	"github.com/Lavizord/checkers-server/postgrescli/ent/mathversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/operator"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/platform"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/round"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/schema"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/serie"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/session"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/studio"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/transaction"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -133,6 +135,12 @@ func init() {
 	platformDescCreatedAt := platformFields[2].Descriptor()
 	// platform.DefaultCreatedAt holds the default value on creation for the created_at field.
 	platform.DefaultCreatedAt = platformDescCreatedAt.Default.(func() time.Time)
+	roundFields := schema.Round{}.Fields()
+	_ = roundFields
+	// roundDescTimestamp is the schema descriptor for timestamp field.
+	roundDescTimestamp := roundFields[7].Descriptor()
+	// round.DefaultTimestamp holds the default value on creation for the timestamp field.
+	round.DefaultTimestamp = roundDescTimestamp.Default.(func() time.Time)
 	serieFields := schema.Serie{}.Fields()
 	_ = serieFields
 	// serieDescCreatedAt is the schema descriptor for created_at field.
@@ -151,4 +159,10 @@ func init() {
 	studioDescCreatedAt := studioFields[1].Descriptor()
 	// studio.DefaultCreatedAt holds the default value on creation for the created_at field.
 	studio.DefaultCreatedAt = studioDescCreatedAt.Default.(func() time.Time)
+	transactionFields := schema.Transaction{}.Fields()
+	_ = transactionFields
+	// transactionDescTimestamp is the schema descriptor for timestamp field.
+	transactionDescTimestamp := transactionFields[10].Descriptor()
+	// transaction.DefaultTimestamp holds the default value on creation for the timestamp field.
+	transaction.DefaultTimestamp = transactionDescTimestamp.Default.(func() time.Time)
 }

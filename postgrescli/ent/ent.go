@@ -23,10 +23,12 @@ import (
 	"github.com/Lavizord/checkers-server/postgrescli/ent/mathversion"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/operator"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/platform"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/round"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/serie"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/seriefeature"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/session"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/studio"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/transaction"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -98,10 +100,12 @@ func checkColumn(table, column string) error {
 			mathversion.Table:     mathversion.ValidColumn,
 			operator.Table:        operator.ValidColumn,
 			platform.Table:        platform.ValidColumn,
+			round.Table:           round.ValidColumn,
 			serie.Table:           serie.ValidColumn,
 			seriefeature.Table:    seriefeature.ValidColumn,
 			session.Table:         session.ValidColumn,
 			studio.Table:          studio.ValidColumn,
+			transaction.Table:     transaction.ValidColumn,
 		})
 	})
 	return columnCheck(table, column)

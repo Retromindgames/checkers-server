@@ -34,6 +34,8 @@ type Tx struct {
 	Operator *OperatorClient
 	// Platform is the client for interacting with the Platform builders.
 	Platform *PlatformClient
+	// Round is the client for interacting with the Round builders.
+	Round *RoundClient
 	// Serie is the client for interacting with the Serie builders.
 	Serie *SerieClient
 	// SerieFeature is the client for interacting with the SerieFeature builders.
@@ -42,6 +44,8 @@ type Tx struct {
 	Session *SessionClient
 	// Studio is the client for interacting with the Studio builders.
 	Studio *StudioClient
+	// Transaction is the client for interacting with the Transaction builders.
+	Transaction *TransactionClient
 
 	// lazily loaded.
 	client     *Client
@@ -184,10 +188,12 @@ func (tx *Tx) init() {
 	tx.MathVersion = NewMathVersionClient(tx.config)
 	tx.Operator = NewOperatorClient(tx.config)
 	tx.Platform = NewPlatformClient(tx.config)
+	tx.Round = NewRoundClient(tx.config)
 	tx.Serie = NewSerieClient(tx.config)
 	tx.SerieFeature = NewSerieFeatureClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)
 	tx.Studio = NewStudioClient(tx.config)
+	tx.Transaction = NewTransactionClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

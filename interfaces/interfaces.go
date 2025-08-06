@@ -1,6 +1,7 @@
 package interfaces
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -15,7 +16,7 @@ import (
 
 // PlatformInterface defines the interface for platform-specific code
 type PlatformInterface interface {
-	HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, op models.Operator, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli)
+	HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, gc *models.GameConfigDTO, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli)
 	HandleFetchWalletBalance(s models.Session, rc *redisdb.RedisClient) (int64, error)
 	HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, error)
 	HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, int64, error)
@@ -35,22 +36,19 @@ type TestModule struct{}
 
 // Helper function to save failed transactions
 func saveFailedBetTransaction(pgs *postgrescli.PostgresCli, session models.Session, betData models.SokkerDuelBet, apiError error, gameID string) error {
-	trans := models.Transaction{
-		ID:        betData.TransactionID,
-		SessionID: session.ID,
-		Type:      "bet",
-		Amount:    betData.Amount,
-		Currency:  session.Currency,
-		Platform:  "sokkerpro",
-		Operator:  "SokkerDuel",
-		Client:    session.PlayerName,
-		//Game:        session.OperatorIdentifier.GameName,
-		RoundID:     gameID,
-		Timestamp:   time.Now(),
-		Status:      "error",
-		Description: apiError.Error(),
+	ctx := context.Background()
+	_, err := pgs.EntCli.Transaction.
+		Create().
+		SetType("bet").
+		SetToken(session.Token).
+		SetCurrency(session.)
+		Save(ctx)
+
+	if err != nil {
+		log.Printf("[PostgresCli] - error saving session: %v", err)
+		return fmt.Errorf("ent: save session: %w", err)
 	}
-	return pgs.SaveTransaction(trans)
+	return nil
 }
 
 func saveFailedWinTransaction(pgs *postgrescli.PostgresCli, session models.Session, winData models.SokkerDuelWin, apiError error, gameID string) error {
@@ -90,20 +88,18 @@ func generateGameURL(baseURL, token, sessionID, currency string) (string, error)
 	return parsedURL.String(), nil
 }
 
-func generatePlayerSession(op models.Operator, token, username, currency string, rc *redisdb.RedisClient) (*models.Session, error) {
+func generatePlayerSession(req models.GameLaunchRequest, gc *models.GameConfigDTO, username string, rc *redisdb.RedisClient) (*models.Session, error) {
 	session := models.Session{
-		ID:         models.GenerateUUID(),
-		Token:      token,
-		PlayerName: username,
-		Currency:   currency,
-		//OperatorIdentifier: models.OperatorIdentifier{
-		//	OperatorName:     op.OperatorName,
-		//	OperatorGameName: op.OperatorGameName,
-		//	GameName:         op.GameName,
-		//	WinFactor:        op.WinFactor,
-		//},
-		OperatorBaseUrl: op.OperatorWalletBaseUrl,
-		CreatedAt:       time.Now(),
+		ID:                models.GenerateUUID(),
+		Token:             req.Token,
+		ClientID:          username,
+		Demo:              req.Demo,
+		OperatorID:        gc.OperatorID,
+		GameID:            gc.GameID,
+		GameVersionID:     gc.GameVersionID,
+		MathVersionID:     gc.MathVersionID,
+		CurrencyVersionID: gc.CurrencyVersionID,
+		CreatedAt:         time.Now(),
 	}
 	err := rc.AddSession(&session)
 	return &session, err

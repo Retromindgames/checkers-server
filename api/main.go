@@ -150,7 +150,7 @@ func gameLaunchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Delegate the request to the module
-	module.HandleGameLaunch(w, r, req, *operator, redisClient, postgresClient)
+	module.HandleGameLaunch(w, r, req, config, redisClient, postgresClient)
 }
 
 func gameMovesHandler(w http.ResponseWriter, r *http.Request) {

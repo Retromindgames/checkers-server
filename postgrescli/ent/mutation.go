@@ -23,10 +23,12 @@ import (
 	"github.com/Lavizord/checkers-server/postgrescli/ent/operator"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/platform"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/predicate"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/round"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/serie"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/seriefeature"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/session"
 	"github.com/Lavizord/checkers-server/postgrescli/ent/studio"
+	"github.com/Lavizord/checkers-server/postgrescli/ent/transaction"
 )
 
 const (
@@ -49,10 +51,12 @@ const (
 	TypeMathVersion     = "MathVersion"
 	TypeOperator        = "Operator"
 	TypePlatform        = "Platform"
+	TypeRound           = "Round"
 	TypeSerie           = "Serie"
 	TypeSerieFeature    = "SerieFeature"
 	TypeSession         = "Session"
 	TypeStudio          = "Studio"
+	TypeTransaction     = "Transaction"
 )
 
 // CurrencyMutation represents an operation that mutates the Currency nodes in the graph.
@@ -9824,6 +9828,1712 @@ func (m *PlatformMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Platform edge %s", name)
 }
 
+// RoundMutation represents an operation that mutates the Round nodes in the graph.
+type RoundMutation struct {
+	config
+	op                      Op
+	typ                     string
+	id                      *int
+	platform                *string
+	operator                *string
+	reels                   *map[string]interface{}
+	multipliers             *map[string]interface{}
+	bonus_type              *string
+	bonus_symbol            *int
+	addbonus_symbol         *int
+	bonus_multiplier        *int
+	addbonus_multiplier     *int
+	timestamp               *time.Time
+	round_type              *string
+	play                    *map[string]interface{}
+	free_spins_remaining    *int
+	addfree_spins_remaining *int
+	math_output             *string
+	game_service            *map[string]interface{}
+	free_spins_count        *int
+	addfree_spins_count     *int
+	ante_bet                *bool
+	buy_bonus               *string
+	character               *int
+	addcharacter            *int
+	clearedFields           map[string]struct{}
+	transactions            map[int]struct{}
+	removedtransactions     map[int]struct{}
+	clearedtransactions     bool
+	done                    bool
+	oldValue                func(context.Context) (*Round, error)
+	predicates              []predicate.Round
+}
+
+var _ ent.Mutation = (*RoundMutation)(nil)
+
+// roundOption allows management of the mutation configuration using functional options.
+type roundOption func(*RoundMutation)
+
+// newRoundMutation creates new mutation for the Round entity.
+func newRoundMutation(c config, op Op, opts ...roundOption) *RoundMutation {
+	m := &RoundMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRound,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRoundID sets the ID field of the mutation.
+func withRoundID(id int) roundOption {
+	return func(m *RoundMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Round
+		)
+		m.oldValue = func(ctx context.Context) (*Round, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Round.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRound sets the old Round of the mutation.
+func withRound(node *Round) roundOption {
+	return func(m *RoundMutation) {
+		m.oldValue = func(context.Context) (*Round, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RoundMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RoundMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RoundMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RoundMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Round.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetPlatform sets the "platform" field.
+func (m *RoundMutation) SetPlatform(s string) {
+	m.platform = &s
+}
+
+// Platform returns the value of the "platform" field in the mutation.
+func (m *RoundMutation) Platform() (r string, exists bool) {
+	v := m.platform
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlatform returns the old "platform" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldPlatform(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlatform is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlatform requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlatform: %w", err)
+	}
+	return oldValue.Platform, nil
+}
+
+// ResetPlatform resets all changes to the "platform" field.
+func (m *RoundMutation) ResetPlatform() {
+	m.platform = nil
+}
+
+// SetOperator sets the "operator" field.
+func (m *RoundMutation) SetOperator(s string) {
+	m.operator = &s
+}
+
+// Operator returns the value of the "operator" field in the mutation.
+func (m *RoundMutation) Operator() (r string, exists bool) {
+	v := m.operator
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOperator returns the old "operator" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldOperator(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOperator is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOperator requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOperator: %w", err)
+	}
+	return oldValue.Operator, nil
+}
+
+// ResetOperator resets all changes to the "operator" field.
+func (m *RoundMutation) ResetOperator() {
+	m.operator = nil
+}
+
+// SetReels sets the "reels" field.
+func (m *RoundMutation) SetReels(value map[string]interface{}) {
+	m.reels = &value
+}
+
+// Reels returns the value of the "reels" field in the mutation.
+func (m *RoundMutation) Reels() (r map[string]interface{}, exists bool) {
+	v := m.reels
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReels returns the old "reels" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldReels(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReels is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReels requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReels: %w", err)
+	}
+	return oldValue.Reels, nil
+}
+
+// ClearReels clears the value of the "reels" field.
+func (m *RoundMutation) ClearReels() {
+	m.reels = nil
+	m.clearedFields[round.FieldReels] = struct{}{}
+}
+
+// ReelsCleared returns if the "reels" field was cleared in this mutation.
+func (m *RoundMutation) ReelsCleared() bool {
+	_, ok := m.clearedFields[round.FieldReels]
+	return ok
+}
+
+// ResetReels resets all changes to the "reels" field.
+func (m *RoundMutation) ResetReels() {
+	m.reels = nil
+	delete(m.clearedFields, round.FieldReels)
+}
+
+// SetMultipliers sets the "multipliers" field.
+func (m *RoundMutation) SetMultipliers(value map[string]interface{}) {
+	m.multipliers = &value
+}
+
+// Multipliers returns the value of the "multipliers" field in the mutation.
+func (m *RoundMutation) Multipliers() (r map[string]interface{}, exists bool) {
+	v := m.multipliers
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMultipliers returns the old "multipliers" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldMultipliers(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMultipliers is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMultipliers requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMultipliers: %w", err)
+	}
+	return oldValue.Multipliers, nil
+}
+
+// ClearMultipliers clears the value of the "multipliers" field.
+func (m *RoundMutation) ClearMultipliers() {
+	m.multipliers = nil
+	m.clearedFields[round.FieldMultipliers] = struct{}{}
+}
+
+// MultipliersCleared returns if the "multipliers" field was cleared in this mutation.
+func (m *RoundMutation) MultipliersCleared() bool {
+	_, ok := m.clearedFields[round.FieldMultipliers]
+	return ok
+}
+
+// ResetMultipliers resets all changes to the "multipliers" field.
+func (m *RoundMutation) ResetMultipliers() {
+	m.multipliers = nil
+	delete(m.clearedFields, round.FieldMultipliers)
+}
+
+// SetBonusType sets the "bonus_type" field.
+func (m *RoundMutation) SetBonusType(s string) {
+	m.bonus_type = &s
+}
+
+// BonusType returns the value of the "bonus_type" field in the mutation.
+func (m *RoundMutation) BonusType() (r string, exists bool) {
+	v := m.bonus_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBonusType returns the old "bonus_type" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldBonusType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBonusType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBonusType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBonusType: %w", err)
+	}
+	return oldValue.BonusType, nil
+}
+
+// ClearBonusType clears the value of the "bonus_type" field.
+func (m *RoundMutation) ClearBonusType() {
+	m.bonus_type = nil
+	m.clearedFields[round.FieldBonusType] = struct{}{}
+}
+
+// BonusTypeCleared returns if the "bonus_type" field was cleared in this mutation.
+func (m *RoundMutation) BonusTypeCleared() bool {
+	_, ok := m.clearedFields[round.FieldBonusType]
+	return ok
+}
+
+// ResetBonusType resets all changes to the "bonus_type" field.
+func (m *RoundMutation) ResetBonusType() {
+	m.bonus_type = nil
+	delete(m.clearedFields, round.FieldBonusType)
+}
+
+// SetBonusSymbol sets the "bonus_symbol" field.
+func (m *RoundMutation) SetBonusSymbol(i int) {
+	m.bonus_symbol = &i
+	m.addbonus_symbol = nil
+}
+
+// BonusSymbol returns the value of the "bonus_symbol" field in the mutation.
+func (m *RoundMutation) BonusSymbol() (r int, exists bool) {
+	v := m.bonus_symbol
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBonusSymbol returns the old "bonus_symbol" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldBonusSymbol(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBonusSymbol is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBonusSymbol requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBonusSymbol: %w", err)
+	}
+	return oldValue.BonusSymbol, nil
+}
+
+// AddBonusSymbol adds i to the "bonus_symbol" field.
+func (m *RoundMutation) AddBonusSymbol(i int) {
+	if m.addbonus_symbol != nil {
+		*m.addbonus_symbol += i
+	} else {
+		m.addbonus_symbol = &i
+	}
+}
+
+// AddedBonusSymbol returns the value that was added to the "bonus_symbol" field in this mutation.
+func (m *RoundMutation) AddedBonusSymbol() (r int, exists bool) {
+	v := m.addbonus_symbol
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearBonusSymbol clears the value of the "bonus_symbol" field.
+func (m *RoundMutation) ClearBonusSymbol() {
+	m.bonus_symbol = nil
+	m.addbonus_symbol = nil
+	m.clearedFields[round.FieldBonusSymbol] = struct{}{}
+}
+
+// BonusSymbolCleared returns if the "bonus_symbol" field was cleared in this mutation.
+func (m *RoundMutation) BonusSymbolCleared() bool {
+	_, ok := m.clearedFields[round.FieldBonusSymbol]
+	return ok
+}
+
+// ResetBonusSymbol resets all changes to the "bonus_symbol" field.
+func (m *RoundMutation) ResetBonusSymbol() {
+	m.bonus_symbol = nil
+	m.addbonus_symbol = nil
+	delete(m.clearedFields, round.FieldBonusSymbol)
+}
+
+// SetBonusMultiplier sets the "bonus_multiplier" field.
+func (m *RoundMutation) SetBonusMultiplier(i int) {
+	m.bonus_multiplier = &i
+	m.addbonus_multiplier = nil
+}
+
+// BonusMultiplier returns the value of the "bonus_multiplier" field in the mutation.
+func (m *RoundMutation) BonusMultiplier() (r int, exists bool) {
+	v := m.bonus_multiplier
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBonusMultiplier returns the old "bonus_multiplier" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldBonusMultiplier(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBonusMultiplier is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBonusMultiplier requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBonusMultiplier: %w", err)
+	}
+	return oldValue.BonusMultiplier, nil
+}
+
+// AddBonusMultiplier adds i to the "bonus_multiplier" field.
+func (m *RoundMutation) AddBonusMultiplier(i int) {
+	if m.addbonus_multiplier != nil {
+		*m.addbonus_multiplier += i
+	} else {
+		m.addbonus_multiplier = &i
+	}
+}
+
+// AddedBonusMultiplier returns the value that was added to the "bonus_multiplier" field in this mutation.
+func (m *RoundMutation) AddedBonusMultiplier() (r int, exists bool) {
+	v := m.addbonus_multiplier
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearBonusMultiplier clears the value of the "bonus_multiplier" field.
+func (m *RoundMutation) ClearBonusMultiplier() {
+	m.bonus_multiplier = nil
+	m.addbonus_multiplier = nil
+	m.clearedFields[round.FieldBonusMultiplier] = struct{}{}
+}
+
+// BonusMultiplierCleared returns if the "bonus_multiplier" field was cleared in this mutation.
+func (m *RoundMutation) BonusMultiplierCleared() bool {
+	_, ok := m.clearedFields[round.FieldBonusMultiplier]
+	return ok
+}
+
+// ResetBonusMultiplier resets all changes to the "bonus_multiplier" field.
+func (m *RoundMutation) ResetBonusMultiplier() {
+	m.bonus_multiplier = nil
+	m.addbonus_multiplier = nil
+	delete(m.clearedFields, round.FieldBonusMultiplier)
+}
+
+// SetTimestamp sets the "timestamp" field.
+func (m *RoundMutation) SetTimestamp(t time.Time) {
+	m.timestamp = &t
+}
+
+// Timestamp returns the value of the "timestamp" field in the mutation.
+func (m *RoundMutation) Timestamp() (r time.Time, exists bool) {
+	v := m.timestamp
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTimestamp returns the old "timestamp" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldTimestamp(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTimestamp is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTimestamp requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTimestamp: %w", err)
+	}
+	return oldValue.Timestamp, nil
+}
+
+// ResetTimestamp resets all changes to the "timestamp" field.
+func (m *RoundMutation) ResetTimestamp() {
+	m.timestamp = nil
+}
+
+// SetRoundType sets the "round_type" field.
+func (m *RoundMutation) SetRoundType(s string) {
+	m.round_type = &s
+}
+
+// RoundType returns the value of the "round_type" field in the mutation.
+func (m *RoundMutation) RoundType() (r string, exists bool) {
+	v := m.round_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRoundType returns the old "round_type" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldRoundType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRoundType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRoundType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRoundType: %w", err)
+	}
+	return oldValue.RoundType, nil
+}
+
+// ClearRoundType clears the value of the "round_type" field.
+func (m *RoundMutation) ClearRoundType() {
+	m.round_type = nil
+	m.clearedFields[round.FieldRoundType] = struct{}{}
+}
+
+// RoundTypeCleared returns if the "round_type" field was cleared in this mutation.
+func (m *RoundMutation) RoundTypeCleared() bool {
+	_, ok := m.clearedFields[round.FieldRoundType]
+	return ok
+}
+
+// ResetRoundType resets all changes to the "round_type" field.
+func (m *RoundMutation) ResetRoundType() {
+	m.round_type = nil
+	delete(m.clearedFields, round.FieldRoundType)
+}
+
+// SetPlay sets the "play" field.
+func (m *RoundMutation) SetPlay(value map[string]interface{}) {
+	m.play = &value
+}
+
+// Play returns the value of the "play" field in the mutation.
+func (m *RoundMutation) Play() (r map[string]interface{}, exists bool) {
+	v := m.play
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlay returns the old "play" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldPlay(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlay is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlay requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlay: %w", err)
+	}
+	return oldValue.Play, nil
+}
+
+// ResetPlay resets all changes to the "play" field.
+func (m *RoundMutation) ResetPlay() {
+	m.play = nil
+}
+
+// SetFreeSpinsRemaining sets the "free_spins_remaining" field.
+func (m *RoundMutation) SetFreeSpinsRemaining(i int) {
+	m.free_spins_remaining = &i
+	m.addfree_spins_remaining = nil
+}
+
+// FreeSpinsRemaining returns the value of the "free_spins_remaining" field in the mutation.
+func (m *RoundMutation) FreeSpinsRemaining() (r int, exists bool) {
+	v := m.free_spins_remaining
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFreeSpinsRemaining returns the old "free_spins_remaining" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldFreeSpinsRemaining(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFreeSpinsRemaining is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFreeSpinsRemaining requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFreeSpinsRemaining: %w", err)
+	}
+	return oldValue.FreeSpinsRemaining, nil
+}
+
+// AddFreeSpinsRemaining adds i to the "free_spins_remaining" field.
+func (m *RoundMutation) AddFreeSpinsRemaining(i int) {
+	if m.addfree_spins_remaining != nil {
+		*m.addfree_spins_remaining += i
+	} else {
+		m.addfree_spins_remaining = &i
+	}
+}
+
+// AddedFreeSpinsRemaining returns the value that was added to the "free_spins_remaining" field in this mutation.
+func (m *RoundMutation) AddedFreeSpinsRemaining() (r int, exists bool) {
+	v := m.addfree_spins_remaining
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearFreeSpinsRemaining clears the value of the "free_spins_remaining" field.
+func (m *RoundMutation) ClearFreeSpinsRemaining() {
+	m.free_spins_remaining = nil
+	m.addfree_spins_remaining = nil
+	m.clearedFields[round.FieldFreeSpinsRemaining] = struct{}{}
+}
+
+// FreeSpinsRemainingCleared returns if the "free_spins_remaining" field was cleared in this mutation.
+func (m *RoundMutation) FreeSpinsRemainingCleared() bool {
+	_, ok := m.clearedFields[round.FieldFreeSpinsRemaining]
+	return ok
+}
+
+// ResetFreeSpinsRemaining resets all changes to the "free_spins_remaining" field.
+func (m *RoundMutation) ResetFreeSpinsRemaining() {
+	m.free_spins_remaining = nil
+	m.addfree_spins_remaining = nil
+	delete(m.clearedFields, round.FieldFreeSpinsRemaining)
+}
+
+// SetMathOutput sets the "math_output" field.
+func (m *RoundMutation) SetMathOutput(s string) {
+	m.math_output = &s
+}
+
+// MathOutput returns the value of the "math_output" field in the mutation.
+func (m *RoundMutation) MathOutput() (r string, exists bool) {
+	v := m.math_output
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMathOutput returns the old "math_output" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldMathOutput(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMathOutput is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMathOutput requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMathOutput: %w", err)
+	}
+	return oldValue.MathOutput, nil
+}
+
+// ClearMathOutput clears the value of the "math_output" field.
+func (m *RoundMutation) ClearMathOutput() {
+	m.math_output = nil
+	m.clearedFields[round.FieldMathOutput] = struct{}{}
+}
+
+// MathOutputCleared returns if the "math_output" field was cleared in this mutation.
+func (m *RoundMutation) MathOutputCleared() bool {
+	_, ok := m.clearedFields[round.FieldMathOutput]
+	return ok
+}
+
+// ResetMathOutput resets all changes to the "math_output" field.
+func (m *RoundMutation) ResetMathOutput() {
+	m.math_output = nil
+	delete(m.clearedFields, round.FieldMathOutput)
+}
+
+// SetGameService sets the "game_service" field.
+func (m *RoundMutation) SetGameService(value map[string]interface{}) {
+	m.game_service = &value
+}
+
+// GameService returns the value of the "game_service" field in the mutation.
+func (m *RoundMutation) GameService() (r map[string]interface{}, exists bool) {
+	v := m.game_service
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGameService returns the old "game_service" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldGameService(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGameService is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGameService requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGameService: %w", err)
+	}
+	return oldValue.GameService, nil
+}
+
+// ClearGameService clears the value of the "game_service" field.
+func (m *RoundMutation) ClearGameService() {
+	m.game_service = nil
+	m.clearedFields[round.FieldGameService] = struct{}{}
+}
+
+// GameServiceCleared returns if the "game_service" field was cleared in this mutation.
+func (m *RoundMutation) GameServiceCleared() bool {
+	_, ok := m.clearedFields[round.FieldGameService]
+	return ok
+}
+
+// ResetGameService resets all changes to the "game_service" field.
+func (m *RoundMutation) ResetGameService() {
+	m.game_service = nil
+	delete(m.clearedFields, round.FieldGameService)
+}
+
+// SetFreeSpinsCount sets the "free_spins_count" field.
+func (m *RoundMutation) SetFreeSpinsCount(i int) {
+	m.free_spins_count = &i
+	m.addfree_spins_count = nil
+}
+
+// FreeSpinsCount returns the value of the "free_spins_count" field in the mutation.
+func (m *RoundMutation) FreeSpinsCount() (r int, exists bool) {
+	v := m.free_spins_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFreeSpinsCount returns the old "free_spins_count" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldFreeSpinsCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFreeSpinsCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFreeSpinsCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFreeSpinsCount: %w", err)
+	}
+	return oldValue.FreeSpinsCount, nil
+}
+
+// AddFreeSpinsCount adds i to the "free_spins_count" field.
+func (m *RoundMutation) AddFreeSpinsCount(i int) {
+	if m.addfree_spins_count != nil {
+		*m.addfree_spins_count += i
+	} else {
+		m.addfree_spins_count = &i
+	}
+}
+
+// AddedFreeSpinsCount returns the value that was added to the "free_spins_count" field in this mutation.
+func (m *RoundMutation) AddedFreeSpinsCount() (r int, exists bool) {
+	v := m.addfree_spins_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearFreeSpinsCount clears the value of the "free_spins_count" field.
+func (m *RoundMutation) ClearFreeSpinsCount() {
+	m.free_spins_count = nil
+	m.addfree_spins_count = nil
+	m.clearedFields[round.FieldFreeSpinsCount] = struct{}{}
+}
+
+// FreeSpinsCountCleared returns if the "free_spins_count" field was cleared in this mutation.
+func (m *RoundMutation) FreeSpinsCountCleared() bool {
+	_, ok := m.clearedFields[round.FieldFreeSpinsCount]
+	return ok
+}
+
+// ResetFreeSpinsCount resets all changes to the "free_spins_count" field.
+func (m *RoundMutation) ResetFreeSpinsCount() {
+	m.free_spins_count = nil
+	m.addfree_spins_count = nil
+	delete(m.clearedFields, round.FieldFreeSpinsCount)
+}
+
+// SetAnteBet sets the "ante_bet" field.
+func (m *RoundMutation) SetAnteBet(b bool) {
+	m.ante_bet = &b
+}
+
+// AnteBet returns the value of the "ante_bet" field in the mutation.
+func (m *RoundMutation) AnteBet() (r bool, exists bool) {
+	v := m.ante_bet
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAnteBet returns the old "ante_bet" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldAnteBet(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAnteBet is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAnteBet requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAnteBet: %w", err)
+	}
+	return oldValue.AnteBet, nil
+}
+
+// ClearAnteBet clears the value of the "ante_bet" field.
+func (m *RoundMutation) ClearAnteBet() {
+	m.ante_bet = nil
+	m.clearedFields[round.FieldAnteBet] = struct{}{}
+}
+
+// AnteBetCleared returns if the "ante_bet" field was cleared in this mutation.
+func (m *RoundMutation) AnteBetCleared() bool {
+	_, ok := m.clearedFields[round.FieldAnteBet]
+	return ok
+}
+
+// ResetAnteBet resets all changes to the "ante_bet" field.
+func (m *RoundMutation) ResetAnteBet() {
+	m.ante_bet = nil
+	delete(m.clearedFields, round.FieldAnteBet)
+}
+
+// SetBuyBonus sets the "buy_bonus" field.
+func (m *RoundMutation) SetBuyBonus(s string) {
+	m.buy_bonus = &s
+}
+
+// BuyBonus returns the value of the "buy_bonus" field in the mutation.
+func (m *RoundMutation) BuyBonus() (r string, exists bool) {
+	v := m.buy_bonus
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBuyBonus returns the old "buy_bonus" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldBuyBonus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBuyBonus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBuyBonus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBuyBonus: %w", err)
+	}
+	return oldValue.BuyBonus, nil
+}
+
+// ClearBuyBonus clears the value of the "buy_bonus" field.
+func (m *RoundMutation) ClearBuyBonus() {
+	m.buy_bonus = nil
+	m.clearedFields[round.FieldBuyBonus] = struct{}{}
+}
+
+// BuyBonusCleared returns if the "buy_bonus" field was cleared in this mutation.
+func (m *RoundMutation) BuyBonusCleared() bool {
+	_, ok := m.clearedFields[round.FieldBuyBonus]
+	return ok
+}
+
+// ResetBuyBonus resets all changes to the "buy_bonus" field.
+func (m *RoundMutation) ResetBuyBonus() {
+	m.buy_bonus = nil
+	delete(m.clearedFields, round.FieldBuyBonus)
+}
+
+// SetCharacter sets the "character" field.
+func (m *RoundMutation) SetCharacter(i int) {
+	m.character = &i
+	m.addcharacter = nil
+}
+
+// Character returns the value of the "character" field in the mutation.
+func (m *RoundMutation) Character() (r int, exists bool) {
+	v := m.character
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCharacter returns the old "character" field's value of the Round entity.
+// If the Round object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoundMutation) OldCharacter(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCharacter is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCharacter requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCharacter: %w", err)
+	}
+	return oldValue.Character, nil
+}
+
+// AddCharacter adds i to the "character" field.
+func (m *RoundMutation) AddCharacter(i int) {
+	if m.addcharacter != nil {
+		*m.addcharacter += i
+	} else {
+		m.addcharacter = &i
+	}
+}
+
+// AddedCharacter returns the value that was added to the "character" field in this mutation.
+func (m *RoundMutation) AddedCharacter() (r int, exists bool) {
+	v := m.addcharacter
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearCharacter clears the value of the "character" field.
+func (m *RoundMutation) ClearCharacter() {
+	m.character = nil
+	m.addcharacter = nil
+	m.clearedFields[round.FieldCharacter] = struct{}{}
+}
+
+// CharacterCleared returns if the "character" field was cleared in this mutation.
+func (m *RoundMutation) CharacterCleared() bool {
+	_, ok := m.clearedFields[round.FieldCharacter]
+	return ok
+}
+
+// ResetCharacter resets all changes to the "character" field.
+func (m *RoundMutation) ResetCharacter() {
+	m.character = nil
+	m.addcharacter = nil
+	delete(m.clearedFields, round.FieldCharacter)
+}
+
+// AddTransactionIDs adds the "transactions" edge to the Transaction entity by ids.
+func (m *RoundMutation) AddTransactionIDs(ids ...int) {
+	if m.transactions == nil {
+		m.transactions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.transactions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTransactions clears the "transactions" edge to the Transaction entity.
+func (m *RoundMutation) ClearTransactions() {
+	m.clearedtransactions = true
+}
+
+// TransactionsCleared reports if the "transactions" edge to the Transaction entity was cleared.
+func (m *RoundMutation) TransactionsCleared() bool {
+	return m.clearedtransactions
+}
+
+// RemoveTransactionIDs removes the "transactions" edge to the Transaction entity by IDs.
+func (m *RoundMutation) RemoveTransactionIDs(ids ...int) {
+	if m.removedtransactions == nil {
+		m.removedtransactions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.transactions, ids[i])
+		m.removedtransactions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTransactions returns the removed IDs of the "transactions" edge to the Transaction entity.
+func (m *RoundMutation) RemovedTransactionsIDs() (ids []int) {
+	for id := range m.removedtransactions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TransactionsIDs returns the "transactions" edge IDs in the mutation.
+func (m *RoundMutation) TransactionsIDs() (ids []int) {
+	for id := range m.transactions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTransactions resets all changes to the "transactions" edge.
+func (m *RoundMutation) ResetTransactions() {
+	m.transactions = nil
+	m.clearedtransactions = false
+	m.removedtransactions = nil
+}
+
+// Where appends a list predicates to the RoundMutation builder.
+func (m *RoundMutation) Where(ps ...predicate.Round) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RoundMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RoundMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Round, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RoundMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RoundMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Round).
+func (m *RoundMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RoundMutation) Fields() []string {
+	fields := make([]string, 0, 17)
+	if m.platform != nil {
+		fields = append(fields, round.FieldPlatform)
+	}
+	if m.operator != nil {
+		fields = append(fields, round.FieldOperator)
+	}
+	if m.reels != nil {
+		fields = append(fields, round.FieldReels)
+	}
+	if m.multipliers != nil {
+		fields = append(fields, round.FieldMultipliers)
+	}
+	if m.bonus_type != nil {
+		fields = append(fields, round.FieldBonusType)
+	}
+	if m.bonus_symbol != nil {
+		fields = append(fields, round.FieldBonusSymbol)
+	}
+	if m.bonus_multiplier != nil {
+		fields = append(fields, round.FieldBonusMultiplier)
+	}
+	if m.timestamp != nil {
+		fields = append(fields, round.FieldTimestamp)
+	}
+	if m.round_type != nil {
+		fields = append(fields, round.FieldRoundType)
+	}
+	if m.play != nil {
+		fields = append(fields, round.FieldPlay)
+	}
+	if m.free_spins_remaining != nil {
+		fields = append(fields, round.FieldFreeSpinsRemaining)
+	}
+	if m.math_output != nil {
+		fields = append(fields, round.FieldMathOutput)
+	}
+	if m.game_service != nil {
+		fields = append(fields, round.FieldGameService)
+	}
+	if m.free_spins_count != nil {
+		fields = append(fields, round.FieldFreeSpinsCount)
+	}
+	if m.ante_bet != nil {
+		fields = append(fields, round.FieldAnteBet)
+	}
+	if m.buy_bonus != nil {
+		fields = append(fields, round.FieldBuyBonus)
+	}
+	if m.character != nil {
+		fields = append(fields, round.FieldCharacter)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RoundMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case round.FieldPlatform:
+		return m.Platform()
+	case round.FieldOperator:
+		return m.Operator()
+	case round.FieldReels:
+		return m.Reels()
+	case round.FieldMultipliers:
+		return m.Multipliers()
+	case round.FieldBonusType:
+		return m.BonusType()
+	case round.FieldBonusSymbol:
+		return m.BonusSymbol()
+	case round.FieldBonusMultiplier:
+		return m.BonusMultiplier()
+	case round.FieldTimestamp:
+		return m.Timestamp()
+	case round.FieldRoundType:
+		return m.RoundType()
+	case round.FieldPlay:
+		return m.Play()
+	case round.FieldFreeSpinsRemaining:
+		return m.FreeSpinsRemaining()
+	case round.FieldMathOutput:
+		return m.MathOutput()
+	case round.FieldGameService:
+		return m.GameService()
+	case round.FieldFreeSpinsCount:
+		return m.FreeSpinsCount()
+	case round.FieldAnteBet:
+		return m.AnteBet()
+	case round.FieldBuyBonus:
+		return m.BuyBonus()
+	case round.FieldCharacter:
+		return m.Character()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RoundMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case round.FieldPlatform:
+		return m.OldPlatform(ctx)
+	case round.FieldOperator:
+		return m.OldOperator(ctx)
+	case round.FieldReels:
+		return m.OldReels(ctx)
+	case round.FieldMultipliers:
+		return m.OldMultipliers(ctx)
+	case round.FieldBonusType:
+		return m.OldBonusType(ctx)
+	case round.FieldBonusSymbol:
+		return m.OldBonusSymbol(ctx)
+	case round.FieldBonusMultiplier:
+		return m.OldBonusMultiplier(ctx)
+	case round.FieldTimestamp:
+		return m.OldTimestamp(ctx)
+	case round.FieldRoundType:
+		return m.OldRoundType(ctx)
+	case round.FieldPlay:
+		return m.OldPlay(ctx)
+	case round.FieldFreeSpinsRemaining:
+		return m.OldFreeSpinsRemaining(ctx)
+	case round.FieldMathOutput:
+		return m.OldMathOutput(ctx)
+	case round.FieldGameService:
+		return m.OldGameService(ctx)
+	case round.FieldFreeSpinsCount:
+		return m.OldFreeSpinsCount(ctx)
+	case round.FieldAnteBet:
+		return m.OldAnteBet(ctx)
+	case round.FieldBuyBonus:
+		return m.OldBuyBonus(ctx)
+	case round.FieldCharacter:
+		return m.OldCharacter(ctx)
+	}
+	return nil, fmt.Errorf("unknown Round field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RoundMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case round.FieldPlatform:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlatform(v)
+		return nil
+	case round.FieldOperator:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOperator(v)
+		return nil
+	case round.FieldReels:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReels(v)
+		return nil
+	case round.FieldMultipliers:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMultipliers(v)
+		return nil
+	case round.FieldBonusType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBonusType(v)
+		return nil
+	case round.FieldBonusSymbol:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBonusSymbol(v)
+		return nil
+	case round.FieldBonusMultiplier:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBonusMultiplier(v)
+		return nil
+	case round.FieldTimestamp:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTimestamp(v)
+		return nil
+	case round.FieldRoundType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRoundType(v)
+		return nil
+	case round.FieldPlay:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlay(v)
+		return nil
+	case round.FieldFreeSpinsRemaining:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFreeSpinsRemaining(v)
+		return nil
+	case round.FieldMathOutput:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMathOutput(v)
+		return nil
+	case round.FieldGameService:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGameService(v)
+		return nil
+	case round.FieldFreeSpinsCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFreeSpinsCount(v)
+		return nil
+	case round.FieldAnteBet:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAnteBet(v)
+		return nil
+	case round.FieldBuyBonus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBuyBonus(v)
+		return nil
+	case round.FieldCharacter:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCharacter(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Round field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RoundMutation) AddedFields() []string {
+	var fields []string
+	if m.addbonus_symbol != nil {
+		fields = append(fields, round.FieldBonusSymbol)
+	}
+	if m.addbonus_multiplier != nil {
+		fields = append(fields, round.FieldBonusMultiplier)
+	}
+	if m.addfree_spins_remaining != nil {
+		fields = append(fields, round.FieldFreeSpinsRemaining)
+	}
+	if m.addfree_spins_count != nil {
+		fields = append(fields, round.FieldFreeSpinsCount)
+	}
+	if m.addcharacter != nil {
+		fields = append(fields, round.FieldCharacter)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RoundMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case round.FieldBonusSymbol:
+		return m.AddedBonusSymbol()
+	case round.FieldBonusMultiplier:
+		return m.AddedBonusMultiplier()
+	case round.FieldFreeSpinsRemaining:
+		return m.AddedFreeSpinsRemaining()
+	case round.FieldFreeSpinsCount:
+		return m.AddedFreeSpinsCount()
+	case round.FieldCharacter:
+		return m.AddedCharacter()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RoundMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case round.FieldBonusSymbol:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddBonusSymbol(v)
+		return nil
+	case round.FieldBonusMultiplier:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddBonusMultiplier(v)
+		return nil
+	case round.FieldFreeSpinsRemaining:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFreeSpinsRemaining(v)
+		return nil
+	case round.FieldFreeSpinsCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFreeSpinsCount(v)
+		return nil
+	case round.FieldCharacter:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCharacter(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Round numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RoundMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(round.FieldReels) {
+		fields = append(fields, round.FieldReels)
+	}
+	if m.FieldCleared(round.FieldMultipliers) {
+		fields = append(fields, round.FieldMultipliers)
+	}
+	if m.FieldCleared(round.FieldBonusType) {
+		fields = append(fields, round.FieldBonusType)
+	}
+	if m.FieldCleared(round.FieldBonusSymbol) {
+		fields = append(fields, round.FieldBonusSymbol)
+	}
+	if m.FieldCleared(round.FieldBonusMultiplier) {
+		fields = append(fields, round.FieldBonusMultiplier)
+	}
+	if m.FieldCleared(round.FieldRoundType) {
+		fields = append(fields, round.FieldRoundType)
+	}
+	if m.FieldCleared(round.FieldFreeSpinsRemaining) {
+		fields = append(fields, round.FieldFreeSpinsRemaining)
+	}
+	if m.FieldCleared(round.FieldMathOutput) {
+		fields = append(fields, round.FieldMathOutput)
+	}
+	if m.FieldCleared(round.FieldGameService) {
+		fields = append(fields, round.FieldGameService)
+	}
+	if m.FieldCleared(round.FieldFreeSpinsCount) {
+		fields = append(fields, round.FieldFreeSpinsCount)
+	}
+	if m.FieldCleared(round.FieldAnteBet) {
+		fields = append(fields, round.FieldAnteBet)
+	}
+	if m.FieldCleared(round.FieldBuyBonus) {
+		fields = append(fields, round.FieldBuyBonus)
+	}
+	if m.FieldCleared(round.FieldCharacter) {
+		fields = append(fields, round.FieldCharacter)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RoundMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RoundMutation) ClearField(name string) error {
+	switch name {
+	case round.FieldReels:
+		m.ClearReels()
+		return nil
+	case round.FieldMultipliers:
+		m.ClearMultipliers()
+		return nil
+	case round.FieldBonusType:
+		m.ClearBonusType()
+		return nil
+	case round.FieldBonusSymbol:
+		m.ClearBonusSymbol()
+		return nil
+	case round.FieldBonusMultiplier:
+		m.ClearBonusMultiplier()
+		return nil
+	case round.FieldRoundType:
+		m.ClearRoundType()
+		return nil
+	case round.FieldFreeSpinsRemaining:
+		m.ClearFreeSpinsRemaining()
+		return nil
+	case round.FieldMathOutput:
+		m.ClearMathOutput()
+		return nil
+	case round.FieldGameService:
+		m.ClearGameService()
+		return nil
+	case round.FieldFreeSpinsCount:
+		m.ClearFreeSpinsCount()
+		return nil
+	case round.FieldAnteBet:
+		m.ClearAnteBet()
+		return nil
+	case round.FieldBuyBonus:
+		m.ClearBuyBonus()
+		return nil
+	case round.FieldCharacter:
+		m.ClearCharacter()
+		return nil
+	}
+	return fmt.Errorf("unknown Round nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RoundMutation) ResetField(name string) error {
+	switch name {
+	case round.FieldPlatform:
+		m.ResetPlatform()
+		return nil
+	case round.FieldOperator:
+		m.ResetOperator()
+		return nil
+	case round.FieldReels:
+		m.ResetReels()
+		return nil
+	case round.FieldMultipliers:
+		m.ResetMultipliers()
+		return nil
+	case round.FieldBonusType:
+		m.ResetBonusType()
+		return nil
+	case round.FieldBonusSymbol:
+		m.ResetBonusSymbol()
+		return nil
+	case round.FieldBonusMultiplier:
+		m.ResetBonusMultiplier()
+		return nil
+	case round.FieldTimestamp:
+		m.ResetTimestamp()
+		return nil
+	case round.FieldRoundType:
+		m.ResetRoundType()
+		return nil
+	case round.FieldPlay:
+		m.ResetPlay()
+		return nil
+	case round.FieldFreeSpinsRemaining:
+		m.ResetFreeSpinsRemaining()
+		return nil
+	case round.FieldMathOutput:
+		m.ResetMathOutput()
+		return nil
+	case round.FieldGameService:
+		m.ResetGameService()
+		return nil
+	case round.FieldFreeSpinsCount:
+		m.ResetFreeSpinsCount()
+		return nil
+	case round.FieldAnteBet:
+		m.ResetAnteBet()
+		return nil
+	case round.FieldBuyBonus:
+		m.ResetBuyBonus()
+		return nil
+	case round.FieldCharacter:
+		m.ResetCharacter()
+		return nil
+	}
+	return fmt.Errorf("unknown Round field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RoundMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.transactions != nil {
+		edges = append(edges, round.EdgeTransactions)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RoundMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case round.EdgeTransactions:
+		ids := make([]ent.Value, 0, len(m.transactions))
+		for id := range m.transactions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RoundMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedtransactions != nil {
+		edges = append(edges, round.EdgeTransactions)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RoundMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case round.EdgeTransactions:
+		ids := make([]ent.Value, 0, len(m.removedtransactions))
+		for id := range m.removedtransactions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RoundMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedtransactions {
+		edges = append(edges, round.EdgeTransactions)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RoundMutation) EdgeCleared(name string) bool {
+	switch name {
+	case round.EdgeTransactions:
+		return m.clearedtransactions
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RoundMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Round unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RoundMutation) ResetEdge(name string) error {
+	switch name {
+	case round.EdgeTransactions:
+		m.ResetTransactions()
+		return nil
+	}
+	return fmt.Errorf("unknown Round edge %s", name)
+}
+
 // SerieMutation represents an operation that mutates the Serie nodes in the graph.
 type SerieMutation struct {
 	config
@@ -12314,4 +14024,1703 @@ func (m *StudioMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Studio edge %s", name)
+}
+
+// TransactionMutation represents an operation that mutates the Transaction nodes in the graph.
+type TransactionMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *int
+	_type              *string
+	deleted_at         *time.Time
+	amount             *int
+	addamount          *int
+	currency           *string
+	platform           *string
+	operator           *string
+	client             *string
+	game               *string
+	status             *int
+	addstatus          *int
+	description        *string
+	timestamp          *time.Time
+	math_profile       *string
+	denominator        *int
+	adddenominator     *int
+	final_balance      *int
+	addfinal_balance   *int
+	seq_id             *int
+	addseq_id          *int
+	multiplier         *int
+	addmultiplier      *int
+	game_service       *map[string]interface{}
+	token              *string
+	original_amount    *int
+	addoriginal_amount *int
+	clearedFields      map[string]struct{}
+	rounds             *int
+	clearedrounds      bool
+	done               bool
+	oldValue           func(context.Context) (*Transaction, error)
+	predicates         []predicate.Transaction
+}
+
+var _ ent.Mutation = (*TransactionMutation)(nil)
+
+// transactionOption allows management of the mutation configuration using functional options.
+type transactionOption func(*TransactionMutation)
+
+// newTransactionMutation creates new mutation for the Transaction entity.
+func newTransactionMutation(c config, op Op, opts ...transactionOption) *TransactionMutation {
+	m := &TransactionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTransaction,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withTransactionID sets the ID field of the mutation.
+func withTransactionID(id int) transactionOption {
+	return func(m *TransactionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Transaction
+		)
+		m.oldValue = func(ctx context.Context) (*Transaction, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Transaction.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTransaction sets the old Transaction of the mutation.
+func withTransaction(node *Transaction) transactionOption {
+	return func(m *TransactionMutation) {
+		m.oldValue = func(context.Context) (*Transaction, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TransactionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TransactionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *TransactionMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *TransactionMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Transaction.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetType sets the "type" field.
+func (m *TransactionMutation) SetType(s string) {
+	m._type = &s
+}
+
+// GetType returns the value of the "type" field in the mutation.
+func (m *TransactionMutation) GetType() (r string, exists bool) {
+	v := m._type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldType returns the old "type" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldType: %w", err)
+	}
+	return oldValue.Type, nil
+}
+
+// ResetType resets all changes to the "type" field.
+func (m *TransactionMutation) ResetType() {
+	m._type = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *TransactionMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *TransactionMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldDeletedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *TransactionMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[transaction.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *TransactionMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[transaction.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *TransactionMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, transaction.FieldDeletedAt)
+}
+
+// SetAmount sets the "amount" field.
+func (m *TransactionMutation) SetAmount(i int) {
+	m.amount = &i
+	m.addamount = nil
+}
+
+// Amount returns the value of the "amount" field in the mutation.
+func (m *TransactionMutation) Amount() (r int, exists bool) {
+	v := m.amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAmount returns the old "amount" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldAmount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAmount: %w", err)
+	}
+	return oldValue.Amount, nil
+}
+
+// AddAmount adds i to the "amount" field.
+func (m *TransactionMutation) AddAmount(i int) {
+	if m.addamount != nil {
+		*m.addamount += i
+	} else {
+		m.addamount = &i
+	}
+}
+
+// AddedAmount returns the value that was added to the "amount" field in this mutation.
+func (m *TransactionMutation) AddedAmount() (r int, exists bool) {
+	v := m.addamount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAmount resets all changes to the "amount" field.
+func (m *TransactionMutation) ResetAmount() {
+	m.amount = nil
+	m.addamount = nil
+}
+
+// SetCurrency sets the "currency" field.
+func (m *TransactionMutation) SetCurrency(s string) {
+	m.currency = &s
+}
+
+// Currency returns the value of the "currency" field in the mutation.
+func (m *TransactionMutation) Currency() (r string, exists bool) {
+	v := m.currency
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrency returns the old "currency" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldCurrency(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrency is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrency requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrency: %w", err)
+	}
+	return oldValue.Currency, nil
+}
+
+// ResetCurrency resets all changes to the "currency" field.
+func (m *TransactionMutation) ResetCurrency() {
+	m.currency = nil
+}
+
+// SetPlatform sets the "platform" field.
+func (m *TransactionMutation) SetPlatform(s string) {
+	m.platform = &s
+}
+
+// Platform returns the value of the "platform" field in the mutation.
+func (m *TransactionMutation) Platform() (r string, exists bool) {
+	v := m.platform
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPlatform returns the old "platform" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldPlatform(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPlatform is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPlatform requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPlatform: %w", err)
+	}
+	return oldValue.Platform, nil
+}
+
+// ResetPlatform resets all changes to the "platform" field.
+func (m *TransactionMutation) ResetPlatform() {
+	m.platform = nil
+}
+
+// SetOperator sets the "operator" field.
+func (m *TransactionMutation) SetOperator(s string) {
+	m.operator = &s
+}
+
+// Operator returns the value of the "operator" field in the mutation.
+func (m *TransactionMutation) Operator() (r string, exists bool) {
+	v := m.operator
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOperator returns the old "operator" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldOperator(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOperator is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOperator requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOperator: %w", err)
+	}
+	return oldValue.Operator, nil
+}
+
+// ResetOperator resets all changes to the "operator" field.
+func (m *TransactionMutation) ResetOperator() {
+	m.operator = nil
+}
+
+// SetClient sets the "client" field.
+func (m *TransactionMutation) SetClient(s string) {
+	m.client = &s
+}
+
+// GetClient returns the value of the "client" field in the mutation.
+func (m *TransactionMutation) GetClient() (r string, exists bool) {
+	v := m.client
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClient returns the old "client" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldClient(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClient is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClient requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClient: %w", err)
+	}
+	return oldValue.Client, nil
+}
+
+// ResetClient resets all changes to the "client" field.
+func (m *TransactionMutation) ResetClient() {
+	m.client = nil
+}
+
+// SetGame sets the "game" field.
+func (m *TransactionMutation) SetGame(s string) {
+	m.game = &s
+}
+
+// Game returns the value of the "game" field in the mutation.
+func (m *TransactionMutation) Game() (r string, exists bool) {
+	v := m.game
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGame returns the old "game" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldGame(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGame is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGame requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGame: %w", err)
+	}
+	return oldValue.Game, nil
+}
+
+// ResetGame resets all changes to the "game" field.
+func (m *TransactionMutation) ResetGame() {
+	m.game = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *TransactionMutation) SetStatus(i int) {
+	m.status = &i
+	m.addstatus = nil
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *TransactionMutation) Status() (r int, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldStatus(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// AddStatus adds i to the "status" field.
+func (m *TransactionMutation) AddStatus(i int) {
+	if m.addstatus != nil {
+		*m.addstatus += i
+	} else {
+		m.addstatus = &i
+	}
+}
+
+// AddedStatus returns the value that was added to the "status" field in this mutation.
+func (m *TransactionMutation) AddedStatus() (r int, exists bool) {
+	v := m.addstatus
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *TransactionMutation) ResetStatus() {
+	m.status = nil
+	m.addstatus = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *TransactionMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *TransactionMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *TransactionMutation) ResetDescription() {
+	m.description = nil
+}
+
+// SetTimestamp sets the "timestamp" field.
+func (m *TransactionMutation) SetTimestamp(t time.Time) {
+	m.timestamp = &t
+}
+
+// Timestamp returns the value of the "timestamp" field in the mutation.
+func (m *TransactionMutation) Timestamp() (r time.Time, exists bool) {
+	v := m.timestamp
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTimestamp returns the old "timestamp" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldTimestamp(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTimestamp is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTimestamp requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTimestamp: %w", err)
+	}
+	return oldValue.Timestamp, nil
+}
+
+// ResetTimestamp resets all changes to the "timestamp" field.
+func (m *TransactionMutation) ResetTimestamp() {
+	m.timestamp = nil
+}
+
+// SetMathProfile sets the "math_profile" field.
+func (m *TransactionMutation) SetMathProfile(s string) {
+	m.math_profile = &s
+}
+
+// MathProfile returns the value of the "math_profile" field in the mutation.
+func (m *TransactionMutation) MathProfile() (r string, exists bool) {
+	v := m.math_profile
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMathProfile returns the old "math_profile" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldMathProfile(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMathProfile is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMathProfile requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMathProfile: %w", err)
+	}
+	return oldValue.MathProfile, nil
+}
+
+// ClearMathProfile clears the value of the "math_profile" field.
+func (m *TransactionMutation) ClearMathProfile() {
+	m.math_profile = nil
+	m.clearedFields[transaction.FieldMathProfile] = struct{}{}
+}
+
+// MathProfileCleared returns if the "math_profile" field was cleared in this mutation.
+func (m *TransactionMutation) MathProfileCleared() bool {
+	_, ok := m.clearedFields[transaction.FieldMathProfile]
+	return ok
+}
+
+// ResetMathProfile resets all changes to the "math_profile" field.
+func (m *TransactionMutation) ResetMathProfile() {
+	m.math_profile = nil
+	delete(m.clearedFields, transaction.FieldMathProfile)
+}
+
+// SetDenominator sets the "denominator" field.
+func (m *TransactionMutation) SetDenominator(i int) {
+	m.denominator = &i
+	m.adddenominator = nil
+}
+
+// Denominator returns the value of the "denominator" field in the mutation.
+func (m *TransactionMutation) Denominator() (r int, exists bool) {
+	v := m.denominator
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDenominator returns the old "denominator" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldDenominator(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDenominator is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDenominator requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDenominator: %w", err)
+	}
+	return oldValue.Denominator, nil
+}
+
+// AddDenominator adds i to the "denominator" field.
+func (m *TransactionMutation) AddDenominator(i int) {
+	if m.adddenominator != nil {
+		*m.adddenominator += i
+	} else {
+		m.adddenominator = &i
+	}
+}
+
+// AddedDenominator returns the value that was added to the "denominator" field in this mutation.
+func (m *TransactionMutation) AddedDenominator() (r int, exists bool) {
+	v := m.adddenominator
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDenominator resets all changes to the "denominator" field.
+func (m *TransactionMutation) ResetDenominator() {
+	m.denominator = nil
+	m.adddenominator = nil
+}
+
+// SetFinalBalance sets the "final_balance" field.
+func (m *TransactionMutation) SetFinalBalance(i int) {
+	m.final_balance = &i
+	m.addfinal_balance = nil
+}
+
+// FinalBalance returns the value of the "final_balance" field in the mutation.
+func (m *TransactionMutation) FinalBalance() (r int, exists bool) {
+	v := m.final_balance
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFinalBalance returns the old "final_balance" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldFinalBalance(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFinalBalance is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFinalBalance requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFinalBalance: %w", err)
+	}
+	return oldValue.FinalBalance, nil
+}
+
+// AddFinalBalance adds i to the "final_balance" field.
+func (m *TransactionMutation) AddFinalBalance(i int) {
+	if m.addfinal_balance != nil {
+		*m.addfinal_balance += i
+	} else {
+		m.addfinal_balance = &i
+	}
+}
+
+// AddedFinalBalance returns the value that was added to the "final_balance" field in this mutation.
+func (m *TransactionMutation) AddedFinalBalance() (r int, exists bool) {
+	v := m.addfinal_balance
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetFinalBalance resets all changes to the "final_balance" field.
+func (m *TransactionMutation) ResetFinalBalance() {
+	m.final_balance = nil
+	m.addfinal_balance = nil
+}
+
+// SetSeqID sets the "seq_id" field.
+func (m *TransactionMutation) SetSeqID(i int) {
+	m.seq_id = &i
+	m.addseq_id = nil
+}
+
+// SeqID returns the value of the "seq_id" field in the mutation.
+func (m *TransactionMutation) SeqID() (r int, exists bool) {
+	v := m.seq_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSeqID returns the old "seq_id" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldSeqID(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSeqID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSeqID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSeqID: %w", err)
+	}
+	return oldValue.SeqID, nil
+}
+
+// AddSeqID adds i to the "seq_id" field.
+func (m *TransactionMutation) AddSeqID(i int) {
+	if m.addseq_id != nil {
+		*m.addseq_id += i
+	} else {
+		m.addseq_id = &i
+	}
+}
+
+// AddedSeqID returns the value that was added to the "seq_id" field in this mutation.
+func (m *TransactionMutation) AddedSeqID() (r int, exists bool) {
+	v := m.addseq_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearSeqID clears the value of the "seq_id" field.
+func (m *TransactionMutation) ClearSeqID() {
+	m.seq_id = nil
+	m.addseq_id = nil
+	m.clearedFields[transaction.FieldSeqID] = struct{}{}
+}
+
+// SeqIDCleared returns if the "seq_id" field was cleared in this mutation.
+func (m *TransactionMutation) SeqIDCleared() bool {
+	_, ok := m.clearedFields[transaction.FieldSeqID]
+	return ok
+}
+
+// ResetSeqID resets all changes to the "seq_id" field.
+func (m *TransactionMutation) ResetSeqID() {
+	m.seq_id = nil
+	m.addseq_id = nil
+	delete(m.clearedFields, transaction.FieldSeqID)
+}
+
+// SetMultiplier sets the "multiplier" field.
+func (m *TransactionMutation) SetMultiplier(i int) {
+	m.multiplier = &i
+	m.addmultiplier = nil
+}
+
+// Multiplier returns the value of the "multiplier" field in the mutation.
+func (m *TransactionMutation) Multiplier() (r int, exists bool) {
+	v := m.multiplier
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMultiplier returns the old "multiplier" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldMultiplier(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMultiplier is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMultiplier requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMultiplier: %w", err)
+	}
+	return oldValue.Multiplier, nil
+}
+
+// AddMultiplier adds i to the "multiplier" field.
+func (m *TransactionMutation) AddMultiplier(i int) {
+	if m.addmultiplier != nil {
+		*m.addmultiplier += i
+	} else {
+		m.addmultiplier = &i
+	}
+}
+
+// AddedMultiplier returns the value that was added to the "multiplier" field in this mutation.
+func (m *TransactionMutation) AddedMultiplier() (r int, exists bool) {
+	v := m.addmultiplier
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearMultiplier clears the value of the "multiplier" field.
+func (m *TransactionMutation) ClearMultiplier() {
+	m.multiplier = nil
+	m.addmultiplier = nil
+	m.clearedFields[transaction.FieldMultiplier] = struct{}{}
+}
+
+// MultiplierCleared returns if the "multiplier" field was cleared in this mutation.
+func (m *TransactionMutation) MultiplierCleared() bool {
+	_, ok := m.clearedFields[transaction.FieldMultiplier]
+	return ok
+}
+
+// ResetMultiplier resets all changes to the "multiplier" field.
+func (m *TransactionMutation) ResetMultiplier() {
+	m.multiplier = nil
+	m.addmultiplier = nil
+	delete(m.clearedFields, transaction.FieldMultiplier)
+}
+
+// SetGameService sets the "game_service" field.
+func (m *TransactionMutation) SetGameService(value map[string]interface{}) {
+	m.game_service = &value
+}
+
+// GameService returns the value of the "game_service" field in the mutation.
+func (m *TransactionMutation) GameService() (r map[string]interface{}, exists bool) {
+	v := m.game_service
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGameService returns the old "game_service" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldGameService(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGameService is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGameService requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGameService: %w", err)
+	}
+	return oldValue.GameService, nil
+}
+
+// ClearGameService clears the value of the "game_service" field.
+func (m *TransactionMutation) ClearGameService() {
+	m.game_service = nil
+	m.clearedFields[transaction.FieldGameService] = struct{}{}
+}
+
+// GameServiceCleared returns if the "game_service" field was cleared in this mutation.
+func (m *TransactionMutation) GameServiceCleared() bool {
+	_, ok := m.clearedFields[transaction.FieldGameService]
+	return ok
+}
+
+// ResetGameService resets all changes to the "game_service" field.
+func (m *TransactionMutation) ResetGameService() {
+	m.game_service = nil
+	delete(m.clearedFields, transaction.FieldGameService)
+}
+
+// SetToken sets the "token" field.
+func (m *TransactionMutation) SetToken(s string) {
+	m.token = &s
+}
+
+// Token returns the value of the "token" field in the mutation.
+func (m *TransactionMutation) Token() (r string, exists bool) {
+	v := m.token
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldToken returns the old "token" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldToken(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldToken is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldToken requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldToken: %w", err)
+	}
+	return oldValue.Token, nil
+}
+
+// ResetToken resets all changes to the "token" field.
+func (m *TransactionMutation) ResetToken() {
+	m.token = nil
+}
+
+// SetOriginalAmount sets the "original_amount" field.
+func (m *TransactionMutation) SetOriginalAmount(i int) {
+	m.original_amount = &i
+	m.addoriginal_amount = nil
+}
+
+// OriginalAmount returns the value of the "original_amount" field in the mutation.
+func (m *TransactionMutation) OriginalAmount() (r int, exists bool) {
+	v := m.original_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOriginalAmount returns the old "original_amount" field's value of the Transaction entity.
+// If the Transaction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TransactionMutation) OldOriginalAmount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOriginalAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOriginalAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOriginalAmount: %w", err)
+	}
+	return oldValue.OriginalAmount, nil
+}
+
+// AddOriginalAmount adds i to the "original_amount" field.
+func (m *TransactionMutation) AddOriginalAmount(i int) {
+	if m.addoriginal_amount != nil {
+		*m.addoriginal_amount += i
+	} else {
+		m.addoriginal_amount = &i
+	}
+}
+
+// AddedOriginalAmount returns the value that was added to the "original_amount" field in this mutation.
+func (m *TransactionMutation) AddedOriginalAmount() (r int, exists bool) {
+	v := m.addoriginal_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetOriginalAmount resets all changes to the "original_amount" field.
+func (m *TransactionMutation) ResetOriginalAmount() {
+	m.original_amount = nil
+	m.addoriginal_amount = nil
+}
+
+// SetRoundsID sets the "rounds" edge to the Round entity by id.
+func (m *TransactionMutation) SetRoundsID(id int) {
+	m.rounds = &id
+}
+
+// ClearRounds clears the "rounds" edge to the Round entity.
+func (m *TransactionMutation) ClearRounds() {
+	m.clearedrounds = true
+}
+
+// RoundsCleared reports if the "rounds" edge to the Round entity was cleared.
+func (m *TransactionMutation) RoundsCleared() bool {
+	return m.clearedrounds
+}
+
+// RoundsID returns the "rounds" edge ID in the mutation.
+func (m *TransactionMutation) RoundsID() (id int, exists bool) {
+	if m.rounds != nil {
+		return *m.rounds, true
+	}
+	return
+}
+
+// RoundsIDs returns the "rounds" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RoundsID instead. It exists only for internal usage by the builders.
+func (m *TransactionMutation) RoundsIDs() (ids []int) {
+	if id := m.rounds; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRounds resets all changes to the "rounds" edge.
+func (m *TransactionMutation) ResetRounds() {
+	m.rounds = nil
+	m.clearedrounds = false
+}
+
+// Where appends a list predicates to the TransactionMutation builder.
+func (m *TransactionMutation) Where(ps ...predicate.Transaction) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the TransactionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *TransactionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Transaction, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *TransactionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *TransactionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Transaction).
+func (m *TransactionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *TransactionMutation) Fields() []string {
+	fields := make([]string, 0, 19)
+	if m._type != nil {
+		fields = append(fields, transaction.FieldType)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, transaction.FieldDeletedAt)
+	}
+	if m.amount != nil {
+		fields = append(fields, transaction.FieldAmount)
+	}
+	if m.currency != nil {
+		fields = append(fields, transaction.FieldCurrency)
+	}
+	if m.platform != nil {
+		fields = append(fields, transaction.FieldPlatform)
+	}
+	if m.operator != nil {
+		fields = append(fields, transaction.FieldOperator)
+	}
+	if m.client != nil {
+		fields = append(fields, transaction.FieldClient)
+	}
+	if m.game != nil {
+		fields = append(fields, transaction.FieldGame)
+	}
+	if m.status != nil {
+		fields = append(fields, transaction.FieldStatus)
+	}
+	if m.description != nil {
+		fields = append(fields, transaction.FieldDescription)
+	}
+	if m.timestamp != nil {
+		fields = append(fields, transaction.FieldTimestamp)
+	}
+	if m.math_profile != nil {
+		fields = append(fields, transaction.FieldMathProfile)
+	}
+	if m.denominator != nil {
+		fields = append(fields, transaction.FieldDenominator)
+	}
+	if m.final_balance != nil {
+		fields = append(fields, transaction.FieldFinalBalance)
+	}
+	if m.seq_id != nil {
+		fields = append(fields, transaction.FieldSeqID)
+	}
+	if m.multiplier != nil {
+		fields = append(fields, transaction.FieldMultiplier)
+	}
+	if m.game_service != nil {
+		fields = append(fields, transaction.FieldGameService)
+	}
+	if m.token != nil {
+		fields = append(fields, transaction.FieldToken)
+	}
+	if m.original_amount != nil {
+		fields = append(fields, transaction.FieldOriginalAmount)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *TransactionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case transaction.FieldType:
+		return m.GetType()
+	case transaction.FieldDeletedAt:
+		return m.DeletedAt()
+	case transaction.FieldAmount:
+		return m.Amount()
+	case transaction.FieldCurrency:
+		return m.Currency()
+	case transaction.FieldPlatform:
+		return m.Platform()
+	case transaction.FieldOperator:
+		return m.Operator()
+	case transaction.FieldClient:
+		return m.GetClient()
+	case transaction.FieldGame:
+		return m.Game()
+	case transaction.FieldStatus:
+		return m.Status()
+	case transaction.FieldDescription:
+		return m.Description()
+	case transaction.FieldTimestamp:
+		return m.Timestamp()
+	case transaction.FieldMathProfile:
+		return m.MathProfile()
+	case transaction.FieldDenominator:
+		return m.Denominator()
+	case transaction.FieldFinalBalance:
+		return m.FinalBalance()
+	case transaction.FieldSeqID:
+		return m.SeqID()
+	case transaction.FieldMultiplier:
+		return m.Multiplier()
+	case transaction.FieldGameService:
+		return m.GameService()
+	case transaction.FieldToken:
+		return m.Token()
+	case transaction.FieldOriginalAmount:
+		return m.OriginalAmount()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TransactionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case transaction.FieldType:
+		return m.OldType(ctx)
+	case transaction.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case transaction.FieldAmount:
+		return m.OldAmount(ctx)
+	case transaction.FieldCurrency:
+		return m.OldCurrency(ctx)
+	case transaction.FieldPlatform:
+		return m.OldPlatform(ctx)
+	case transaction.FieldOperator:
+		return m.OldOperator(ctx)
+	case transaction.FieldClient:
+		return m.OldClient(ctx)
+	case transaction.FieldGame:
+		return m.OldGame(ctx)
+	case transaction.FieldStatus:
+		return m.OldStatus(ctx)
+	case transaction.FieldDescription:
+		return m.OldDescription(ctx)
+	case transaction.FieldTimestamp:
+		return m.OldTimestamp(ctx)
+	case transaction.FieldMathProfile:
+		return m.OldMathProfile(ctx)
+	case transaction.FieldDenominator:
+		return m.OldDenominator(ctx)
+	case transaction.FieldFinalBalance:
+		return m.OldFinalBalance(ctx)
+	case transaction.FieldSeqID:
+		return m.OldSeqID(ctx)
+	case transaction.FieldMultiplier:
+		return m.OldMultiplier(ctx)
+	case transaction.FieldGameService:
+		return m.OldGameService(ctx)
+	case transaction.FieldToken:
+		return m.OldToken(ctx)
+	case transaction.FieldOriginalAmount:
+		return m.OldOriginalAmount(ctx)
+	}
+	return nil, fmt.Errorf("unknown Transaction field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TransactionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case transaction.FieldType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetType(v)
+		return nil
+	case transaction.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case transaction.FieldAmount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAmount(v)
+		return nil
+	case transaction.FieldCurrency:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrency(v)
+		return nil
+	case transaction.FieldPlatform:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPlatform(v)
+		return nil
+	case transaction.FieldOperator:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOperator(v)
+		return nil
+	case transaction.FieldClient:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClient(v)
+		return nil
+	case transaction.FieldGame:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGame(v)
+		return nil
+	case transaction.FieldStatus:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case transaction.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case transaction.FieldTimestamp:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTimestamp(v)
+		return nil
+	case transaction.FieldMathProfile:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMathProfile(v)
+		return nil
+	case transaction.FieldDenominator:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDenominator(v)
+		return nil
+	case transaction.FieldFinalBalance:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFinalBalance(v)
+		return nil
+	case transaction.FieldSeqID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSeqID(v)
+		return nil
+	case transaction.FieldMultiplier:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMultiplier(v)
+		return nil
+	case transaction.FieldGameService:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGameService(v)
+		return nil
+	case transaction.FieldToken:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetToken(v)
+		return nil
+	case transaction.FieldOriginalAmount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOriginalAmount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Transaction field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *TransactionMutation) AddedFields() []string {
+	var fields []string
+	if m.addamount != nil {
+		fields = append(fields, transaction.FieldAmount)
+	}
+	if m.addstatus != nil {
+		fields = append(fields, transaction.FieldStatus)
+	}
+	if m.adddenominator != nil {
+		fields = append(fields, transaction.FieldDenominator)
+	}
+	if m.addfinal_balance != nil {
+		fields = append(fields, transaction.FieldFinalBalance)
+	}
+	if m.addseq_id != nil {
+		fields = append(fields, transaction.FieldSeqID)
+	}
+	if m.addmultiplier != nil {
+		fields = append(fields, transaction.FieldMultiplier)
+	}
+	if m.addoriginal_amount != nil {
+		fields = append(fields, transaction.FieldOriginalAmount)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *TransactionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case transaction.FieldAmount:
+		return m.AddedAmount()
+	case transaction.FieldStatus:
+		return m.AddedStatus()
+	case transaction.FieldDenominator:
+		return m.AddedDenominator()
+	case transaction.FieldFinalBalance:
+		return m.AddedFinalBalance()
+	case transaction.FieldSeqID:
+		return m.AddedSeqID()
+	case transaction.FieldMultiplier:
+		return m.AddedMultiplier()
+	case transaction.FieldOriginalAmount:
+		return m.AddedOriginalAmount()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TransactionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case transaction.FieldAmount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAmount(v)
+		return nil
+	case transaction.FieldStatus:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddStatus(v)
+		return nil
+	case transaction.FieldDenominator:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDenominator(v)
+		return nil
+	case transaction.FieldFinalBalance:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFinalBalance(v)
+		return nil
+	case transaction.FieldSeqID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSeqID(v)
+		return nil
+	case transaction.FieldMultiplier:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMultiplier(v)
+		return nil
+	case transaction.FieldOriginalAmount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddOriginalAmount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Transaction numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *TransactionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(transaction.FieldDeletedAt) {
+		fields = append(fields, transaction.FieldDeletedAt)
+	}
+	if m.FieldCleared(transaction.FieldMathProfile) {
+		fields = append(fields, transaction.FieldMathProfile)
+	}
+	if m.FieldCleared(transaction.FieldSeqID) {
+		fields = append(fields, transaction.FieldSeqID)
+	}
+	if m.FieldCleared(transaction.FieldMultiplier) {
+		fields = append(fields, transaction.FieldMultiplier)
+	}
+	if m.FieldCleared(transaction.FieldGameService) {
+		fields = append(fields, transaction.FieldGameService)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *TransactionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TransactionMutation) ClearField(name string) error {
+	switch name {
+	case transaction.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	case transaction.FieldMathProfile:
+		m.ClearMathProfile()
+		return nil
+	case transaction.FieldSeqID:
+		m.ClearSeqID()
+		return nil
+	case transaction.FieldMultiplier:
+		m.ClearMultiplier()
+		return nil
+	case transaction.FieldGameService:
+		m.ClearGameService()
+		return nil
+	}
+	return fmt.Errorf("unknown Transaction nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *TransactionMutation) ResetField(name string) error {
+	switch name {
+	case transaction.FieldType:
+		m.ResetType()
+		return nil
+	case transaction.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case transaction.FieldAmount:
+		m.ResetAmount()
+		return nil
+	case transaction.FieldCurrency:
+		m.ResetCurrency()
+		return nil
+	case transaction.FieldPlatform:
+		m.ResetPlatform()
+		return nil
+	case transaction.FieldOperator:
+		m.ResetOperator()
+		return nil
+	case transaction.FieldClient:
+		m.ResetClient()
+		return nil
+	case transaction.FieldGame:
+		m.ResetGame()
+		return nil
+	case transaction.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case transaction.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case transaction.FieldTimestamp:
+		m.ResetTimestamp()
+		return nil
+	case transaction.FieldMathProfile:
+		m.ResetMathProfile()
+		return nil
+	case transaction.FieldDenominator:
+		m.ResetDenominator()
+		return nil
+	case transaction.FieldFinalBalance:
+		m.ResetFinalBalance()
+		return nil
+	case transaction.FieldSeqID:
+		m.ResetSeqID()
+		return nil
+	case transaction.FieldMultiplier:
+		m.ResetMultiplier()
+		return nil
+	case transaction.FieldGameService:
+		m.ResetGameService()
+		return nil
+	case transaction.FieldToken:
+		m.ResetToken()
+		return nil
+	case transaction.FieldOriginalAmount:
+		m.ResetOriginalAmount()
+		return nil
+	}
+	return fmt.Errorf("unknown Transaction field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *TransactionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.rounds != nil {
+		edges = append(edges, transaction.EdgeRounds)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *TransactionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case transaction.EdgeRounds:
+		if id := m.rounds; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *TransactionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *TransactionMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *TransactionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedrounds {
+		edges = append(edges, transaction.EdgeRounds)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *TransactionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case transaction.EdgeRounds:
+		return m.clearedrounds
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *TransactionMutation) ClearEdge(name string) error {
+	switch name {
+	case transaction.EdgeRounds:
+		m.ClearRounds()
+		return nil
+	}
+	return fmt.Errorf("unknown Transaction unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *TransactionMutation) ResetEdge(name string) error {
+	switch name {
+	case transaction.EdgeRounds:
+		m.ResetRounds()
+		return nil
+	}
+	return fmt.Errorf("unknown Transaction edge %s", name)
 }

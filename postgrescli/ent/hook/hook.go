@@ -141,6 +141,18 @@ func (f PlatformFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlatformMutation", m)
 }
 
+// The RoundFunc type is an adapter to allow the use of ordinary
+// function as Round mutator.
+type RoundFunc func(context.Context, *ent.RoundMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RoundFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RoundMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RoundMutation", m)
+}
+
 // The SerieFunc type is an adapter to allow the use of ordinary
 // function as Serie mutator.
 type SerieFunc func(context.Context, *ent.SerieMutation) (ent.Value, error)
@@ -187,6 +199,18 @@ func (f StudioFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.StudioMutation", m)
+}
+
+// The TransactionFunc type is an adapter to allow the use of ordinary
+// function as Transaction mutator.
+type TransactionFunc func(context.Context, *ent.TransactionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TransactionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TransactionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TransactionMutation", m)
 }
 
 // Condition is a hook condition function.

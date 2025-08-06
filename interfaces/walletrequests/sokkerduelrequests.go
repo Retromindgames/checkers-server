@@ -69,8 +69,8 @@ func SokkerDuelGetWallet(baseUrl string, token string) (*models.WalletResponse, 
 	return &walletResponse, nil
 }
 
-func SokkerDuelPostBet(session models.Session, betData models.SokkerDuelBet) (*models.SokkerDuelBetResponse, error) {
-	baseUrl, err := url.Parse(session.OperatorBaseUrl)
+func SokkerDuelPostBet(platformBaseUrl, sessionToken string, betData models.SokkerDuelBet) (*models.SokkerDuelBetResponse, error) {
+	baseUrl, err := url.Parse(platformBaseUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %v", err)
 	}
@@ -84,7 +84,7 @@ func SokkerDuelPostBet(session models.Session, betData models.SokkerDuelBet) (*m
 		return nil, fmt.Errorf("failed to create bet request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-access-token", session.Token)
+	req.Header.Set("x-access-token", sessionToken)
 
 	// Print request
 	//log.Println("===== API REQUEST =====")
@@ -122,8 +122,8 @@ func SokkerDuelPostBet(session models.Session, betData models.SokkerDuelBet) (*m
 	return &walletResponse, nil
 }
 
-func SokkerDuelPostWin(session models.Session, winData models.SokkerDuelWin) (*models.SokkerDuelWinResponse, error) {
-	baseUrl, err := url.Parse(session.OperatorBaseUrl)
+func SokkerDuelPostWin(platformBaseUrl, sessionToken string, winData models.SokkerDuelWin) (*models.SokkerDuelWinResponse, error) {
+	baseUrl, err := url.Parse(platformBaseUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base URL: %v", err)
 	}
@@ -138,7 +138,7 @@ func SokkerDuelPostWin(session models.Session, winData models.SokkerDuelWin) (*m
 		return nil, fmt.Errorf("failed to create win request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-access-token", session.Token)
+	req.Header.Set("x-access-token", sessionToken)
 
 	// Print request
 	//log.Println("===== API REQUEST =====")
