@@ -40,8 +40,22 @@ func saveFailedBetTransaction(pgs *postgrescli.PostgresCli, session models.Sessi
 	_, err := pgs.EntCli.Transaction.
 		Create().
 		SetType("bet").
+		SetAmount(int(betData.Amount)).
+		SetCurrency(session.Currency).
+		SetPlatform(session.).
+		SetOperator(session.).
+		SetClient(session.).
+		SetGame(session.).
+		SetStatus().
+		SetDescription().
+		SetMathProfile("").
+		SetDenominator().
+		SetFinalBalance().
+		SetSeqID().
+		SetMultiplier().
+		SetGameService("PLACEHOLDER").
 		SetToken(session.Token).
-		SetCurrency(session.)
+		SetOriginalAmount().
 		Save(ctx)
 
 	if err != nil {

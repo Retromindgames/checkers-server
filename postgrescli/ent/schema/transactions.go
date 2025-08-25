@@ -16,6 +16,7 @@ type Transaction struct {
 // Fields of the Transaction.
 func (Transaction) Fields() []ent.Field {
 	return []ent.Field{
+		field.String("Session_id").Optional(),
 		field.String("type").Optional(),
 		field.Time("deleted_at").
 			Optional(), // allow null

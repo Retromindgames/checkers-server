@@ -3,6 +3,7 @@ package interfaces
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 )
 
 func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, gc *models.GameConfigDTO, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli) {
+	baseUrl := os.Getenv("SOKKER_GAME_URL")
+
 	// Fetch wallet information
 	logInResponse, err := walletrequests.SokkerDuelGetWallet(op.OperatorWalletBaseUrl, req.Token)
 	if err != nil {
@@ -46,7 +49,7 @@ func (m *SokkerDuelModule) HandleGameLaunch(w http.ResponseWriter, r *http.Reque
 			go handleSaveSession(session, pgs)
 		}
 	}
-	gameURL, err := generateGameURL(op.GameBaseUrl, req.Token, session.ID, logInResponse.Data.Currency)
+	gameURL, err := generateGameURL(baseUrl, req.Token, session.ID, logInResponse.Data.Currency)
 	if err != nil {
 		respondWithError(w, "Failed to generate game URL", err)
 		return

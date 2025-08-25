@@ -39,6 +39,7 @@ type Session struct {
 	GameVersionID     int       `json:"game_version_id"`
 	MathVersionID     int       `json:"math_version_id"`
 	CurrencyVersionID int       `json:"currency_version_id"`
+	Currency          string    `json:"currency"`
 	CreatedAt         time.Time `json:"created_at"`
 	DeletedAt         time.Time `json:"deleted_at"`
 	ExtractID         int64     `json:"extract_id"` // This was created to store the extract ID of a bet, so that we can later use it in the win post...
@@ -66,22 +67,6 @@ func (s *Session) IsTokenExpired() bool {
 
 	expTime := time.Unix(int64(expFloat), 0)
 	return time.Now().After(expTime)
-}
-
-type Transaction struct {
-	ID          string    `json:"transaction_id"` // Unique ID for each transaction
-	SessionID   string    `json:"session_id"`     // Session ID for the player
-	Type        string    `json:"type"`           // Type of transaction: 'bet' or 'win'
-	Amount      int64     `json:"amount"`         // Amount in cents
-	Currency    string    `json:"currency"`       // Currency code (e.g., EUR, USD)
-	Platform    string    `json:"platform"`       // Platform name
-	Operator    string    `json:"operator"`       // Operator name (e.g., SokkerDuel)
-	Client      string    `json:"client"`         // Client ID (player ID)
-	Game        string    `json:"game"`           // Internal game name
-	Status      string    `json:"status"`         // HTTP status code
-	Description string    `json:"description"`    // Description (e.g., "Insufficient Funds" or "OK")
-	RoundID     string    `json:"round_id"`       // Foreign key to the round / game
-	Timestamp   time.Time `json:"timestamp"`      // Timestamp in UTC
 }
 
 type OperatorDTO struct {
