@@ -37,7 +37,7 @@ func SokkerDuelGetWallet(baseUrl string, token string) (*models.WalletResponse, 
 	jar, _ := cookiejar.New(nil)
 	client := &http.Client{
 		Timeout: 10 * time.Second, // Added timeout for reliability.
-		Jar:     jar,              // Enable cookies // TODO: Review this.
+		Jar:     jar,              // Enable cookies
 
 	}
 	resp, err := client.Do(req)

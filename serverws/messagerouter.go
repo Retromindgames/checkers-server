@@ -15,6 +15,7 @@ import (
 //
 // The valid command sent will be processsed and router to the right handler. Some of those handlers
 // might send the message to redis.
+// This pretty much represents the commands the client can send to the back end services to do something.
 func RouteMessages(message *messages.Message[json.RawMessage], client *Client, redis *redisdb.RedisClient) {
 	switch message.Command {
 	case "queue":
@@ -68,7 +69,7 @@ func RouteMessages(message *messages.Message[json.RawMessage], client *Client, r
 }
 
 func handleQueue(msg *messages.Message[json.RawMessage], client *Client, redis *redisdb.RedisClient) {
-	qh := NewQueueHandler(client, redis, msg)
+	qh := NewQueueHandler(client, redis, msg, client.hub.gameName)
 	qh.Process()
 }
 
@@ -82,7 +83,7 @@ func handleLeaveQueue(client *Client, redis *redisdb.RedisClient) {
 	client.player.SetStatusOnline()
 	redis.UpdatePlayer(client.player) // This is important, we will only re-add players to a queue that are in queue.
 	//redis.UpdatePlayersInQueueSet(client.player.ID, models.StatusOnline)
-	queueName := fmt.Sprintf("queue:%f", client.player.SelectedBet)
+	queueName := fmt.Sprintf("queue:{%v}:%f", client.hub.gameName, client.player.SelectedBet)
 	err := redis.RemovePlayerFromQueue(queueName, client.player)
 	if err != nil {
 		//log.Printf("Error removing player from Redis queue: %v\n", err)	//! This was commented, it fails when there is only 1 player in queue.
@@ -133,7 +134,8 @@ func handleReadyQueue(msg *messages.Message[json.RawMessage], client *Client, re
 		client.send <- msgBytes
 		return
 	}
-	err = redis.RPush("ready_queue", client.player) // now we tell roomworker to process this player ready.
+	queueName := fmt.Sprintf("ready_queue:{%v}", client.hub.gameName)
+	err = redis.RPush(queueName, client.player) // now we tell roomworker to process this player ready.
 	if err != nil {
 		logger.Default.Error("[wsapi] - handleReadyQueue - error pushing player to roomworker Redis ready queue for session id: %v, error: %v", client.player.ID, err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "Pushing player to queue: "+err.Error())
@@ -151,6 +153,8 @@ func handleLeaveRoom(client *Client, redis *redisdb.RedisClient) {
 		client.send <- msgBytes
 		return
 	}
+	//	queueName := fmt.Sprintf("leave_room:{%v}:%v", client.hub.gameName, client.player.ID)
+	//	redis.PublishToRoomPubSub(client.player.RoomID, queueName)
 	redis.PublishToRoomPubSub(client.player.RoomID, "leave_room:"+client.player.ID)
 	logger.Default.Infof("[wsapi] - handleLeaveRoom - published to room pubsub for session id: %v", client.player.ID)
 }
@@ -158,7 +162,8 @@ func handleLeaveRoom(client *Client, redis *redisdb.RedisClient) {
 func handleLeaveGame(client *Client, redis *redisdb.RedisClient) {
 	msgBytes, _ := messages.GenerateGenericMessage("info", "Processing 'leave_game'")
 	client.send <- msgBytes
-	err := redis.RPush("leave_game", client.player)
+	queueName := fmt.Sprintf("leave_game:{%v}", client.hub.gameName)
+	err := redis.RPush(queueName, client.player)
 	if err != nil {
 		logger.Default.Error("[wsapi] - handleReadyQueue - error pushing player to Redis ready queue for session id: %v, error: %v", client.player.ID, err)
 		msgBytes, _ := messages.GenerateGenericMessage("error", "Error adding player to leave_game")
@@ -183,8 +188,9 @@ func handleMovePiece(message *messages.Message[json.RawMessage], client *Client,
 		client.send <- msg
 		return
 	}
+	queueName := fmt.Sprintf("move_piece:{%v}", client.hub.gameName)
 	// movement message is sent to the game worker
-	err = redis.RPushGeneric("move_piece", message.Value)
+	err = redis.RPushGeneric(queueName, message.Value)
 	if err != nil {
 		logger.Default.Errorf("[wsapi] - handleMovePiece - error pushing move to redis for session id: %v, err: %v", client.player.ID, err)
 		msg, _ := messages.GenerateGenericMessage("error", "error pushing move to gameworker.")

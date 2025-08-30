@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/models"
@@ -28,11 +29,13 @@ type Hub struct {
 
 	broadastpubsub *redis.PubSub
 
+	gameName string
+
 	//pubsub *redisdb.RedisClient.PubSub
 
 }
 
-func newHub(addr string, username string, password string, redistls bool) *Hub {
+func newHub(addr string, username string, password string, redistls bool, gn string) *Hub {
 	redisclient, err := redisdb.NewRedisClient(addr, username, password, redistls)
 	if err != nil {
 		logger.Default.Fatalf("[Redis] Error initializing Redis client: %v", err)
@@ -43,6 +46,7 @@ func newHub(addr string, username string, password string, redistls bool) *Hub {
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
 		redis:      redisclient,
+		gameName:   gn,
 	}
 }
 
@@ -103,7 +107,7 @@ func (h *Hub) CloseConnection(client *Client) {
 }
 
 func (h *Hub) SubscribeBroadcast() {
-	pubsub := h.redis.Client.Subscribe(context.Background(), "game_info")
+	pubsub := h.redis.Client.Subscribe(context.Background(), fmt.Sprintf("game_info:{%v}", h.gameName))
 	h.broadastpubsub = pubsub
 	ch := pubsub.Channel()
 

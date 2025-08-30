@@ -11,7 +11,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func (r *RedisClient) AddRoom(room *models.Room) error {
+func (r *RedisClient) AddRoom(gameName string, room *models.Room) error {
 	ctx := context.Background()
 	// Serialize the full room object
 	data, err := json.Marshal(room)
@@ -28,20 +28,21 @@ func (r *RedisClient) AddRoom(room *models.Room) error {
 	if err != nil {
 		return fmt.Errorf("[RedisClient] (Room) - failed to store room data: %v", err)
 	}
+
 	// Add room ID to sorted set, indexed by bid amount, this will help us get the rooms by bid amount
-	zsetKey := "rooms_by_bid"
+	zsetKey := fmt.Sprintf("rooms_by_bid:{%s}", gameName)
 	err = r.Client.ZAdd(ctx, zsetKey, redis.Z{
 		Score:  room.BetValue,
 		Member: room.ID,
 	}).Err()
 	if err != nil {
-		return fmt.Errorf("[RedisClient] (Room) - failed to update room index: %v", err)
+		return fmt.Errorf("[RedisClient] (Room) - failed to update room zindex: %v", err)
 	}
 	// Manage Queue Count
-	exists, err := r.CheckQueueCountExists(room.BetValue)
+	exists, err := r.CheckQueueCountExists(gameName, room.BetValue)
 	if err == nil {
 		if !exists {
-			r.CreateQueueCount(room.BetValue)
+			r.CreateQueueCount(gameName, room.BetValue)
 		}
 	}
 	return nil
@@ -79,9 +80,9 @@ func (r *RedisClient) GetRoomByID(roomID string) (*models.Room, error) {
 	return &room, nil
 }
 
-func (r *RedisClient) GetRoomsByBetValue(BetValue float64) ([]models.Room, error) {
+func (r *RedisClient) GetRoomsByBetValue(gameName string, BetValue float64) ([]models.Room, error) {
 	ctx := context.Background()
-	zsetKey := "rooms_by_bid"
+	zsetKey := fmt.Sprintf("rooms_by_bid:{%s}", gameName)
 	// Get room IDs in the given bid amount range
 	roomIDs, err := r.Client.ZRangeByScore(ctx, zsetKey, &redis.ZRangeBy{
 		Min: fmt.Sprintf("%f", BetValue),
@@ -106,9 +107,9 @@ func (r *RedisClient) GetRoomsByBetValue(BetValue float64) ([]models.Room, error
 	return rooms, nil
 }
 
-func (r *RedisClient) GetEmptyRoomsByBetValue(BetValue float64) ([]models.Room, error) {
+func (r *RedisClient) GetEmptyRoomsByBetValue(gameName string, BetValue float64) ([]models.Room, error) {
 	ctx := context.Background()
-	zsetKey := "rooms_by_bid"
+	zsetKey := fmt.Sprintf("rooms_by_bid:{%s}", gameName)
 	// Get room IDs in the given bid amount range
 	roomIDs, err := r.Client.ZRangeByScore(ctx, zsetKey, &redis.ZRangeBy{
 		Min: fmt.Sprintf("%f", BetValue),

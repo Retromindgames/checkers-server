@@ -20,15 +20,24 @@ func main() {
 	})
 
 	flag.Parse()
-	hub := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password, redisConfig.Tls)
-	defer hub.Close() // close Redis on exit
+	hubCheckers := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password, redisConfig.Tls, "BatalhaDasDamas")
+	hubChess := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password, redisConfig.Tls, "BatalhaDoChess")
+	defer func() {
+		hubCheckers.Close() // close Redis on exit
+		hubChess.Close()
+	}()
+	go hubCheckers.run()
+	go hubChess.run()
 
-	go hub.run()
 	// we subscribe to our redis broadcast channel.
-	hub.SubscribeBroadcast()
+	hubCheckers.SubscribeBroadcast()
+	hubChess.SubscribeBroadcast()
 
 	http.HandleFunc("/ws/checkers", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(hub, w, r)
+		serveWs(hubCheckers, w, r)
+	})
+	http.HandleFunc("/ws/chess", func(w http.ResponseWriter, r *http.Request) {
+		serveWs(hubChess, w, r)
 	})
 
 	err := http.ListenAndServe(*addr, nil)

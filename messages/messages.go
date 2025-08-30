@@ -306,8 +306,8 @@ func MustMarshal(v interface{}) json.RawMessage {
 	return bytes
 }
 
-func GenerateGameInfoMessageBytes(redisClient *redisdb.RedisClient) ([]byte, error) {
-	aggregates, err := redisClient.GetQueueNumberResponse()
+func GenerateGameInfoMessageBytes(redisClient *redisdb.RedisClient, gameName string) ([]byte, error) {
+	aggregates, err := redisClient.GetQueueNumberResponse(gameName)
 	if err != nil {
 		log.Printf("[GenerateGameInfoMessageBytes] - Error getting QueueNumber: %v\n", err)
 		return nil, err

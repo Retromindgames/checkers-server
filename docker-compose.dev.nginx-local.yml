@@ -40,17 +40,17 @@ services:
       - redis
       - postgres
 
-  loginworker:
-    container_name: loginworker
-    build:
-      context: .
-      dockerfile: loginworker.dockerfile
-    expose:
-      - "8081"  # Expose port 8081 internally
-    networks:
-      - app-network
-    depends_on:
-      - postgres
+  #loginworker:
+  #  container_name: loginworker
+  #  build:
+  #    context: .
+  #    dockerfile: loginworker.dockerfile
+  #  expose:
+  #    - "8081"  # Expose port 8081 internally
+  #  networks:
+  #    - app-network
+  #  depends_on:
+  #    - postgres
 
   #pstatusworker:
   #  container_name: pstatusworker
@@ -82,11 +82,25 @@ services:
     networks:
       - app-network
 
-  gameworker:
-    container_name: gameworker
+  gameworker-checkers:
+    container_name: gameworker-checkers
     build:
       context: .
       dockerfile: gameworker.dockerfile
+    environment:
+      GAME_ENGINE: "BatalhaDasDamas"
+    depends_on:
+      - redis
+    networks:
+      - app-network
+  
+  gameworker-chess:
+    container_name: gameworker-chess
+    build:
+      context: .
+      dockerfile: gameworker.dockerfile
+    environment:
+      GAME_ENGINE: "BatalhaDoChess"
     depends_on:
       - redis
     networks:

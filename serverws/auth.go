@@ -32,7 +32,7 @@ func AuthValid(w http.ResponseWriter, r *http.Request, redis *redisdb.RedisClien
 func fetchAndValidateSession(token, sessionID, currency string, redis *redisdb.RedisClient) (*models.Session, error) {
 	session, err := redis.GetSessionByID(sessionID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch session from Redis for sessionID: %v, with err", sessionID, err)
+		return nil, fmt.Errorf("failed to fetch session from Redis for sessionID: %v, with err: %v", sessionID, err)
 	}
 
 	if session.Currency != currency {
@@ -55,7 +55,7 @@ func FetchWalletBallance(session *models.Session, redis *redisdb.RedisClient) (i
 	module := interfaces.OperatorModules[session.OperatorIdentifier.OperatorName]
 	walletBalance, err := module.HandleFetchWalletBalance(*session, redis)
 	if err != nil {
-		return 0, fmt.Errorf("failed to fetch wallet for session: %v, with error:", session.ID, err)
+		return 0, fmt.Errorf("failed to fetch wallet for session: %v, with error: %v", session.ID, err)
 	}
 	return walletBalance, nil
 }

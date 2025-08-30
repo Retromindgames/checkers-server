@@ -32,6 +32,14 @@ BEGIN
             'https://play.retromindgames.pt/games/damasSokkerDuel/index.html',
             '',
             0.9
+        ),
+        (
+            'TestOp',
+            'chessSokkerDuel',
+            'BatalhaDoChess',
+            'https://play.retromindgames.pt/games/chessSokkerDuel/index.html',
+            '',
+            0.9
         );
     END IF;
 END $$;

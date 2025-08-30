@@ -11,32 +11,32 @@ import (
 	"github.com/Lavizord/checkers-server/models"
 )
 
-func (r *RedisClient) CreateQueueCount(aggregateValue float64) {
-	key := fmt.Sprintf("queue_count:{room}:%f", aggregateValue) // hash tag {room}
+func (r *RedisClient) CreateQueueCount(gameName string, aggregateValue float64) {
+	key := fmt.Sprintf("queue_count:{%s}:{room}:%f", gameName, aggregateValue) // hash tag {room}
 	_, err := r.Client.SetNX(context.Background(), key, 1, 0).Result()
 	if err != nil {
 		log.Printf("Error setting room aggregate: %v", err)
 	}
 }
 
-func (r *RedisClient) IncrementQueueCount(aggregateValue float64) {
-	key := fmt.Sprintf("queue_count:{room}:%f", aggregateValue)
+func (r *RedisClient) IncrementQueueCount(gameName string, aggregateValue float64) {
+	key := fmt.Sprintf("queue_count:{%s}:{room}:%f", gameName, aggregateValue)
 	_, err := r.Client.Incr(context.Background(), key).Result()
 	if err != nil {
 		log.Printf("Error incrementing room aggregate: %v", err)
 	}
 }
 
-func (r *RedisClient) DecrementQueueCount(aggregateValue float64) {
-	key := fmt.Sprintf("queue_count:{room}:%f", aggregateValue)
+func (r *RedisClient) DecrementQueueCount(gameName string, aggregateValue float64) {
+	key := fmt.Sprintf("queue_count:{%s}:{room}:%f", gameName, aggregateValue)
 	_, err := r.Client.Decr(context.Background(), key).Result()
 	if err != nil {
 		log.Printf("Error decrementing room aggregate: %v", err)
 	}
 }
 
-func (r *RedisClient) CheckQueueCountExists(aggregateValue float64) (bool, error) {
-	key := fmt.Sprintf("queue_count:{room}:%f", aggregateValue) // add {room}
+func (r *RedisClient) CheckQueueCountExists(gameName string, aggregateValue float64) (bool, error) {
+	key := fmt.Sprintf("queue_count:{%s}:{room}:%f", gameName, aggregateValue)
 
 	exists, err := r.Client.Exists(context.Background(), key).Result()
 	if err != nil {
@@ -45,13 +45,14 @@ func (r *RedisClient) CheckQueueCountExists(aggregateValue float64) (bool, error
 	return exists == 1, nil
 }
 
-func (r *RedisClient) GetQueueNumberResponse() (*models.QueueNumbersResponse, error) {
+func (r *RedisClient) GetQueueNumberResponse(gameName string) (*models.QueueNumbersResponse, error) {
 	var cursor uint64
 	var keys []string
-	var err error
+	pattern := fmt.Sprintf("queue_count:{%s}:{room}:*", gameName)
+
 	for {
 		var partialKeys []string
-		partialKeys, cursor, err = r.Client.Scan(context.Background(), cursor, "queue_count:{room}:*", 100).Result()
+		partialKeys, cursor, err := r.Client.Scan(context.Background(), cursor, pattern, 100).Result()
 		if err != nil {
 			return nil, fmt.Errorf("error scanning for room aggregates: %v", err)
 		}
@@ -69,12 +70,12 @@ func (r *RedisClient) GetQueueNumberResponse() (*models.QueueNumbersResponse, er
 		}
 
 		for i, key := range keys {
-			// Key format: "queue_count:{room}:<aggregateValue>"
+			// Key format: "queue_count:{gameNaME}:{room}:<aggregateValue>"
 			parts := strings.Split(key, ":")
-			if len(parts) < 3 {
+			if len(parts) < 4 {
 				continue // malformed
 			}
-			aggregateValueStr := parts[2]
+			aggregateValueStr := parts[3]
 			aggregateValue, err := strconv.ParseFloat(aggregateValueStr, 64)
 			if err != nil {
 				continue
