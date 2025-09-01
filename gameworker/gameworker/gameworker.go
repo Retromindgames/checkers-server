@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Lavizord/checkers-server/gameworker/gameworker/chessworker"
-	"github.com/Lavizord/checkers-server/gameworker/gameworker/damasworker"
 	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/messages"
 	"github.com/Lavizord/checkers-server/models"
@@ -16,7 +14,7 @@ import (
 
 type Worker interface {
 	Run()
-	GameName() string
+	GetGameName() string
 }
 
 type GameWorker struct {
@@ -26,24 +24,17 @@ type GameWorker struct {
 	QueueBetAmmounts []float64
 }
 
-func NewWorker(gameName string, redis *redisdb.RedisClient, db *postgrescli.PostgresCli) Worker {
-	switch gameName {
-	case "BatalhaDasDamas":
-		return damasworker.NewDamasWorker(redis, db)
-	case "BatalhaDoChess":
-		return chessworker.NewChessWorker(redis, db)
-	default:
-		return nil
-	}
-}
-
 // Processes a set of redis queues and
-func NewGameWorker(redis *redisdb.RedisClient, db *postgrescli.PostgresCli, gn string) *GameWorker {
+func New(redis *redisdb.RedisClient, db *postgrescli.PostgresCli, gn string) *GameWorker {
 	return &GameWorker{
 		RedisClient: redis,
 		GameName:    gn,
 		Db:          db,
 	}
+}
+
+func (gw *GameWorker) GetGameName() string {
+	return gw.GameName
 }
 
 func (gw *GameWorker) Run() {

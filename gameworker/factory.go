@@ -1,16 +1,19 @@
 package main
 
 import (
+	"github.com/Lavizord/checkers-server/gameworker/chessworker"
+	"github.com/Lavizord/checkers-server/gameworker/damasworker"
+	"github.com/Lavizord/checkers-server/gameworker/gameworker"
 	"github.com/Lavizord/checkers-server/postgrescli"
 	"github.com/Lavizord/checkers-server/redisdb"
 )
 
-func NewWorker(gameName string, redis *redisdb.RedisClient, db *postgrescli.PostgresCli) core.Worker {
+func NewWorker(gameName string, redis *redisdb.RedisClient, db *postgrescli.PostgresCli) gameworker.Worker {
 	switch gameName {
 	case "BatalhaDasDamas":
-		return damas.New(redis, db)
+		return damasworker.New(redis, db)
 	case "BatalhaDoChess":
-		return chess.New(redis, db)
+		return chessworker.New(redis, db)
 	default:
 		return nil
 	}

@@ -10,6 +10,6 @@ type ChessWorker struct {
 	*gameworker.GameWorker
 }
 
-func NewChessWorker(redis *redisdb.RedisClient, db *postgrescli.PostgresCli) *ChessWorker {
+func New(redis *redisdb.RedisClient, db *postgrescli.PostgresCli) *ChessWorker {
 	return &ChessWorker{&gameworker.GameWorker{RedisClient: redis, Db: db, GameName: "BatalhaDoChess"}}
 }

@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/Lavizord/checkers-server/config"
-	"github.com/Lavizord/checkers-server/gameworker/gameworker"
 	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/postgrescli"
 	"github.com/Lavizord/checkers-server/redisdb"
@@ -50,12 +49,12 @@ func main() {
 	logger.Default.Infof("creating gameworker...")
 	gameEngine := os.Getenv("GAME_ENGINE")
 	if gameEngine == "" {
-		logger.Default.Fatalf("no GAME_ENGINE env variable defined")
+		logger.Default.Fatalf("no GAME_ENGINE env variable defined, exiting")
 	}
-	gw := gameworker.NewGameWorker(redisClient, postgresClient, gameEngine)
+	gw := NewWorker(gameEngine, redisClient, postgresClient)
 	gw.Run()
 
-	logger.Default.Infof("gameworker created, awaiting messages...")
+	logger.Default.Infof("gameworker created for game engine [%v], awaiting messages...", gameEngine)
 
 	select {}
 }
