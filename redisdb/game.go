@@ -46,12 +46,11 @@ func (r *RedisClient) GetGame(gameID string) (*models.Game, error) {
 		return nil, fmt.Errorf("[RedisClient] - failed to get game: %v", err)
 	}
 
-	var game models.Game
-	err = json.Unmarshal([]byte(data), &game)
+	game, err := models.UnmarshalGame([]byte(data))
 	if err != nil {
 		return nil, fmt.Errorf("[RedisClient] - failed to deserialize Game: %v", err)
 	}
-	return &game, nil
+	return game, nil
 }
 
 func (r *RedisClient) RemoveGame(gameID string) error {
@@ -60,8 +59,8 @@ func (r *RedisClient) RemoveGame(gameID string) error {
 	if err != nil {
 		return fmt.Errorf("[RedisClient] - Error getting game: %s", gameID)
 	}
-	var game models.Game
-	if err := json.Unmarshal([]byte(data), &game); err != nil {
+	game, err := models.UnmarshalGame([]byte(data))
+	if err != nil {
 		return fmt.Errorf("[RedisClient] - failed to unmarshal game: %v", err)
 	}
 	// Delete from main hash

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/Lavizord/checkers-server/gameworker/chessworker"
-	"github.com/Lavizord/checkers-server/gameworker/damasworker"
-	"github.com/Lavizord/checkers-server/gameworker/gameworker"
+	"github.com/Lavizord/checkers-server/gameworkers/chessworker"
+	"github.com/Lavizord/checkers-server/gameworkers/damasworker"
+	"github.com/Lavizord/checkers-server/gameworkers/gameworker"
 	"github.com/Lavizord/checkers-server/postgrescli"
 	"github.com/Lavizord/checkers-server/redisdb"
 )

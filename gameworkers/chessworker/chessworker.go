@@ -1,10 +1,11 @@
-package gameworker
+package chessworker
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
 
+	"github.com/Lavizord/checkers-server/gameworkers/gameworker"
 	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/messages"
 	"github.com/Lavizord/checkers-server/models"
@@ -12,44 +13,28 @@ import (
 	"github.com/Lavizord/checkers-server/redisdb"
 )
 
-type Worker interface {
-	Run()
-	GetGameName() string
+type ChessWorker struct {
+	*gameworker.GameWorker
 }
 
-type GameWorker struct {
-	RedisClient      *redisdb.RedisClient
-	Db               *postgrescli.PostgresCli
-	GameName         string
-	QueueBetAmmounts []float64
+func New(redis *redisdb.RedisClient, db *postgrescli.PostgresCli) *ChessWorker {
+	return &ChessWorker{&gameworker.GameWorker{RedisClient: redis, Db: db, GameName: "BatalhaDoChess"}}
 }
 
-// Processes a set of redis queues and
-func New(redis *redisdb.RedisClient, db *postgrescli.PostgresCli, gn string) *GameWorker {
-	return &GameWorker{
-		RedisClient: redis,
-		GameName:    gn,
-		Db:          db,
-	}
-}
-
-func (gw *GameWorker) GetGameName() string {
-	return gw.GameName
-}
-
-func (gw *GameWorker) Run() {
-	go gw.ProcessGameCreationMessages()
-	go gw.ProcessGameMoves()
-	go gw.ProcessLeaveGame()
-	go gw.ProcessDisconnectFromGame()
-	go gw.ProcessReconnectFromGame()
+func (cw *ChessWorker) Run() {
+	go cw.ProcessGameCreationMessages() // ChessWorker’s version
+	go cw.ProcessGameMoves()            // ChessWorker’s version
+	go cw.ProcessLeaveGame()
+	go cw.ProcessDisconnectFromGame()
+	go cw.ProcessReconnectFromGame()
 }
 
 // Process elements in the create game message list. A room is serialzied into the list.
 //
 // This method validates and created a game, the game creation is based on the game of the room.
-func (gw *GameWorker) ProcessGameCreationMessages() {
+func (gw *ChessWorker) ProcessGameCreationMessages() {
 	listName := fmt.Sprintf("create_game:{%v}", gw.GameName)
+	logger.Default.Infof("starting processing chessworker queue: %v", listName)
 	for {
 		roomData, err := gw.RedisClient.BLPopGeneric(listName, 0) // Block
 		if err != nil {
@@ -121,11 +106,17 @@ func (gw *GameWorker) ProcessGameCreationMessages() {
 	}
 }
 
+// TODO: Finish chess implementation.
+func (gw *ChessWorker) ValidMove(game *models.Game, move models.Move, piece models.PieceInterface) bool {
+	if piece == nil {
+		log.Println("Error: piece is nil")
+		return false
+	}
+	return true
+}
+
 // Checks and processes game move messages.
-//
-// TODO: This should be moved into a game pub sub, since we already have game timers running.
-// doing so will allow us to better controll the flow of the game.
-func (gw *GameWorker) ProcessGameMoves() {
+func (gw *ChessWorker) ProcessGameMoves() {
 	listName := fmt.Sprintf("move_piece:{%v}", gw.GameName)
 	for {
 		moveData, err := gw.RedisClient.BLPopGeneric(listName, 0) // Block
@@ -160,7 +151,7 @@ func (gw *GameWorker) ProcessGameMoves() {
 			continue
 		}
 
-		piece := game.Board.GetPieceByID(move.PieceID)
+		piece, _ := game.Board.GetPieceByID(move.PieceID)
 		if !gw.ValidMove(game, move, piece) {
 			logger.Default.Errorf("(Process Game Moves) - invalid move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.PlayerID)
 			boardState, _ := messages.GenerateGameBoardState(*game)
@@ -177,9 +168,9 @@ func (gw *GameWorker) ProcessGameMoves() {
 			continue
 		}
 		game.UpdatePlayerPieces()
-		move.IsKinged = game.Board.WasPieceKinged(move.To, *piece)
+		move.IsKinged = game.Board.WasPieceKinged(move.To, piece)
 		if move.IsKinged {
-			piece.IsKinged = move.IsKinged
+			piece.SetIsPieceKinged(move.IsKinged)
 		}
 
 		// We send the message to the opponent player.
@@ -219,150 +210,4 @@ func (gw *GameWorker) ProcessGameMoves() {
 		}
 		gw.RedisClient.UpdateGame(game) // we update our game at the end. I guess this probably never happens
 	}
-}
-
-func (gw *GameWorker) ProcessLeaveGame() {
-	listName := fmt.Sprintf("leave_game:{%v}", gw.GameName)
-
-	for {
-		// Block until there is a game over message
-		playerData, err := gw.RedisClient.BLPop(listName, 0)
-		if err != nil {
-			logger.Default.Errorf("(Process Leave Game) - Error retrieving player data from leave game queue: %v", err)
-			continue
-		}
-		logger.Default.Infof("(Process Leave Game) - processing leave game for player: %v, from game with id", playerData.ID, playerData.GameID)
-		playerData, err = gw.RedisClient.GetPlayer(playerData.ID)
-		if err != nil {
-			logger.Default.Errorf("(Process Leave Game) - error fetching playerData: %v, from game with id", playerData.ID, playerData.GameID)
-			continue
-		}
-		game, err := gw.RedisClient.GetGame(playerData.GameID)
-		if err != nil {
-			logger.Default.Errorf("(Process Leave Game) - error retrieving game: %v, for player with id: %v", playerData.GameID, playerData.ID)
-			continue
-		}
-		winnrID, _ := game.GetOpponentPlayerID(playerData.ID)
-		gw.HandleGameEnd(game, "player_left", winnrID)
-	}
-}
-
-func (gw *GameWorker) ProcessDisconnectFromGame() {
-	listName := fmt.Sprintf("disconnect_game:{%v}", gw.GameName)
-	for {
-		// Block until there is a game over message
-		playerData, err := gw.RedisClient.BLPop(listName, 0)
-		if err != nil {
-			logger.Default.Errorf("(processDisconnectFromGame) - error retrieving data from disconnect_game queue: %v", err)
-			continue
-		}
-		game, err := gw.RedisClient.GetGame(playerData.GameID)
-		if err != nil {
-			logger.Default.Errorf("(processDisconnectFromGame) - error retrieving game with id: %v, from player: %v, with err: %v", playerData.GameID, playerData.ID, err)
-			continue
-		}
-		logger.Default.Infof("(processDisconnectFromGame) - processing disconnect from game game with id: %v, from player: %v", playerData.GameID, playerData.ID)
-		gw.RedisClient.SaveDisconnectSessionPlayerData(*playerData, *game)
-		gamePlayer, _ := game.GetGamePlayer(playerData.ID)
-		// Now we notify the other player that this happened
-		msg, _ := messages.NewMessage("opponent_disconnected_game", "disconnected")
-		opponent, _ := game.GetOpponentGamePlayer(gamePlayer.ID)
-		gw.RedisClient.PublishToGamePlayer(*opponent, string(msg))
-	}
-}
-
-// TODO:  Review / refactor
-func (gw *GameWorker) ProcessReconnectFromGame() {
-	listName := fmt.Sprintf("reconnect_game:{%v}", gw.GameName)
-	for {
-		// Block until there is a game over message
-		playerData, err := gw.RedisClient.BLPop(listName, 0)
-		if err != nil {
-			log.Printf("(Process Reconnect Game) - Error retrieving player data from queue: %v", err)
-			continue
-		}
-		log.Printf("[%s-%d]  (Process Reconnect Game) - Processing the reconnect game: %+v", playerData)
-		game, err := gw.RedisClient.GetGame(playerData.GameID)
-		if err != nil {
-			log.Printf("(Process Reconnect Game) - Error retrieving game data from redis: %v", err)
-			continue
-		}
-		// We send a message to the reconnected player with the board state.
-		msg, err := messages.GenerateGameReconnectMessage(*game)
-		if err != nil {
-			log.Printf("(Process Reconnect Game) - Error generating game reconnect message: %v", err)
-			continue
-		}
-		err = gw.RedisClient.PublishToPlayer(*playerData, string(msg))
-		if err != nil {
-			log.Printf("(Process Reconnect Game) - Error publishing game reconnect message: %v", err)
-			continue
-		}
-		// We notify the opponent that the player reconnected.
-		opponent, _ := game.GetOpponentGamePlayer(playerData.ID)
-		msg, _ = messages.NewMessage("opponent_disconnected_game", "reconnected")
-		gw.RedisClient.PublishToGamePlayer(*opponent, string(msg))
-		gw.RedisClient.DeleteDisconnectedPlayerSession(playerData.SessionID)
-	}
-}
-
-// Cleans up any redis data on disconected players of a certain game.
-//
-// Usually used when the game ends.
-func (gw *GameWorker) CleanUpGameDisconnectedPlayers(game models.Game) {
-	p1SessionId := game.Players[0].SessionID
-	p2SessionId := game.Players[1].SessionID
-
-	discPlayer1 := gw.RedisClient.GetDisconnectedPlayerData(p1SessionId)
-	if discPlayer1 != nil {
-		gw.RedisClient.DeleteDisconnectedPlayerSession(p1SessionId)
-		gw.RedisClient.RemovePlayer(discPlayer1.ID)
-	}
-	discPlayer2 := gw.RedisClient.GetDisconnectedPlayerData(p2SessionId)
-	if discPlayer2 != nil {
-		gw.RedisClient.DeleteDisconnectedPlayerSession(p2SessionId)
-		gw.RedisClient.RemovePlayer(discPlayer2.ID)
-	}
-}
-
-// Does some checks to see if the move is valid.
-//
-// TODO: This needs to be adapted acording to the game. Maybe implement it in the game object.
-func (gw *GameWorker) ValidMove(game *models.Game, move models.Move, piece *models.Piece) bool {
-	if piece == nil {
-		log.Println("Error: piece is nil")
-		return false
-	}
-	capturers := game.Board.PiecesThatCanCapture(game.CurrentPlayerID)
-	// If captures are available, and this piece can't capture, reject the move
-	if len(capturers) > 0 {
-		canCapture := false
-		for _, p := range capturers {
-			if p.PieceID == piece.PieceID {
-				canCapture = true
-				break
-			}
-		}
-		if !canCapture {
-			log.Println("Error: there are player pieces that can capture, must move one of those.")
-			return false
-		}
-	}
-
-	var valid bool
-	var err error
-	game.Board.PiecesThatCanCapture(game.CurrentPlayerID)
-	if piece.IsKinged {
-		valid, err = game.Board.IsValidMoveKing(move)
-	} else {
-		valid, err = game.Board.IsValidMove(move)
-	}
-	if err != nil {
-		log.Printf("Error: %v", err)
-		return false
-	}
-	if !valid {
-		return false
-	}
-	return true
 }

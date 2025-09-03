@@ -1,26 +1,13 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/Lavizord/checkers-server/config"
-
-	"github.com/google/uuid"
 )
-
-type Piece struct {
-	Type     string `json:"type"`
-	PlayerID string `json:"player_id"`
-	IsKinged bool   `json:"is_kinged"`
-	PieceID  string `json:"piece_id"`
-}
-
-func getPieceUUID() *string {
-	id := uuid.New().String()
-	return &id
-}
 
 type GamePlayer struct {
 	ID        string `json:"id"`
@@ -45,6 +32,61 @@ type Game struct {
 	BetValue           float64            `json:"bet_value"` // Bet amount for the game
 	TimerSetting       string             `json:"timer_settings"`
 	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
+}
+
+type rawGame struct {
+	ID                 string             `json:"id"`
+	Board              json.RawMessage    `json:"board"`
+	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
+	Players            []GamePlayer       `json:"players"`
+	CurrentPlayerID    string             `json:"current_player_id"`
+	Turn               int                `json:"turn"`
+	Moves              []Move             `json:"moves"`
+	StartTime          time.Time          `json:"start_time"`
+	EndTime            time.Time          `json:"end_time"`
+	Winner             string             `json:"winner"`
+	BetValue           float64            `json:"bet_value"`
+	TimerSettings      string             `json:"timer_settings"`
+}
+
+func UnmarshalGame(data []byte) (*Game, error) {
+	var rg rawGame
+	if err := json.Unmarshal(data, &rg); err != nil {
+		return nil, err
+	}
+
+	var board Board
+	switch rg.OperatorIdentifier.GameName {
+	case "BatalhaDoChess":
+		var cb ChessBoard
+		if err := json.Unmarshal(rg.Board, &cb); err != nil {
+			return nil, err
+		}
+		board = &cb
+	case "BatalhaDasDamas":
+		var db DamasBoard
+		if err := json.Unmarshal(rg.Board, &db); err != nil {
+			return nil, err
+		}
+		board = &db
+	default:
+		return nil, fmt.Errorf("unknown game type: %s", rg.OperatorIdentifier.GameName)
+	}
+
+	return &Game{
+		ID:                 rg.ID,
+		Board:              board,
+		Players:            rg.Players,
+		CurrentPlayerID:    rg.CurrentPlayerID,
+		Turn:               rg.Turn,
+		Moves:              rg.Moves,
+		StartTime:          rg.StartTime,
+		EndTime:            rg.EndTime,
+		Winner:             rg.Winner,
+		BetValue:           rg.BetValue,
+		TimerSetting:       rg.TimerSettings,
+		OperatorIdentifier: rg.OperatorIdentifier,
+	}, nil
 }
 
 // Move represents a single move in the game
@@ -86,10 +128,9 @@ func mapPlayers(r *Room) []GamePlayer {
 
 func (r *Room) NewGame() *Game {
 	whiteID, _ := r.GetOpponentPlayerID(r.CurrentPlayerID)
-
 	game := Game{
 		ID:    r.ID,
-		Board: *NewBoard(r.CurrentPlayerID, whiteID, "std-game"),
+		Board: NewBoard(r.CurrentPlayerID, whiteID, "std-game", r.OperatorIdentifier.GameName),
 		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "two-pieces-endgame"),
 		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "multiple-capture"),
 		Players:            mapPlayers(r),
@@ -143,8 +184,8 @@ func (g *Game) CalcGameMaxTimer() (int, error) {
 
 func (g *Game) CountPlayerPieces(playerID string) int {
 	count := 0
-	for _, piece := range g.Board.Grid {
-		if piece != nil && piece.PlayerID == playerID {
+	for _, piece := range g.Board.GetPieces() {
+		if piece != nil && piece.GetPlayerID() == playerID {
 			count++
 		}
 	}
@@ -223,34 +264,27 @@ func (g *Game) NextPlayer() {
 }
 
 func (g *Game) RemovePiece(pos string) {
-	if _, exists := g.Board.Grid[pos]; exists {
-		g.Board.Grid[pos] = nil
+	if _, exists := g.Board.GetPiece(pos); exists {
+		g.Board.RemovePiece(pos)
 	}
 }
 
 func (g *Game) MovePiece(move Move) bool {
 
 	// Validate move
-	piece, exists := g.Board.Grid[move.From]
-	if !exists || piece == nil || piece.PieceID != move.PieceID || piece.PlayerID != move.PlayerID {
+	piece, exists := g.Board.GetPiece(move.From)
+	if !exists || piece == nil || piece.GetID() != move.PieceID || piece.GetID() != move.PlayerID {
 		// Invalid move, update and break
 		return false
 	}
 
-	// Move piece to new position
-	g.Board.Grid[move.To] = piece
-	g.Board.Grid[move.From] = nil
+	// Move piece to new position // TODO: This is new code. Handle error, check it works.
+	g.Board.MovePiece(move.From, move.To)
 
-	//if move.IsCapture && !piece.IsKinged {
-	//	midRow := (move.From[0] + move.To[0]) / 2
-	//	midCol := (move.From[1] + move.To[1]) / 2
-	//	capturePos := fmt.Sprintf("%c%c", midRow, midCol)
-	//	g.Board.Grid[capturePos] = nil // Remove captured piece
-	//}
 	// Handle capture
 	if move.IsCapture {
 		var capturePos string
-		if piece.IsKinged {
+		if piece.IsPieceKinged() {
 			// For kinged pieces, the captured piece is the last square before the landing position
 			fromRow, fromCol := move.From[0], move.From[1]
 			toRow, toCol := move.To[0], move.To[1]
@@ -277,7 +311,7 @@ func (g *Game) MovePiece(move Move) bool {
 		}
 
 		// Remove the captured piece
-		g.Board.Grid[capturePos] = nil
+		g.Board.RemovePiece(capturePos)
 	}
 	return true
 }

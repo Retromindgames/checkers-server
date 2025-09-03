@@ -32,7 +32,7 @@ type GameConnectedMessage struct {
 // This one missed the json code, the FE is already working wth this... dont CHANGE the ones that dont have it.
 type GameStartMessage struct {
 	GameID          string `json:"game_id"`
-	Board           map[string]*models.Piece
+	Board           map[string]models.PieceInterface
 	MaxTimer        int `json:"max_timer"`
 	CurrentPlayerID string
 	GamePlayers     []GamePlayerResponse
@@ -40,7 +40,7 @@ type GameStartMessage struct {
 }
 
 type GameUpdatetMessage struct {
-	Board           map[string]*models.Piece
+	Board           map[string]models.PieceInterface
 	CurrentPlayerID string `json:"current_player_id"`
 	CurrentTurn     int    `json:"current_turn"`
 }
@@ -236,7 +236,7 @@ func GenerateGameStartMessage(game models.Game) ([]byte, error) {
 	maxTimer, _ := game.CalcGameMaxTimer()
 	gamestart := GameStartMessage{
 		GameID:          game.ID,
-		Board:           game.Board.Grid,
+		Board:           game.Board.GetGrid(),
 		MaxTimer:        maxTimer,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers:     ConvertGamePlayersToResponse(game.Players),
@@ -249,7 +249,7 @@ func GenerateGameBoardState(game models.Game) ([]byte, error) {
 	maxTimer, _ := game.CalcGameMaxTimer()
 	gamestart := GameStartMessage{
 		GameID:          game.ID,
-		Board:           game.Board.Grid,
+		Board:           game.Board.GetGrid(),
 		MaxTimer:        maxTimer,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers:     ConvertGamePlayersToResponse(game.Players),
@@ -263,7 +263,7 @@ func GenerateGameReconnectMessage(game models.Game) ([]byte, error) {
 
 	gamestart := GameStartMessage{
 		GameID:          game.ID,
-		Board:           game.Board.Grid,
+		Board:           game.Board.GetGrid(),
 		MaxTimer:        maxTimer,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers:     ConvertGamePlayersToResponse(game.Players),

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/messages"
 	"github.com/Lavizord/checkers-server/models"
 )
@@ -121,7 +122,11 @@ func (gw *GameWorker) StartCumulativeTimer(game *models.Game) {
 			activePlayerTimer := playerTimers[activePlayer.ID]
 
 			// Publish the updated timer to both players
-			game, _ := gw.RedisClient.GetGame(game.ID)
+			game, err := gw.RedisClient.GetGame(game.ID)
+			if err != nil {
+				logger.Default.Errorf("error getting game with id: %v, for active player: %v, with err: %v", game.ID, activePlayer.ID, err.Error())
+				continue
+			}
 			msg, _ := messages.GenerateGameTimerMessage(*game, activePlayerTimer)
 			game.UpdatePlayerTimer(activePlayer.ID, activePlayerTimer)
 			go gw.RedisClient.UpdateGame(game)
