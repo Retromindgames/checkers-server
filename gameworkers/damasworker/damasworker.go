@@ -27,6 +27,10 @@ func (dw *DamasWorker) Run() {
 	go dw.ProcessReconnectFromGameList()
 }
 
+func (cw *DamasWorker) ProcessGameMovesList() {
+	cw.ProcessMovesLoop(cw)
+}
+
 func (dw *DamasWorker) HandleMove(game *models.Game, move models.MoveInterface, player *models.Player, piece models.PieceInterface) error {
 
 	_, err := game.Board.ValidateMove(move, piece)
