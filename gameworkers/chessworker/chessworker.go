@@ -29,15 +29,15 @@ func (cw *ChessWorker) ProcessGameMovesList() {
 	cw.ProcessMovesLoop(cw)
 }
 
-func (dw *ChessWorker) HandleMove(game *models.Game, move models.MoveInterface, player *models.Player, piece models.PieceInterface) error {
+func (cw *ChessWorker) HandleMove(game *models.Game, move models.MoveInterface, player *models.Player, piece models.PieceInterface) error {
 	msg, err := messages.GenerateMoveMessage(move)
 	if err != nil {
 		logger.Default.Errorf("(Process Game Moves) - failed to generate move message: %+v, from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
 	}
 	//log.Printf("[%s-%d] - (Process Game Moves) - Message to publish: %v\n", name, pid, string(msg))
 	opponent, _ := game.GetOpponentGamePlayer(move.GetPlayerID())
-	dw.RedisClient.PublishToGamePlayer(*opponent, string(msg))
-
+	cw.RedisClient.PublishToGamePlayer(*opponent, string(msg))
+	cw.HandleTurnChange(game)
 	// Since the move was validated and passed to the other player, its time to check for our end turn / end game conditions.
 	// This means we can add the move to our game.
 	game.Moves = append(game.Moves, move)
