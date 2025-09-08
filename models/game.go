@@ -25,7 +25,7 @@ type Game struct {
 	Players            []GamePlayer       `json:"players"`
 	CurrentPlayerID    string             `json:"current_player_id"`
 	Turn               int                `json:"turn"`
-	Moves              []Move             `json:"moves"`
+	Moves              []MoveInterface    `json:"moves"`
 	StartTime          time.Time          `json:"start_time"`
 	EndTime            time.Time          `json:"end_time"`
 	Winner             string             `json:"winner"`
@@ -41,7 +41,7 @@ type rawGame struct {
 	Players            []GamePlayer       `json:"players"`
 	CurrentPlayerID    string             `json:"current_player_id"`
 	Turn               int                `json:"turn"`
-	Moves              []Move             `json:"moves"`
+	Moves              []json.RawMessage  `json:"moves"` // raw moves
 	StartTime          time.Time          `json:"start_time"`
 	EndTime            time.Time          `json:"end_time"`
 	Winner             string             `json:"winner"`
@@ -73,13 +73,32 @@ func UnmarshalGame(data []byte) (*Game, error) {
 		return nil, fmt.Errorf("unknown game type: %s", rg.OperatorIdentifier.GameName)
 	}
 
+	// decode moves
+	var moves []MoveInterface
+	for _, raw := range rg.Moves {
+		switch rg.OperatorIdentifier.GameName {
+		case "BatalhaDoChess":
+			var m ChessMove
+			if err := json.Unmarshal(raw, &m); err != nil {
+				return nil, err
+			}
+			moves = append(moves, m)
+		case "BatalhaDasDamas":
+			var m Move // plain move
+			if err := json.Unmarshal(raw, &m); err != nil {
+				return nil, err
+			}
+			moves = append(moves, m)
+		}
+	}
+
 	return &Game{
 		ID:                 rg.ID,
 		Board:              board,
 		Players:            rg.Players,
 		CurrentPlayerID:    rg.CurrentPlayerID,
 		Turn:               rg.Turn,
-		Moves:              rg.Moves,
+		Moves:              moves,
 		StartTime:          rg.StartTime,
 		EndTime:            rg.EndTime,
 		Winner:             rg.Winner,
@@ -89,14 +108,57 @@ func UnmarshalGame(data []byte) (*Game, error) {
 	}, nil
 }
 
-// Move represents a single move in the game
+// Define the interface
+type MoveInterface interface {
+	GetPlayerID() string
+	GetPieceID() string
+	GetFrom() string
+	GetTo() string
+	IsCaptureMove() bool
+	IsKingedMove() bool
+	SetIsKingedMove(bool)
+}
 type Move struct {
-	PlayerID  string `json:"player_id"`  // The player making the move
-	PieceID   string `json:"piece_id"`   // Will be given to clientes by the server.
-	From      string `json:"from"`       // e.g., "A1"
-	To        string `json:"to"`         // e.g., "B2"
-	IsCapture bool   `json:"is_capture"` // Whether the move captured an opponent's piece
-	IsKinged  bool   `json:"is_kinged"`  // Whether the piece was kinged after the move
+	PlayerID  string `json:"player_id"`
+	PieceID   string `json:"piece_id"`
+	From      string `json:"from"`
+	To        string `json:"to"`
+	IsCapture bool   `json:"is_capture"`
+	IsKinged  bool   `json:"is_kinged"`
+}
+
+func (m Move) GetPlayerID() string    { return m.PlayerID }
+func (m Move) GetPieceID() string     { return m.PieceID }
+func (m Move) GetFrom() string        { return m.From }
+func (m Move) GetTo() string          { return m.To }
+func (m Move) IsCaptureMove() bool    { return m.IsCapture }
+func (m Move) SetIsKingedMove(b bool) { m.IsCapture = b }
+func (m Move) IsKingedMove() bool     { return m.IsKinged }
+
+type ChessMove struct {
+	Move                  // embed base move
+	PromotionPiece string `json:"promotion_piece"`
+}
+
+func UnmarshalMove(raw []byte, gameName string) (MoveInterface, error) {
+	switch gameName {
+	case "BatalhaDasDamas":
+		var m Move
+		if err := json.Unmarshal(raw, &m); err != nil {
+			return nil, err
+		}
+		return m, nil
+
+	case "BatalhaDoChess":
+		var m ChessMove
+		if err := json.Unmarshal(raw, &m); err != nil {
+			return nil, err
+		}
+		return m, nil
+
+	default:
+		return nil, fmt.Errorf("unknown game type: %s", gameName)
+	}
 }
 
 type GameMovesRequest struct {
@@ -136,7 +198,7 @@ func (r *Room) NewGame() *Game {
 		Players:            mapPlayers(r),
 		CurrentPlayerID:    r.CurrentPlayerID,
 		Turn:               0,
-		Moves:              []Move{},
+		Moves:              []MoveInterface{},
 		StartTime:          time.Now(),
 		Winner:             "",
 		BetValue:           r.BetValue,
@@ -269,25 +331,26 @@ func (g *Game) RemovePiece(pos string) {
 	}
 }
 
-func (g *Game) MovePiece(move Move) bool {
+// TODO: THIS NEEDS TO BE MOVED TO THE BOARD, SINCE THE BOARD IS WHAT CHANGED EACH GAME IT SHOULD BE THE ONE TO MAKE THE MOVE!
+func (g *Game) MovePiece(move MoveInterface) bool {
 
 	// Validate move
-	piece, exists := g.Board.GetPiece(move.From)
-	if !exists || piece == nil || piece.GetID() != move.PieceID || piece.GetID() != move.PlayerID {
+	piece, exists := g.Board.GetPiece(move.GetFrom())
+	if !exists || piece == nil || piece.GetID() != move.GetPieceID() || piece.GetID() != move.GetPlayerID() {
 		// Invalid move, update and break
 		return false
 	}
 
 	// Move piece to new position // TODO: This is new code. Handle error, check it works.
-	g.Board.MovePiece(move.From, move.To)
+	g.Board.MovePiece(move.GetFrom(), move.GetTo())
 
 	// Handle capture
-	if move.IsCapture {
+	if move.IsCaptureMove() {
 		var capturePos string
 		if piece.IsPieceKinged() {
 			// For kinged pieces, the captured piece is the last square before the landing position
-			fromRow, fromCol := move.From[0], move.From[1]
-			toRow, toCol := move.To[0], move.To[1]
+			fromRow, fromCol := move.GetFrom()[0], move.GetFrom()[1]
+			toRow, toCol := move.GetTo()[0], move.GetTo()[1]
 
 			// Calculate the direction of movement
 			rowStep := 1
@@ -305,8 +368,8 @@ func (g *Game) MovePiece(move Move) bool {
 			capturePos = fmt.Sprintf("%c%c", captureRow, captureCol)
 		} else {
 			// For regular pieces, the captured piece is in the middle of the from and to positions
-			midRow := (move.From[0] + move.To[0]) / 2
-			midCol := (move.From[1] + move.To[1]) / 2
+			midRow := (move.GetFrom()[0] + move.GetTo()[0]) / 2
+			midCol := (move.GetFrom()[1] + move.GetTo()[1]) / 2
 			capturePos = fmt.Sprintf("%c%c", midRow, midCol)
 		}
 

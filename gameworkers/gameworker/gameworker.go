@@ -34,21 +34,25 @@ func New(redis *redisdb.RedisClient, db *postgrescli.PostgresCli, gn string) *Ga
 }
 
 func (gw *GameWorker) Run() {
-	go gw.ProcessGameCreationMessages()
-	go gw.ProcessGameMoves()
-	go gw.ProcessLeaveGame()
-	go gw.ProcessDisconnectFromGame()
-	go gw.ProcessReconnectFromGame()
+	go gw.ProcessGameCreationList()
+	go gw.ProcessGameMovesList()
+	go gw.ProcessLeaveGameList()
+	go gw.ProcessDisconnectFromGameList()
+	go gw.ProcessReconnectFromGameList()
 }
 
 func (gw *GameWorker) GetGameName() string {
 	return gw.GameName
 }
 
+func (gw *GameWorker) HandleMove(game *models.Game, move models.MoveInterface, player *models.Player, piece models.PieceInterface) error {
+	return fmt.Errorf("not implemented")
+}
+
 // Process elements in the create game message list. A room is serialzied into the list.
 //
 // This method validates and created a game, the game creation is based on the game of the room.
-func (gw *GameWorker) ProcessGameCreationMessages() {
+func (gw *GameWorker) ProcessGameCreationList() {
 	listName := fmt.Sprintf("create_game:{%v}", gw.GameName)
 	logger.Default.Infof("starting processing gameworker queue: %v", listName)
 
@@ -124,10 +128,108 @@ func (gw *GameWorker) ProcessGameCreationMessages() {
 }
 
 // Checks and processes game move messages.
+//func (gw *GameWorker) ProcessGameMovesList() {
+//	listName := fmt.Sprintf("move_piece:{%v}", gw.GameName)
+//	for {
+//		moveData, err := gw.RedisClient.BLPopGeneric(listName, 0) // Block
+//		if err != nil {
+//			logger.Default.Infof("(Process Game Moves) - Error retrieving move data: %v", err)
+//			continue
+//		}
 //
-// TODO: This should be moved into a game pub sub, since we already have game timers running.
-// doing so will allow us to better controll the flow of the game.
-func (gw *GameWorker) ProcessGameMoves() {
+//		// We start by getting our move data, player, game and opponentPlayer.
+//		var move models.MoveInterface
+//		err = json.Unmarshal([]byte(moveData[1]), &move) // Extract second element
+//		if err != nil {
+//			logger.Default.Infof("(Process Game Moves) - JSON Unmarshal Error: %v", err)
+//			continue
+//		}
+//		player, err := gw.RedisClient.GetPlayer(move.GetPlayerID())
+//		if err != nil {
+//			player = gw.RedisClient.GetDisconnectedPlayerData(move.GetPlayerID())
+//			if player == nil {
+//				logger.Default.Errorf("(Process Game Moves) - failed to get data of player with id: %v", move.GetPlayerID())
+//				continue
+//			}
+//			logger.Default.Warnf("(Process Game Moves) - player retrieved from disconnected list: %v", move.GetPlayerID())
+//		}
+//		game, err := gw.RedisClient.GetGame(player.GameID)
+//		if err != nil {
+//			logger.Default.Errorf("(Process Game Moves) - failed to get game with id: %v, from player with id: %v", player.GameID, move.GetPlayerID())
+//			continue
+//		}
+//		if game.CurrentPlayerID != move.GetPlayerID() {
+//			logger.Default.Errorf("(Process Game Moves) - incorrect current player to process move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
+//			continue
+//		}
+//
+//		piece, _ := game.Board.GetPieceByID(move.GetPieceID())
+//		if piece == nil {
+//			logger.Default.Errorf("(Process Game Moves) - error getting piece from board, for move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
+//			continue
+//		}
+//		_, err = game.Board.ValidateMove(move, piece)
+//		if err != nil {
+//			logger.Default.Errorf("(Process Game Moves) - invalid move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
+//			boardState, _ := messages.GenerateGameBoardState(*game)
+//			msginv, _ := messages.NewMessage("invalid_move", boardState)
+//			gw.RedisClient.PublishToPlayer(*player, string(msginv))
+//			continue
+//		}
+//		// We move our piece.
+//		if !game.MovePiece(move) {
+//			logger.Default.Errorf("(Process Game Moves) - invalid move, board missmatch: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
+//			boardState, _ := messages.GenerateGameBoardState(*game)
+//			msginv, _ := messages.NewMessage("invalid_move", boardState)
+//			gw.RedisClient.PublishToPlayer(*player, string(msginv))
+//			continue
+//		}
+//		game.UpdatePlayerPieces()
+//		move.SetIsKingedMove(game.Board.WasPieceKinged(move.GetTo(), piece))
+//		if move.IsKingedMove() {
+//			piece.SetIsPieceKinged(move.IsKingedMove())
+//		}
+//
+//		// We send the message to the opponent player.
+//		msg, err := messages.GenerateMoveMessage(move)
+//		if err != nil {
+//			logger.Default.Errorf("(Process Game Moves) - failed to generate move message: %+v, from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
+//		}
+//		//log.Printf("[%s-%d] - (Process Game Moves) - Message to publish: %v\n", name, pid, string(msg))
+//		opponent, _ := game.GetOpponentGamePlayer(move.GetPlayerID())
+//		gw.RedisClient.PublishToGamePlayer(*opponent, string(msg))
+//
+//		// Since the move was validated and passed to the other player, its time to check for our end turn / end game conditions.
+//		// This means we can add the move to our game.
+//		game.Moves = append(game.Moves, move)
+//
+//		// We check for game Over
+//		if game.CheckGameOver() {
+//			logger.Default.Infof("(Process Game Moves) - determined game is over, from game with id: %v, from player with id: %v", player.GameID, move.GetPlayerID())
+//			gw.HandleGameEnd(game, "winner", move.GetPlayerID())
+//			continue
+//		}
+//		// We check for a capture.
+//		if !move.IsCaptureMove() {
+//			logger.Default.Infof("(Process Game Moves) - move is not a capture changing turn, from game with id: %v, from player with id: %v", player.GameID, move.GetPlayerID())
+//			gw.HandleTurnChange(game)
+//			continue
+//		}
+//		if move.IsCaptureMove() && !game.Board.CanPieceCaptureNEW(move.GetTo()) {
+//			logger.Default.Infof("(Process Game Moves) - move is capture and cant capture any more pieces, from game with id: %v, from player with id: %v", player.GameID, move.GetPlayerID())
+//			gw.HandleTurnChange(game)
+//			continue
+//		}
+//		if move.IsKingedMove() {
+//			logger.Default.Infof("(Process Game Moves) - move is kinged, handling turn change, from game with id: %v, from player with id: %v", player.GameID, move.GetPlayerID())
+//			gw.HandleTurnChange(game)
+//			continue
+//		}
+//		gw.RedisClient.UpdateGame(game) // we update our game at the end. I guess this probably never happens
+//	}
+//}
+
+func (gw *GameWorker) ProcessGameMovesList() {
 	listName := fmt.Sprintf("move_piece:{%v}", gw.GameName)
 	for {
 		moveData, err := gw.RedisClient.BLPopGeneric(listName, 0) // Block
@@ -137,93 +239,46 @@ func (gw *GameWorker) ProcessGameMoves() {
 		}
 
 		// We start by getting our move data, player, game and opponentPlayer.
-		var move models.Move
-		err = json.Unmarshal([]byte(moveData[1]), &move) // Extract second element
+		move, err := models.UnmarshalMove([]byte(moveData[1]), gw.GameName)
 		if err != nil {
 			logger.Default.Infof("(Process Game Moves) - JSON Unmarshal Error: %v", err)
 			continue
 		}
-		player, err := gw.RedisClient.GetPlayer(move.PlayerID)
+
+		player, err := gw.RedisClient.GetPlayer(move.GetPlayerID())
 		if err != nil {
-			player = gw.RedisClient.GetDisconnectedPlayerData(move.PlayerID)
+			player = gw.RedisClient.GetDisconnectedPlayerData(move.GetPlayerID())
 			if player == nil {
-				logger.Default.Errorf("(Process Game Moves) - failed to get data of player with id: %v", move.PlayerID)
+				logger.Default.Errorf("(Process Game Moves) - failed to get data of player with id: %v", move.GetPlayerID())
 				continue
 			}
-			logger.Default.Warnf("(Process Game Moves) - player retrieved from disconnected list: %v", move.PlayerID)
+			logger.Default.Warnf("(Process Game Moves) - player retrieved from disconnected list: %v", move.GetPlayerID())
 		}
 		game, err := gw.RedisClient.GetGame(player.GameID)
 		if err != nil {
-			logger.Default.Errorf("(Process Game Moves) - failed to get game with id: %v, from player with id: %v", player.GameID, move.PlayerID)
+			logger.Default.Errorf("(Process Game Moves) - failed to get game with id: %v, from player with id: %v", player.GameID, move.GetPlayerID())
 			continue
 		}
-		if game.CurrentPlayerID != move.PlayerID {
-			logger.Default.Errorf("(Process Game Moves) - incorrect current player to process move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.PlayerID)
+		if game.CurrentPlayerID != move.GetPlayerID() {
+			logger.Default.Errorf("(Process Game Moves) - incorrect current player to process move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
 			continue
 		}
 
-		piece, _ := game.Board.GetPieceByID(move.PieceID)
-		if !gw.ValidMove(game, move, piece) {
-			logger.Default.Errorf("(Process Game Moves) - invalid move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.PlayerID)
-			boardState, _ := messages.GenerateGameBoardState(*game)
-			msginv, _ := messages.NewMessage("invalid_move", boardState)
-			gw.RedisClient.PublishToPlayer(*player, string(msginv))
+		piece, _ := game.Board.GetPieceByID(move.GetPieceID())
+		if piece == nil {
+			logger.Default.Errorf("(Process Game Moves) - error getting piece from board, for move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
 			continue
 		}
-		// We move our piece.
-		if !game.MovePiece(move) {
-			logger.Default.Errorf("(Process Game Moves) - invalid move, board missmatch: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.PlayerID)
-			boardState, _ := messages.GenerateGameBoardState(*game)
-			msginv, _ := messages.NewMessage("invalid_move", boardState)
-			gw.RedisClient.PublishToPlayer(*player, string(msginv))
+		// delegate to the worker-specific logic
+		if err := gw.HandleMove(game, move, player, piece); err != nil {
+			logger.Default.Errorf("(Process Game Moves) - handle move error: %v", err)
 			continue
-		}
-		game.UpdatePlayerPieces()
-		move.IsKinged = game.Board.WasPieceKinged(move.To, piece)
-		if move.IsKinged {
-			piece.SetIsPieceKinged(move.IsKinged)
 		}
 
-		// We send the message to the opponent player.
-		msg, err := messages.GenerateMoveMessage(move)
-		if err != nil {
-			logger.Default.Errorf("(Process Game Moves) - failed to generate move message: %+v, from game with id: %v, from player with id: %v", move, player.GameID, move.PlayerID)
-		}
-		//log.Printf("[%s-%d] - (Process Game Moves) - Message to publish: %v\n", name, pid, string(msg))
-		opponent, _ := game.GetOpponentGamePlayer(move.PlayerID)
-		gw.RedisClient.PublishToGamePlayer(*opponent, string(msg))
-
-		// Since the move was validated and passed to the other player, its time to check for our end turn / end game conditions.
-		// This means we can add the move to our game.
-		game.Moves = append(game.Moves, move)
-
-		// We check for game Over
-		if game.CheckGameOver() {
-			logger.Default.Infof("(Process Game Moves) - determined game is over, from game with id: %v, from player with id: %v", player.GameID, move.PlayerID)
-			gw.HandleGameEnd(game, "winner", move.PlayerID)
-			continue
-		}
-		// We check for a capture.
-		if !move.IsCapture {
-			logger.Default.Infof("(Process Game Moves) - move is not a capture changing turn, from game with id: %v, from player with id: %v", player.GameID, move.PlayerID)
-			gw.HandleTurnChange(game)
-			continue
-		}
-		if move.IsCapture && !game.Board.CanPieceCaptureNEW(move.To) {
-			logger.Default.Infof("(Process Game Moves) - move is capture and cant capture any more pieces, from game with id: %v, from player with id: %v", player.GameID, move.PlayerID)
-			gw.HandleTurnChange(game)
-			continue
-		}
-		if move.IsKinged {
-			logger.Default.Infof("(Process Game Moves) - move is kinged, handling turn change, from game with id: %v, from player with id: %v", player.GameID, move.PlayerID)
-			gw.HandleTurnChange(game)
-			continue
-		}
-		gw.RedisClient.UpdateGame(game) // we update our game at the end. I guess this probably never happens
 	}
 }
 
-func (gw *GameWorker) ProcessLeaveGame() {
+func (gw *GameWorker) ProcessLeaveGameList() {
 	listName := fmt.Sprintf("leave_game:{%v}", gw.GameName)
 
 	for {
@@ -249,7 +304,7 @@ func (gw *GameWorker) ProcessLeaveGame() {
 	}
 }
 
-func (gw *GameWorker) ProcessDisconnectFromGame() {
+func (gw *GameWorker) ProcessDisconnectFromGameList() {
 	listName := fmt.Sprintf("disconnect_game:{%v}", gw.GameName)
 	for {
 		// Block until there is a game over message
@@ -274,7 +329,7 @@ func (gw *GameWorker) ProcessDisconnectFromGame() {
 }
 
 // TODO:  Review / refactor
-func (gw *GameWorker) ProcessReconnectFromGame() {
+func (gw *GameWorker) ProcessReconnectFromGameList() {
 	listName := fmt.Sprintf("reconnect_game:{%v}", gw.GameName)
 	for {
 		// Block until there is a game over message
@@ -325,46 +380,4 @@ func (gw *GameWorker) CleanUpGameDisconnectedPlayers(game models.Game) {
 		gw.RedisClient.DeleteDisconnectedPlayerSession(p2SessionId)
 		gw.RedisClient.RemovePlayer(discPlayer2.ID)
 	}
-}
-
-// Does some checks to see if the move is valid.
-//
-// TODO: This needs to be adapted acording to the game. Maybe implement it in the game object.
-func (gw *GameWorker) ValidMove(game *models.Game, move models.Move, piece models.PieceInterface) bool {
-	if piece == nil {
-		log.Println("Error: piece is nil")
-		return false
-	}
-	capturers := game.Board.PiecesThatCanCapture(game.CurrentPlayerID)
-	// If captures are available, and this piece can't capture, reject the move
-	if len(capturers) > 0 {
-		canCapture := false
-		for _, p := range capturers {
-			if p.GetID() == piece.GetID() {
-				canCapture = true
-				break
-			}
-		}
-		if !canCapture {
-			log.Println("Error: there are player pieces that can capture, must move one of those.")
-			return false
-		}
-	}
-
-	var valid bool
-	var err error
-	game.Board.PiecesThatCanCapture(game.CurrentPlayerID)
-	if piece.IsPieceKinged() {
-		valid, err = game.Board.IsValidMoveKing(move)
-	} else {
-		valid, err = game.Board.IsValidMove(move)
-	}
-	if err != nil {
-		log.Printf("Error: %v", err)
-		return false
-	}
-	if !valid {
-		return false
-	}
-	return true
 }

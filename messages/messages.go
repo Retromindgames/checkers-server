@@ -296,7 +296,7 @@ func GenerateGameOverMessage(reason string, game models.Game, winnings int64) ([
 	return NewMessage("game_over", gameover)
 }
 
-func GenerateMoveMessage(move models.Move) ([]byte, error) {
+func GenerateMoveMessage(move models.MoveInterface) ([]byte, error) {
 	return NewMessage("move_piece", move)
 }
 

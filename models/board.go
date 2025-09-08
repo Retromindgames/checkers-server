@@ -10,11 +10,10 @@ type Board interface {
 	GetPieces() []PieceInterface
 	GetGrid() map[string]PieceInterface
 	RemovePiece(pos string)
-	MovePiece(from, to string) error
 	PiecesThatCanCapture(playerID string) []PieceInterface
 	CanPieceCaptureNEW(pos string) bool
-	IsValidMoveKing(move Move) (bool, error)
-	IsValidMove(move Move) (bool, error)
+	ValidateMove(move MoveInterface, piece PieceInterface) (bool, error)
+	MovePiece(from, to string) error
 	WasPieceKinged(pos string, piece PieceInterface) bool
 }
 

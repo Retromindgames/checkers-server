@@ -174,15 +174,15 @@ func handleLeaveGame(client *Client, redis *redisdb.RedisClient) {
 }
 
 func handleMovePiece(message *messages.Message[json.RawMessage], client *Client, redis *redisdb.RedisClient) {
-	var move models.Move
-	err := json.Unmarshal([]byte(message.Value), &move)
+	var move models.MoveInterface
+	move, err := models.UnmarshalMove([]byte(message.Value), client.hub.gameName)
 	if err != nil {
 		logger.Default.Errorf("[wsapi] - handleMovePiece - JSON Unmarshal Error for session id: %v", client.player.ID)
 		msg, _ := messages.GenerateGenericMessage("invalid", "Handle Move Piece - JSON Unmarshal Error.")
 		client.send <- msg
 		return
 	}
-	if move.PlayerID != client.player.ID {
+	if move.GetPlayerID() != client.player.ID {
 		logger.Default.Errorf("[wsapi] - handleMovePiece - move.PlayerID != player.ID for session id: %v", client.player.ID)
 		msg, _ := messages.GenerateGenericMessage("invalid", "Handle Move Piece - move.PlayerID != player.ID.")
 		client.send <- msg

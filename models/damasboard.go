@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/Lavizord/checkers-server/logger"
 	"github.com/google/uuid"
 )
 
@@ -38,9 +39,9 @@ func (b *DamasBoard) GetPieces() []PieceInterface {
 func (b *DamasBoard) GetGrid() map[string]PieceInterface {
 	grid := make(map[string]PieceInterface)
 	for pos, piece := range b.Grid {
-		if piece != nil {
-			grid[pos] = piece // *DamasPiece implements PieceInterface
-		}
+		//if piece != nil {
+		grid[pos] = piece // *DamasPiece implements PieceInterface
+		//}
 	}
 	return grid
 }
@@ -230,29 +231,66 @@ func (b *DamasBoard) canKingCapture(fromRow rune, fromCol int, piece *DamasPiece
 	return false
 }
 
-func (b *DamasBoard) IsValidMove(move Move) (bool, error) {
-	piece, exists := b.Grid[move.From]
+func (b *DamasBoard) ValidateMove(move MoveInterface, piece PieceInterface) (bool, error) {
+	capturers := b.PiecesThatCanCapture(move.GetPlayerID())
+	if len(capturers) > 0 {
+		canCapture := false
+		for _, p := range capturers {
+			if p.GetID() == move.GetPlayerID() {
+				canCapture = true
+				break
+			}
+		}
+		if !canCapture {
+			errmsg := fmt.Errorf("error: there are player pieces that can capture, must move one of those")
+			logger.Default.Errorf(errmsg.Error())
+			return false, errmsg
+		}
+	}
+
+	var valid bool
+	var err error
+	if piece.IsPieceKinged() {
+		valid, err = b.IsValidMoveKing(move)
+	} else {
+		valid, err = b.IsValidMove(move)
+	}
+	if err != nil {
+		logger.Default.Errorf("Error: %v", err)
+		return false, err
+	}
+	if !valid {
+		errmsg := fmt.Errorf("move is not valid.")
+		logger.Default.Errorf(errmsg.Error())
+		return false, errmsg
+	}
+	return true, nil
+}
+
+func (b *DamasBoard) IsValidMove(move MoveInterface) (bool, error) {
+
+	piece, exists := b.Grid[move.GetFrom()]
 	if !exists || piece == nil {
 		return false, fmt.Errorf("(isValidMove) - piece does not exist at the source square")
 	}
 	// Check if the piece belongs to the player making the move
-	if piece.PlayerID != move.PlayerID {
+	if piece.PlayerID != move.GetPlayerID() {
 		return false, fmt.Errorf("(isValidMove) - piece does not belong to the player")
 	}
-	fromRow, fromCol, err := parsePosition(move.From)
+	fromRow, fromCol, err := parsePosition(move.GetFrom())
 	if err != nil {
 		return false, fmt.Errorf("(isValidMove) - invalid source position: %v", err)
 	}
-	toRow, toCol, err := parsePosition(move.To)
+	toRow, toCol, err := parsePosition(move.GetTo())
 	if err != nil {
 		return false, fmt.Errorf("(isValidMove) - invalid destination position: %v", err)
 	}
 	// Check if the destination square is empty
-	_, exists = b.Grid[move.To]
+	_, exists = b.Grid[move.GetTo()]
 	if !exists {
 		return false, fmt.Errorf("(isValidMove) - destination square doesn't exist")
 	}
-	if b.Grid[move.To] != nil {
+	if b.Grid[move.GetTo()] != nil {
 		return false, fmt.Errorf("(isValidMove) - destination square is not empty")
 	}
 	// Calculate the difference in rows and columns
@@ -268,7 +306,7 @@ func (b *DamasBoard) IsValidMove(move Move) (bool, error) {
 	// Check if the move is diagonal
 	if abs(deltaCol) != 1 || abs(deltaRow) != 1 {
 		// If it's not a single diagonal move, check if it's a capture
-		if !move.IsCapture || abs(deltaCol) != 2 || abs(deltaRow) != 2 {
+		if !move.IsCaptureMove() || abs(deltaCol) != 2 || abs(deltaRow) != 2 {
 			return false, fmt.Errorf("(isValidMove) - move is not diagonal or a valid capture")
 		}
 
@@ -277,7 +315,7 @@ func (b *DamasBoard) IsValidMove(move Move) (bool, error) {
 		captureCol := fromCol + deltaCol/2
 		captureSquare := string(captureRow) + string('0'+captureCol)
 		capturedPiece, exists := b.Grid[captureSquare]
-		if !exists || capturedPiece == nil || capturedPiece.PlayerID == move.PlayerID {
+		if !exists || capturedPiece == nil || capturedPiece.PlayerID == move.GetPlayerID() {
 			return false, fmt.Errorf("(isValidMove) - invalid capture: no opponent's piece to capture")
 		}
 	}
@@ -285,31 +323,31 @@ func (b *DamasBoard) IsValidMove(move Move) (bool, error) {
 	return true, nil
 }
 
-func (b *DamasBoard) IsValidMoveKing(move Move) (bool, error) {
-	piece, exists := b.Grid[move.From]
+func (b *DamasBoard) IsValidMoveKing(move MoveInterface) (bool, error) {
+	piece, exists := b.Grid[move.GetFrom()]
 	if !exists || piece == nil {
 		return false, fmt.Errorf("(IsValidMoveKing) - piece does not exist at source")
 	}
-	if piece.PlayerID != move.PlayerID {
+	if piece.PlayerID != move.GetPlayerID() {
 		return false, fmt.Errorf("(IsValidMoveKing) - piece does not belong to player")
 	}
 	if !piece.IsKinged {
 		return false, fmt.Errorf("(IsValidMoveKing) - piece is not kinged")
 	}
 
-	fromRow, fromCol, err := parsePosition(move.From)
+	fromRow, fromCol, err := parsePosition(move.GetFrom())
 	if err != nil {
 		return false, fmt.Errorf("(IsValidMoveKing) - invalid source: %v", err)
 	}
-	toRow, toCol, err := parsePosition(move.To)
+	toRow, toCol, err := parsePosition(move.GetTo())
 	if err != nil {
 		return false, fmt.Errorf("(IsValidMoveKing) - invalid destination: %v", err)
 	}
 
-	if _, ok := b.Grid[move.To]; !ok {
+	if _, ok := b.Grid[move.GetTo()]; !ok {
 		return false, fmt.Errorf("(IsValidMoveKing) - destination does not exist")
 	}
-	if b.Grid[move.To] != nil {
+	if b.Grid[move.GetTo()] != nil {
 		return false, fmt.Errorf("(IsValidMoveKing) - destination not empty")
 	}
 
@@ -339,7 +377,7 @@ func (b *DamasBoard) IsValidMoveKing(move Move) (bool, error) {
 		if p == nil {
 			continue
 		}
-		if p.PlayerID == move.PlayerID {
+		if p.PlayerID == move.GetPlayerID() {
 			return false, fmt.Errorf("(IsValidMoveKing) - path blocked by own piece at %v", square)
 		}
 		// This looked sketchi.
@@ -349,10 +387,10 @@ func (b *DamasBoard) IsValidMoveKing(move Move) (bool, error) {
 		enemySeen = true
 	}
 
-	if enemySeen && !move.IsCapture {
+	if enemySeen && !move.IsCaptureMove() {
 		return false, fmt.Errorf("(IsValidMoveKing) - move is a capture but not flagged as capture")
 	}
-	if !enemySeen && move.IsCapture {
+	if !enemySeen && move.IsCaptureMove() {
 		return false, fmt.Errorf("(IsValidMoveKing) - flagged as capture but no enemy on path")
 	}
 

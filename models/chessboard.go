@@ -37,9 +37,9 @@ func (b *ChessBoard) GetPieces() []PieceInterface {
 func (b *ChessBoard) GetGrid() map[string]PieceInterface {
 	grid := make(map[string]PieceInterface)
 	for pos, piece := range b.Grid {
-		if piece != nil {
-			grid[pos] = piece // *ChessPiece implements PieceInterface
-		}
+		//if piece != nil {
+		grid[pos] = piece // *ChessPiece implements PieceInterface
+		//}
 	}
 	return grid
 }
@@ -125,35 +125,39 @@ func (b *ChessBoard) GenerateMultipleCaptureTestBoard(blackID, whiteID string) {
 
 }
 
-func (b *ChessBoard) IsValidMove(move Move) (bool, error) {
+func (b *ChessBoard) ValidateMove(move MoveInterface, piece PieceInterface) (bool, error) {
 	return true, nil
 }
 
-func (b *ChessBoard) IsValidMoveKing(move Move) (bool, error) {
-	piece, exists := b.Grid[move.From]
+func (b *ChessBoard) IsValidMove(move MoveInterface) (bool, error) {
+	return true, nil
+}
+
+func (b *ChessBoard) IsValidMoveKing(move MoveInterface) (bool, error) {
+	piece, exists := b.Grid[move.GetFrom()]
 	if !exists || piece == nil {
 		return false, fmt.Errorf("(IsValidMoveKing) - piece does not exist at source")
 	}
-	if piece.PlayerID != move.PlayerID {
+	if piece.PlayerID != move.GetPlayerID() {
 		return false, fmt.Errorf("(IsValidMoveKing) - piece does not belong to player")
 	}
 	if !piece.IsPieceKinged() {
 		return false, fmt.Errorf("(IsValidMoveKing) - piece is not kinged")
 	}
 
-	fromRow, fromCol, err := parsePosition(move.From)
+	fromRow, fromCol, err := parsePosition(move.GetFrom())
 	if err != nil {
 		return false, fmt.Errorf("(IsValidMoveKing) - invalid source: %v", err)
 	}
-	toRow, toCol, err := parsePosition(move.To)
+	toRow, toCol, err := parsePosition(move.GetTo())
 	if err != nil {
 		return false, fmt.Errorf("(IsValidMoveKing) - invalid destination: %v", err)
 	}
 
-	if _, ok := b.Grid[move.To]; !ok {
+	if _, ok := b.Grid[move.GetTo()]; !ok {
 		return false, fmt.Errorf("(IsValidMoveKing) - destination does not exist")
 	}
-	if b.Grid[move.To] != nil {
+	if b.Grid[move.GetTo()] != nil {
 		return false, fmt.Errorf("(IsValidMoveKing) - destination not empty")
 	}
 
@@ -183,7 +187,7 @@ func (b *ChessBoard) IsValidMoveKing(move Move) (bool, error) {
 		if p == nil {
 			continue
 		}
-		if p.PlayerID == move.PlayerID {
+		if p.PlayerID == move.GetPlayerID() {
 			return false, fmt.Errorf("(IsValidMoveKing) - path blocked by own piece at %v", square)
 		}
 		// This looked sketchi.
@@ -193,10 +197,10 @@ func (b *ChessBoard) IsValidMoveKing(move Move) (bool, error) {
 		enemySeen = true
 	}
 
-	if enemySeen && !move.IsCapture {
+	if enemySeen && !move.IsCaptureMove() {
 		return false, fmt.Errorf("(IsValidMoveKing) - move is a capture but not flagged as capture")
 	}
-	if !enemySeen && move.IsCapture {
+	if !enemySeen && move.IsCaptureMove() {
 		return false, fmt.Errorf("(IsValidMoveKing) - flagged as capture but no enemy on path")
 	}
 
