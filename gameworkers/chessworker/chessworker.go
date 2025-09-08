@@ -1,8 +1,6 @@
 package chessworker
 
 import (
-	"fmt"
-
 	"github.com/Lavizord/checkers-server/gameworkers/gameworker"
 	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/messages"
@@ -139,5 +137,5 @@ func (dw *ChessWorker) HandleMove(game *models.Game, move models.MoveInterface, 
 	// This means we can add the move to our game.
 	game.Moves = append(game.Moves, move)
 
-	return fmt.Errorf("not implemented")
+	return nil
 }
