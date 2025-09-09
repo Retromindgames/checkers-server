@@ -99,7 +99,8 @@ func (h *Hub) CloseConnection(client *Client) {
 	}
 	if client.player.GameID != "" || client.player.Status == models.StatusInGame {
 		logger.Default.Infof("[Hub.CloseConnection] - Removed player is in a Game, sending notification to Game worker for session: %v", client.player.ID)
-		h.redis.RPush("disconnect_game", client.player)
+		listName := fmt.Sprintf("disconnect_game:{%v}", h.gameName)
+		h.redis.RPush(listName, client.player)
 	}
 	h.redis.RemovePlayer(client.player.ID)
 	delete(h.clients, client)
