@@ -46,6 +46,10 @@ func (gw *GameWorker) GetGameName() string {
 	return gw.GameName
 }
 
+// Method for handling a move message.
+//
+// Its responsible for handling the validation of the move and sending the necessary messages to
+// the players, as well as advancing the updating the game.
 func (gw *GameWorker) HandleMove(game *models.Game, move models.MoveInterface, player *models.Player, piece models.PieceInterface) error {
 	panic("HandleMove must be implemented by embedding worker")
 }
@@ -128,112 +132,15 @@ func (gw *GameWorker) ProcessGameCreationList() {
 	}
 }
 
-// Checks and processes game move messages.
-//
-//	func (gw *GameWorker) ProcessGameMovesList() {
-//		listName := fmt.Sprintf("move_piece:{%v}", gw.GameName)
-//		for {
-//			moveData, err := gw.RedisClient.BLPopGeneric(listName, 0) // Block
-//			if err != nil {
-//				logger.Default.Infof("(Process Game Moves) - Error retrieving move data: %v", err)
-//				continue
-//			}
-//
-//			// We start by getting our move data, player, game and opponentPlayer.
-//			var move models.MoveInterface
-//			err = json.Unmarshal([]byte(moveData[1]), &move) // Extract second element
-//			if err != nil {
-//				logger.Default.Infof("(Process Game Moves) - JSON Unmarshal Error: %v", err)
-//				continue
-//			}
-//			player, err := gw.RedisClient.GetPlayer(move.GetPlayerID())
-//			if err != nil {
-//				player = gw.RedisClient.GetDisconnectedPlayerData(move.GetPlayerID())
-//				if player == nil {
-//					logger.Default.Errorf("(Process Game Moves) - failed to get data of player with id: %v", move.GetPlayerID())
-//					continue
-//				}
-//				logger.Default.Warnf("(Process Game Moves) - player retrieved from disconnected list: %v", move.GetPlayerID())
-//			}
-//			game, err := gw.RedisClient.GetGame(player.GameID)
-//			if err != nil {
-//				logger.Default.Errorf("(Process Game Moves) - failed to get game with id: %v, from player with id: %v", player.GameID, move.GetPlayerID())
-//				continue
-//			}
-//			if game.CurrentPlayerID != move.GetPlayerID() {
-//				logger.Default.Errorf("(Process Game Moves) - incorrect current player to process move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
-//				continue
-//			}
-//
-//			piece, _ := game.Board.GetPieceByID(move.GetPieceID())
-//			if piece == nil {
-//				logger.Default.Errorf("(Process Game Moves) - error getting piece from board, for move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
-//				continue
-//			}
-//			_, err = game.Board.ValidateMove(move, piece)
-//			if err != nil {
-//				logger.Default.Errorf("(Process Game Moves) - invalid move: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
-//				boardState, _ := messages.GenerateGameBoardState(*game)
-//				msginv, _ := messages.NewMessage("invalid_move", boardState)
-//				gw.RedisClient.PublishToPlayer(*player, string(msginv))
-//				continue
-//			}
-//			// We move our piece.
-//			if !game.MovePiece(move) {
-//				logger.Default.Errorf("(Process Game Moves) - invalid move, board missmatch: %+v from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
-//				boardState, _ := messages.GenerateGameBoardState(*game)
-//				msginv, _ := messages.NewMessage("invalid_move", boardState)
-//				gw.RedisClient.PublishToPlayer(*player, string(msginv))
-//				continue
-//			}
-//			game.UpdatePlayerPieces()
-//			move.SetIsKingedMove(game.Board.WasPieceKinged(move.GetTo(), piece))
-//			if move.IsKingedMove() {
-//				piece.SetIsPieceKinged(move.IsKingedMove())
-//			}
-//
-//			// We send the message to the opponent player.
-//			msg, err := messages.GenerateMoveMessage(move)
-//			if err != nil {
-//				logger.Default.Errorf("(Process Game Moves) - failed to generate move message: %+v, from game with id: %v, from player with id: %v", move, player.GameID, move.GetPlayerID())
-//			}
-//			//log.Printf("[%s-%d] - (Process Game Moves) - Message to publish: %v\n", name, pid, string(msg))
-//			opponent, _ := game.GetOpponentGamePlayer(move.GetPlayerID())
-//			gw.RedisClient.PublishToGamePlayer(*opponent, string(msg))
-//
-//			// Since the move was validated and passed to the other player, its time to check for our end turn / end game conditions.
-//			// This means we can add the move to our game.
-//			game.Moves = append(game.Moves, move)
-//
-//			// We check for game Over
-//			if game.CheckGameOver() {
-//				logger.Default.Infof("(Process Game Moves) - determined game is over, from game with id: %v, from player with id: %v", player.GameID, move.GetPlayerID())
-//				gw.HandleGameEnd(game, "winner", move.GetPlayerID())
-//				continue
-//			}
-//			// We check for a capture.
-//			if !move.IsCaptureMove() {
-//				logger.Default.Infof("(Process Game Moves) - move is not a capture changing turn, from game with id: %v, from player with id: %v", player.GameID, move.GetPlayerID())
-//				gw.HandleTurnChange(game)
-//				continue
-//			}
-//			if move.IsCaptureMove() && !game.Board.CanPieceCaptureNEW(move.GetTo()) {
-//				logger.Default.Infof("(Process Game Moves) - move is capture and cant capture any more pieces, from game with id: %v, from player with id: %v", player.GameID, move.GetPlayerID())
-//				gw.HandleTurnChange(game)
-//				continue
-//			}
-//			if move.IsKingedMove() {
-//				logger.Default.Infof("(Process Game Moves) - move is kinged, handling turn change, from game with id: %v, from player with id: %v", player.GameID, move.GetPlayerID())
-//				gw.HandleTurnChange(game)
-//				continue
-//			}
-//			gw.RedisClient.UpdateGame(game) // we update our game at the end. I guess this probably never happens
-//		}
-//	}
+// Abstracting the games moves to be able to pass it the game worker.
 func (gw *GameWorker) ProcessGameMovesList() {
 	gw.ProcessMovesLoop(gw)
 }
 
+// Shared method to process the moves of the redis list.
+//
+// Does all the preliminary data validation, and calles the Worker.HandleMove, to
+// process the move within the game-
 func (gw *GameWorker) ProcessMovesLoop(w Worker) {
 	listName := fmt.Sprintf("move_piece:{%v}", gw.GameName)
 	for {
@@ -333,7 +240,6 @@ func (gw *GameWorker) ProcessDisconnectFromGameList() {
 	}
 }
 
-// TODO:  Review / refactor
 func (gw *GameWorker) ProcessReconnectFromGameList() {
 	listName := fmt.Sprintf("reconnect_game:{%v}", gw.GameName)
 	for {

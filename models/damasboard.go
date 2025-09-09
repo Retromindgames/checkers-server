@@ -236,7 +236,7 @@ func (b *DamasBoard) ValidateMove(move MoveInterface, piece PieceInterface) (boo
 	if len(capturers) > 0 {
 		canCapture := false
 		for _, p := range capturers {
-			if p.GetID() == move.GetPlayerID() {
+			if p.GetPlayerID() == move.GetPlayerID() {
 				canCapture = true
 				break
 			}

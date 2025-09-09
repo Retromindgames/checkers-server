@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Lavizord/checkers-server/config"
+	"github.com/Lavizord/checkers-server/logger"
 )
 
 type GamePlayer struct {
@@ -336,8 +337,22 @@ func (g *Game) MovePiece(move MoveInterface) bool {
 
 	// Validate move
 	piece, exists := g.Board.GetPiece(move.GetFrom())
-	if !exists || piece == nil || piece.GetID() != move.GetPieceID() || piece.GetID() != move.GetPlayerID() {
-		// Invalid move, update and break
+	if !exists {
+		logger.Default.Warnf("invalid move: no piece exists at position %v", move.GetFrom())
+		return false
+	}
+	if piece == nil {
+		logger.Default.Warnf("invalid move: piece at %v is nil", move.GetFrom())
+		return false
+	}
+	if piece.GetID() != move.GetPieceID() {
+		logger.Default.Warnf("invalid move: piece ID %v != move piece ID %v",
+			piece.GetID(), move.GetPieceID())
+		return false
+	}
+	if piece.GetPlayerID() != move.GetPlayerID() {
+		logger.Default.Warnf("invalid move: piece ID %v does not belong to player %v",
+			piece.GetID(), move.GetPlayerID())
 		return false
 	}
 
