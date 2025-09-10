@@ -7,14 +7,14 @@ services:
     volumes:
       - ./nginx-local.conf:/etc/nginx/nginx.conf  # Use local NGINX config
     depends_on:
-      - wsapi
+      - wsapi-checkers
+      - wsapi-chess
       - restapi
     networks:
       - app-network
 
-  # Other services remain unchanged
-  wsapi:
-    container_name: wsapi
+  wsapi-checkers:
+    container_name: wsapi-checkers
     build:
       context: .
       dockerfile: serverws.dockerfile
@@ -22,6 +22,22 @@ services:
       - "80" 
     environment:
       - CONFIG_PATH=/root/config/config.json
+      - GAME_ENGINE=BatalhaDasDamas
+    depends_on:
+      - redis
+    networks:
+      - app-network
+  
+  wsapi-chess:
+    container_name: wsapi-chess
+    build:
+      context: .
+      dockerfile: serverws.dockerfile
+    expose:
+      - "80" 
+    environment:
+      - CONFIG_PATH=/root/config/config.json
+      - GAME_ENGINE=BatalhaDoChess
     depends_on:
       - redis
     networks:
@@ -40,43 +56,49 @@ services:
       - redis
       - postgres
 
-  #loginworker:
-  #  container_name: loginworker
-  #  build:
-  #    context: .
-  #    dockerfile: loginworker.dockerfile
-  #  expose:
-  #    - "8081"  # Expose port 8081 internally
-  #  networks:
-  #    - app-network
-  #  depends_on:
-  #    - postgres
-
-  #pstatusworker:
-  #  container_name: pstatusworker
-  #  build:
-  #    context: .
-  #    dockerfile: pstatusworker.dockerfile
-  #  depends_on:
-  #    - redis
-  #  networks:
-  #    - app-network
-
-  roomworker:
-    container_name: roomworker
+  roomworker-chess:
+    container_name: roomworker-chess
     build:
       context: .
       dockerfile: roomworker.dockerfile
     depends_on:
       - redis
+    environment:
+      GAME_ENGINE: "BatalhaDoChess"
+    networks:
+      - app-network
+  
+  roomworker-checkers:
+    container_name: roomworker-checkers
+    build:
+      context: .
+      dockerfile: roomworker.dockerfile
+    depends_on:
+      - redis
+    environment:
+      GAME_ENGINE: "BatalhaDasDamas"
     networks:
       - app-network
 
-  broadcastworker:
-    container_name: broadcastworker
+  broadcastworker-chess:
+    container_name: broadcastworker-chess
     build:
       context: .
       dockerfile: broadcastworker.dockerfile
+    environment:
+      GAME_ENGINE: "BatalhaDoChess"
+    depends_on:
+      - redis
+    networks:
+      - app-network
+  
+  broadcastworker-checkers:
+    container_name: broadcastworker-checkers
+    build:
+      context: .
+      dockerfile: broadcastworker.dockerfile
+    environment:
+      GAME_ENGINE: "BatalhaDasDamas"
     depends_on:
       - redis
     networks:

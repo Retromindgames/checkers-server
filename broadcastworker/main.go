@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/Lavizord/checkers-server/config"
@@ -34,25 +36,23 @@ func main() {
 		}
 	}()
 
+	logger.Default.Infof("creating gameworker...")
+	gameEngine := os.Getenv("GAME_ENGINE")
+	if gameEngine == "" {
+		logger.Default.Fatalf("no GAME_ENGINE env variable defined, exiting")
+	}
+
 	logger.Default.Infof("broadcastworker loaded timer configuration...")
 	for range ticker.C {
-		keyCheckers := "game_info:{BatalhaDasDamas}"
-		keyChess := "game_info:{BatalhaDoChess}"
-		msg, _ := messages.GenerateGameInfoMessageBytes(redisClient, "BatalhaDasDamas")
-		// Publish the message
-		err := redisClient.Publish(keyCheckers, msg)
+		key := fmt.Sprintf("game_info:{%v}", gameEngine)
+
+		msgChess, _ := messages.GenerateGameInfoMessageBytes(redisClient, gameEngine)
+		err := redisClient.Publish(key, msgChess)
 		if err != nil {
 			log.Printf("[BroadcastWorker] Error publishing message: %v\n", err)
 		} else {
 			//log.Printf("[BroadcastWorker] Published room aggregates")
 		}
 
-		msgChess, _ := messages.GenerateGameInfoMessageBytes(redisClient, "BatalhaDoChess")
-		err = redisClient.Publish(keyChess, msgChess)
-		if err != nil {
-			log.Printf("[BroadcastWorker] Error publishing message: %v\n", err)
-		} else {
-			//log.Printf("[BroadcastWorker] Published room aggregates")
-		}
 	}
 }

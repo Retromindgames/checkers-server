@@ -41,18 +41,21 @@ func init() {
 
 func main() {
 	logger.Default.Info("Waiting for room messages...")
-
 	defer func() {
 		if redisClient != nil {
 			redisClient.CloseRedisClient()
 		}
 	}()
 
-	workerCheckers := NewRoomWorker(redisClient, "BatalhaDasDamas", models.DamasValidBetAmounts)
-	workerChess := NewRoomWorker(redisClient, "BatalhaDoChess", models.DamasValidBetAmounts)
+	gameEngine := os.Getenv("GAME_ENGINE")
+	if gameEngine == "" {
+		logger.Default.Fatalf("no GAME_ENGINE env variable defined, exiting")
+	}
 
-	workerChess.Run()
-	workerCheckers.Run()
+	worker := NewRoomWorker(redisClient, gameEngine, models.DamasValidBetAmounts)
+
+	worker.Run()
+	//workerCheckers.Run()
 
 	select {}
 }

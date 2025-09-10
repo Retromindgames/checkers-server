@@ -2,7 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/Lavizord/checkers-server/config"
 	"github.com/Lavizord/checkers-server/logger"
@@ -12,32 +14,32 @@ var addr = flag.String("addr", ":80", "http service address")
 
 func main() {
 
+	gameEngine := os.Getenv("GAME_ENGINE")
+	if gameEngine == "" {
+		logger.Default.Fatalf("no GAME_ENGINE env variable defined, exiting")
+	}
+	urlSufix := os.Getenv("WS_URL_SUFFIX")
+	if gameEngine == "" {
+		logger.Default.Fatalf("no GAME_ENGINE env variable defined, exiting")
+	}
 	config.LoadConfig()
 	redisConfig := config.Cfg.Redis
 
-	http.HandleFunc("/ws/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-
 	flag.Parse()
-	hubCheckers := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password, redisConfig.Tls, "BatalhaDasDamas")
-	hubChess := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password, redisConfig.Tls, "BatalhaDoChess")
+	hub := newHub(redisConfig.Addr, redisConfig.User, redisConfig.Password, redisConfig.Tls, gameEngine)
 	defer func() {
-		hubCheckers.Close() // close Redis on exit
-		hubChess.Close()
+		hub.Close()
 	}()
-	go hubCheckers.run()
-	go hubChess.run()
+	go hub.run()
 
 	// we subscribe to our redis broadcast channel.
-	hubCheckers.SubscribeBroadcast()
-	hubChess.SubscribeBroadcast()
-
-	http.HandleFunc("/ws/checkers", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(hubCheckers, w, r)
+	hub.SubscribeBroadcast()
+	url := fmt.Sprintf("/ws/%s", urlSufix)
+	http.HandleFunc(url, func(w http.ResponseWriter, r *http.Request) {
+		serveWs(hub, w, r)
 	})
-	http.HandleFunc("/ws/chess", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(hubChess, w, r)
+	http.HandleFunc("/ws/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
 	})
 
 	err := http.ListenAndServe(*addr, nil)
