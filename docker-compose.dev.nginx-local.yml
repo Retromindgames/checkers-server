@@ -23,6 +23,7 @@ services:
     environment:
       - CONFIG_PATH=/root/config/config.json
       - GAME_ENGINE=BatalhaDasDamas
+      - WS_URL_SUFFIX=checkers
     depends_on:
       - redis
     networks:
@@ -38,6 +39,7 @@ services:
     environment:
       - CONFIG_PATH=/root/config/config.json
       - GAME_ENGINE=BatalhaDoChess
+      - WS_URL_SUFFIX=chess
     depends_on:
       - redis
     networks:
