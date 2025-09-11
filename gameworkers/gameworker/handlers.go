@@ -1,8 +1,6 @@
 package gameworker
 
 import (
-	"log"
-
 	"github.com/Lavizord/checkers-server/interfaces"
 	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/messages"
@@ -20,27 +18,24 @@ func (gw *GameWorker) HandleGameEnd(game *models.Game, reason string, winnerID s
 	winAmount := interfaces.CalculateWinAmount(int64(game.BetValue*100), game.OperatorIdentifier.WinFactor)
 	gameOverMsg, err := messages.GenerateGameOverMessage(reason, *game, winAmount)
 	if err != nil {
-		logger.Default.Errorf("[gameworker] - (Handle Game Over) - Failed to generate game over message!: %v", err)
+		logger.Default.Errorf("[gameworker] - (Handle Game Over) - Failed to generate game over message, for game: %v, with player1 session: %v and player2 session: %v, with err: %v", game.ID, game.Players[0].SessionID, game.Players[1].SessionID, err)
 		return
 	}
 	p1 := game.Players[0]
 	p2 := game.Players[1]
-	go gw.CleanUpGameDisconnectedPlayers(*game) // This was at the end, was moved up here, might make the reconect when the game is over more smooth...?
+	go gw.CleanUpGameDisconnectedPlayers(*game)
 	go gw.HandleGameEndForPlayer(winnerID, game, p1, reason, winAmount, gameOverMsg)
 	go gw.HandleGameEndForPlayer(winnerID, game, p2, reason, winAmount, gameOverMsg)
 
 	// since the game is Over, we remove it from redis.
 	if gw.RedisClient.RemoveGame(game.ID) != nil {
-		log.Printf("[gameworker] - (Handle Game Over) - Failed to remove game!: %v", err)
-	} else {
-		log.Printf("[gameworker] - (Handle Game Over) - Removed game!: %v", err)
+		logger.Default.Errorf("failed to remove game with id: %s, for player 1 with session id: %v and player 2 with session id: %s, from redis, with err: %v", game.ID, game.Players[0].SessionID, game.Players[1].SessionID, err)
 	}
 	go gw.Db.SaveGame(*game, reason)
 }
 
 func (gw *GameWorker) HandleGameEndForPlayer(winnerID string, game *models.Game, gamePlayer models.GamePlayer, reason string, winAmount int64, gameOverMsg []byte) {
-	var interfaceModule interfaces.OperatorInterface
-	interfaceModule = interfaces.OperatorModules[game.OperatorIdentifier.OperatorName]
+	interfaceModule := interfaces.OperatorModules[game.OperatorIdentifier.OperatorName]
 	var balanceUpdateMsg []byte
 
 	// 1. The Winner needs to have a post to the wallet.
@@ -48,18 +43,18 @@ func (gw *GameWorker) HandleGameEndForPlayer(winnerID string, game *models.Game,
 		// Get the session from the ID, since they share the same ID.
 		winnerSession, err := gw.RedisClient.GetSessionByID(winnerID)
 		if err != nil {
-			log.Printf("[GameWorker] - error -> handleGameEnd - HandleGameEndForPlayer: fetching winner player session:%s\n", err)
+			logger.Default.Errorf("failed to fetch the winner player session for game with id: %s, for player 1 with session id: %v and player 2 with session id: %s, from redis, with err: %v", game.ID, game.Players[0].SessionID, game.Players[1].SessionID, err)
 			return
 		}
 		if winnerSession == nil {
-			log.Printf("[GameWorker] - error -> handleGameEnd - HandleGameEndForPlayer: session id is nill!:%s\n", err)
+			logger.Default.Errorf("session id of the winner is nil for game with id: %s, for player 1 with session id: %v and player 2 with session id: %s, from redis, with err: %v", game.ID, game.Players[0].SessionID, game.Players[1].SessionID, err)
 			return
 		}
 		// we use our winner session here, because this way the winner will be payed out even if offline.
 		var newBalance int64
 		newBalance, _, err = interfaceModule.HandlePostWin(gw.Db, gw.RedisClient, *winnerSession, int64(game.BetValue*100), game.ID)
 		if err != nil {
-			log.Printf("[GameWorker] - Error posting the win :%s\n", err)
+			logger.Default.Errorf("error posting the win to the api, for session: %s, for game with id: %s, for player 1 with session id: %v and player 2 with session id: %s, from redis, with err: %v", winnerSession, game.ID, game.Players[0].SessionID, game.Players[1].SessionID, err)
 		} else {
 			// We then generate the balance update message and send it over to the game Player. The player can be offline, but I guess the message just wont get delivered.
 			// I could try to fetch the player from redis...? Is it worth it?... I fetch the player down the line...
@@ -71,11 +66,11 @@ func (gw *GameWorker) HandleGameEndForPlayer(winnerID string, game *models.Game,
 	// 2. Update player data, if it exists. If not prolly offline.
 	player, err := gw.RedisClient.GetPlayer(gamePlayer.ID)
 	if err != nil {
-		log.Printf("(Handle Game Over) - processGameEndForPlayer - Failed to get player!: %v", err)
+		logger.Default.Warnf("failed to get player to update data to redis, player with id: %s, for game with id: %s, for player 1 with session id: %v and player 2 with session id: %s, from redis, with err: %v", gamePlayer.ID, game.ID, game.Players[0].SessionID, game.Players[1].SessionID, err)
 		return
 	}
 	if player == nil {
-		log.Printf("(Handle Game Over) - processGameEndForPlayer - player is nill !: %v", err)
+		logger.Default.Warnf("player to update data to redis is nil, player with id: %s, for game with id: %s, for player 1 with session id: %v and player 2 with session id: %s, from redis", gamePlayer.ID, game.ID, game.Players[0].SessionID, game.Players[1].SessionID)
 		return
 	}
 	player.GameID = ""
@@ -90,7 +85,7 @@ func (gw *GameWorker) HandleTurnChange(game *models.Game) {
 	gw.RedisClient.UpdateGame(game)
 	msg, err := messages.NewMessage("turn_switch", game.CurrentPlayerID)
 	if err != nil {
-		log.Printf("(Handle Turn Change) - Failed to generate for turn change: %v", msg)
+		logger.Default.Errorf("failed to generate turn_swith message for game with id: %s, for player 1 with session id: %s, and player 2 with session id:%s from redis, with err: %v", game.ID, game.Players[0].SessionID, game.Players[1].SessionID, err)
 	}
 	gw.BroadCastToGamePlayers(msg, *game)
 	gw.PublishSwitchToTimerChannel(game.ID) // Start a fresh timer or switch player timer.
