@@ -7,8 +7,6 @@ import (
 	"github.com/Lavizord/checkers-server/models"
 )
 
-// TODO: The logs in here should be reviewed. More info and logger.Default..
-
 func (gw *GameWorker) HandleGameEnd(game *models.Game, reason string, winnerID string) {
 	//log.Printf("Handling Game End for game [%v] - reason: [%v]", game.ID, reason)
 
