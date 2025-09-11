@@ -356,7 +356,7 @@ func (g *Game) MovePiece(move MoveInterface) bool {
 		return false
 	}
 
-	// Move piece to new position // TODO: This is new code. Handle error, check it works.
+	// Move piece to new position
 	g.Board.MovePiece(move.GetFrom(), move.GetTo())
 
 	// Handle capture
