@@ -89,7 +89,7 @@ func (r *RedisClient) GetQueueNumberResponse(gameName string) (*models.QueueNumb
 				continue
 			}
 
-			games, _ := r.CountGamesByBetValue(aggregateValue)
+			games, _ := r.CountGamesByBetValue(aggregateValue, gameName)
 			playerCount = append(playerCount, models.PlayerCountPerBetValue{
 				BetValue:    aggregateValue,
 				PlayerCount: count + (games * 2),

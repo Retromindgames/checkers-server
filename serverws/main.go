@@ -19,7 +19,7 @@ func main() {
 		logger.Default.Fatalf("no GAME_ENGINE env variable defined, exiting")
 	}
 	urlSufix := os.Getenv("WS_URL_SUFFIX")
-	if gameEngine == "" {
+	if urlSufix == "" {
 		logger.Default.Fatalf("no GAME_ENGINE env variable defined, exiting")
 	}
 	config.LoadConfig()
