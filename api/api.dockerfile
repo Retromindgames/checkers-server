@@ -9,7 +9,7 @@ COPY go.mod go.sum /app/
 COPY messages /app/messages
 COPY models /app/models
 COPY logger /app/logger
-COPY interfaces /app/interfaces
+COPY platforminterfaces /app/platforminterfaces
 COPY config /app/config
 COPY postgrescli /app/postgrescli
 COPY redisdb /app/redisdb

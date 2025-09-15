@@ -1,7 +1,6 @@
-package interfaces
+package platforminterfaces
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -17,9 +16,9 @@ import (
 // PlatformInterface defines the interface for platform-specific code
 type PlatformInterface interface {
 	HandleGameLaunch(w http.ResponseWriter, r *http.Request, req models.GameLaunchRequest, gc *models.GameConfigDTO, rc *redisdb.RedisClient, pgs *postgrescli.PostgresCli)
-	HandleFetchWalletBalance(s models.Session, rc *redisdb.RedisClient) (int64, error)
-	HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, error)
-	HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, betValue int64, gameID string) (int64, int64, error)
+	HandleFetchWalletBalance(s models.Session, gc *models.GameConfigDTO, rc *redisdb.RedisClient) (int, error)
+	HandlePostBet(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, gc *models.GameConfigDTO, betAmount int, roundID string) (int, error)
+	HandlePostWin(pgs *postgrescli.PostgresCli, rc *redisdb.RedisClient, session models.Session, gc *models.GameConfigDTO, betAmount int, roundID string) (int, int, error)
 }
 
 // PlatformModules maps platforms names to their respective modules
@@ -33,56 +32,6 @@ type SokkerDuelModule struct{}
 
 // TestModule handles requests for test accounts
 type TestModule struct{}
-
-// Helper function to save failed transactions
-func saveFailedBetTransaction(pgs *postgrescli.PostgresCli, session models.Session, betData models.SokkerDuelBet, apiError error, gameID string) error {
-	ctx := context.Background()
-	_, err := pgs.EntCli.Transaction.
-		Create().
-		SetType("bet").
-		SetAmount(int(betData.Amount)).
-		SetCurrency(session.Currency).
-		SetPlatform(session.).
-		SetOperator(session.).
-		SetClient(session.).
-		SetGame(session.).
-		SetStatus().
-		SetDescription().
-		SetMathProfile("").
-		SetDenominator().
-		SetFinalBalance().
-		SetSeqID().
-		SetMultiplier().
-		SetGameService("PLACEHOLDER").
-		SetToken(session.Token).
-		SetOriginalAmount().
-		Save(ctx)
-
-	if err != nil {
-		log.Printf("[PostgresCli] - error saving session: %v", err)
-		return fmt.Errorf("ent: save session: %w", err)
-	}
-	return nil
-}
-
-func saveFailedWinTransaction(pgs *postgrescli.PostgresCli, session models.Session, winData models.SokkerDuelWin, apiError error, gameID string) error {
-	trans := models.Transaction{
-		ID:        winData.TransactionID,
-		SessionID: session.ID,
-		Type:      "win",
-		Amount:    winData.Amount,
-		Currency:  session.Currency,
-		Platform:  "sokkerpro",
-		Operator:  "SokkerDuel",
-		Client:    session.PlayerName,
-		//Game:        session.OperatorIdentifier.GameName,
-		RoundID:     gameID,
-		Timestamp:   time.Now(),
-		Status:      "error",
-		Description: apiError.Error(),
-	}
-	return pgs.SaveTransaction(trans)
-}
 
 func generateGameURL(baseURL, token, sessionID, currency string) (string, error) {
 	// Parse the base URL
@@ -174,7 +123,7 @@ func CalculateWinAmount(betValue int64, winFactor float64) int64 {
 }
 
 func handleSaveSession(session *models.Session, pgs *postgrescli.PostgresCli) {
-	err := pgs.SaveSession(*session)
+	err := pgs.SaveSession(*session) // TODO: FINISH THIS TO CLOSE THE API INTERFACE
 	if err != nil {
 		return
 	}

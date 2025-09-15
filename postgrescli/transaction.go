@@ -8,28 +8,27 @@ import (
 	"github.com/Lavizord/checkers-server/models"
 )
 
-
-func (pc *PostgresCli) SaveTransaction(session models.Session, betData models.SokkerDuelBet, apiError error, gameID string) error {
+func (pc *PostgresCli) SaveTransaction(session models.Session, gc models.GameConfigDTO, apiError error, tranType string, status, betAmount, originalAmount, finalBalance int) error {
 	ctx := context.Background()
-	_, err := pgs.EntCli.Transaction.
+	_, err := pc.EntCli.Transaction.
 		Create().
-		SetType("bet").
-		SetAmount(int(betData.Amount)).
+		SetType(tranType).
+		SetAmount(betAmount).
 		SetCurrency(session.Currency).
-		SetPlatform(session.).
-		SetOperator(session.).
-		SetClient(session.).
-		SetGame(session.).
-		SetStatus().
-		SetDescription().
-		SetMathProfile("").
-		SetDenominator().
-		SetFinalBalance().
-		SetSeqID().
-		SetMultiplier().
-		SetGameService("PLACEHOLDER").
+		SetPlatform(session.PlatformName).
+		SetOperator(session.OperatorName).
+		SetClient(session.ClientID).
+		SetGame(gc.GameName).
+		SetStatus(status).
+		SetDescription(apiError.Error()).
+		SetMathProfile("PLACEHOLDER").
+		SetDenominator(gc.CurrencyDenominator).
+		SetFinalBalance(finalBalance).
+		SetSeqID(0).
+		SetMultiplier(gc.CurrencyDefaultMultiplier).
+		SetGameService(nil).
 		SetToken(session.Token).
-		SetOriginalAmount().
+		SetOriginalAmount(originalAmount).
 		Save(ctx)
 
 	if err != nil {

@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Lavizord/checkers-server/interfaces"
 	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/platforminterfaces"
 	"github.com/Lavizord/checkers-server/postgrescli"
 	"github.com/Lavizord/checkers-server/redisdb"
 )
@@ -45,7 +45,7 @@ func GameLaunchHandler(postgresClient *postgrescli.PostgresCli, redisClient *red
 			redisClient.AddGameConfig(config)
 		}
 
-		module, exists := interfaces.PlatformModules[config.PlatformName]
+		module, exists := platforminterfaces.PlatformModules[config.PlatformName]
 		if !exists {
 			respondWithJSON(w, http.StatusBadRequest, models.GameLaunchResponse{
 				Success: false,

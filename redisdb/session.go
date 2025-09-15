@@ -36,7 +36,7 @@ func (r *RedisClient) AddSession(session *models.Session) error {
 	indexKey := fmt.Sprintf("session_index:%s:%s:%s:%s",
 		hashTag, // hash tag for index key
 		//session.OperatorIdentifier.OperatorName,
-		session.PlayerName,
+		session.ClientID,
 		session.Currency,
 	)
 
@@ -45,7 +45,7 @@ func (r *RedisClient) AddSession(session *models.Session) error {
 	pipe.HSet(ctx, sessionKey, map[string]interface{}{
 		"id":          session.ID,
 		"token":       session.Token,
-		"player_name": session.PlayerName,
+		"player_name": session.ClientID,
 		"currency":    session.Currency,
 		//"operator_identifier": string(operatorIdentifierData),
 		"operator_base_url": session.OperatorBaseUrl,
@@ -201,7 +201,7 @@ func (r *RedisClient) RefreshSessionTTL(session *models.Session, ttl time.Durati
 	indexKey := fmt.Sprintf("session_index:%s:%s:%s:%s",
 		hashTag,
 		//session.OperatorIdentifier.OperatorName,
-		session.PlayerName,
+		session.ClientID,
 		session.Currency,
 	)
 

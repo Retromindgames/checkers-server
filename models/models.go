@@ -35,6 +35,9 @@ type Session struct {
 	ClientID          string    `json:"client_id"`
 	Demo              bool      `json:"demo"`
 	OperatorID        int       `json:"operator_id"`
+	OperatorName      string    `json:"operator_name"`
+	PlatformID        int       `json:"platform_id"`
+	PlatformName      string    `json:"platform_name"`
 	GameID            int       `json:"game_id"`
 	GameVersionID     int       `json:"game_version_id"`
 	MathVersionID     int       `json:"math_version_id"`
@@ -42,7 +45,7 @@ type Session struct {
 	Currency          string    `json:"currency"`
 	CreatedAt         time.Time `json:"created_at"`
 	DeletedAt         time.Time `json:"deleted_at"`
-	ExtractID         int64     `json:"extract_id"` // This was created to store the extract ID of a bet, so that we can later use it in the win post...
+	ExtractID         int       `json:"extract_id"` // This was created to store the extract ID of a bet, so that we can later use it in the win post...
 }
 
 func (s *Session) IsTokenExpired() bool {

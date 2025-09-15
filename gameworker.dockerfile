@@ -10,7 +10,7 @@ COPY messages /app/messages
 COPY gameworkers /app/gameworkers
 COPY models /app/models
 COPY logger /app/logger
-COPY interfaces /app/interfaces
+COPY platforminterfaces /app/platforminterfaces
 COPY walletrequests /app/walletrequests
 COPY config /app/config
 COPY postgrescli /app/postgrescli

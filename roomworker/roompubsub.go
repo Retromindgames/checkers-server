@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Lavizord/checkers-server/interfaces"
 	"github.com/Lavizord/checkers-server/messages"
 	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/platforminterfaces"
 	"github.com/Lavizord/checkers-server/redisdb"
 )
 
@@ -85,7 +85,7 @@ func (rw *RoomWorker) ListenRoom(ctx context.Context, rdb *redisdb.RedisClient, 
 					playerID := strings.TrimPrefix(msg.Payload, "player_reconnect:")
 					opponent, _ := room.GetOpponentPlayer(playerID)
 					player, _ := room.GetOpponentPlayer(opponent.ID)
-					outBoundMsg, _ := messages.GeneratePairedMessage(player, opponent, room.ID, room.DeducePlayerColor(playerID), interfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor), countdown)
+					outBoundMsg, _ := messages.GeneratePairedMessage(player, opponent, room.ID, room.DeducePlayerColor(playerID), platforminterfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor), countdown)
 					rdb.PublishToPlayerID(playerID, string(outBoundMsg))
 				}
 
