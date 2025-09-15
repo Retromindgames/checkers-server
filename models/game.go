@@ -1,26 +1,14 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
 	"github.com/Lavizord/checkers-server/config"
-
-	"github.com/google/uuid"
+	"github.com/Lavizord/checkers-server/logger"
 )
-
-type Piece struct {
-	Type     string `json:"type"`
-	PlayerID string `json:"player_id"`
-	IsKinged bool   `json:"is_kinged"`
-	PieceID  string `json:"piece_id"`
-}
-
-func getPieceUUID() *string {
-	id := uuid.New().String()
-	return &id
-}
 
 type GamePlayer struct {
 	ID        string `json:"id"`
@@ -33,28 +21,145 @@ type GamePlayer struct {
 }
 
 type Game struct {
-	ID              string       `json:"id"`
-	Board           Board        `json:"board"`
-	Players         []GamePlayer `json:"players"`
-	CurrentPlayerID string       `json:"current_player_id"`
-	Turn            int          `json:"turn"`
-	Moves           []Move       `json:"moves"`
-	StartTime       time.Time    `json:"start_time"`
-	EndTime         time.Time    `json:"end_time"`
-	Winner          string       `json:"winner"`
-	BetValue        float64      `json:"bet_value"` // Bet amount for the game
-	TimerSetting    string       `json:"timer_settings"`
+	ID              string          `json:"id"`
+	Board           Board           `json:"board"`
+	Players         []GamePlayer    `json:"players"`
+	CurrentPlayerID string          `json:"current_player_id"`
+	Turn            int             `json:"turn"`
+	Moves           []MoveInterface `json:"moves"`
+	StartTime       time.Time       `json:"start_time"`
+	EndTime         time.Time       `json:"end_time"`
+	Winner          string          `json:"winner"`
+	BetValue        float64         `json:"bet_value"` // Bet amount for the game
+	TimerSetting    string          `json:"timer_settings"`
 	//OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
 }
 
-// Move represents a single move in the game
+type rawGame struct {
+	ID                 string             `json:"id"`
+	Board              json.RawMessage    `json:"board"`
+	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
+	Players            []GamePlayer       `json:"players"`
+	CurrentPlayerID    string             `json:"current_player_id"`
+	Turn               int                `json:"turn"`
+	Moves              []json.RawMessage  `json:"moves"` // raw moves
+	StartTime          time.Time          `json:"start_time"`
+	EndTime            time.Time          `json:"end_time"`
+	Winner             string             `json:"winner"`
+	BetValue           float64            `json:"bet_value"`
+	TimerSettings      string             `json:"timer_settings"`
+}
+
+func UnmarshalGame(data []byte) (*Game, error) {
+	var rg rawGame
+	if err := json.Unmarshal(data, &rg); err != nil {
+		return nil, err
+	}
+
+	var board Board
+	switch rg.OperatorIdentifier.GameName {
+	case "BatalhaDoChess":
+		var cb ChessBoard
+		if err := json.Unmarshal(rg.Board, &cb); err != nil {
+			return nil, err
+		}
+		board = &cb
+	case "BatalhaDasDamas":
+		var db DamasBoard
+		if err := json.Unmarshal(rg.Board, &db); err != nil {
+			return nil, err
+		}
+		board = &db
+	default:
+		return nil, fmt.Errorf("unknown game type: %s", rg.OperatorIdentifier.GameName)
+	}
+
+	// decode moves
+	var moves []MoveInterface
+	for _, raw := range rg.Moves {
+		switch rg.OperatorIdentifier.GameName {
+		case "BatalhaDoChess":
+			var m ChessMove
+			if err := json.Unmarshal(raw, &m); err != nil {
+				return nil, err
+			}
+			moves = append(moves, m)
+		case "BatalhaDasDamas":
+			var m Move // plain move
+			if err := json.Unmarshal(raw, &m); err != nil {
+				return nil, err
+			}
+			moves = append(moves, m)
+		}
+	}
+
+	return &Game{
+		ID:                 rg.ID,
+		Board:              board,
+		Players:            rg.Players,
+		CurrentPlayerID:    rg.CurrentPlayerID,
+		Turn:               rg.Turn,
+		Moves:              moves,
+		StartTime:          rg.StartTime,
+		EndTime:            rg.EndTime,
+		Winner:             rg.Winner,
+		BetValue:           rg.BetValue,
+		TimerSetting:       rg.TimerSettings,
+		OperatorIdentifier: rg.OperatorIdentifier,
+	}, nil
+}
+
+// Define the interface
+type MoveInterface interface {
+	GetPlayerID() string
+	GetPieceID() string
+	GetFrom() string
+	GetTo() string
+	IsCaptureMove() bool
+	IsKingedMove() bool
+	SetIsKingedMove(bool)
+}
 type Move struct {
-	PlayerID  string `json:"player_id"`  // The player making the move
-	PieceID   string `json:"piece_id"`   // Will be given to clientes by the server.
-	From      string `json:"from"`       // e.g., "A1"
-	To        string `json:"to"`         // e.g., "B2"
-	IsCapture bool   `json:"is_capture"` // Whether the move captured an opponent's piece
-	IsKinged  bool   `json:"is_kinged"`  // Whether the piece was kinged after the move
+	PlayerID  string `json:"player_id"`
+	PieceID   string `json:"piece_id"`
+	From      string `json:"from"`
+	To        string `json:"to"`
+	IsCapture bool   `json:"is_capture"`
+	IsKinged  bool   `json:"is_kinged"`
+}
+
+func (m Move) GetPlayerID() string    { return m.PlayerID }
+func (m Move) GetPieceID() string     { return m.PieceID }
+func (m Move) GetFrom() string        { return m.From }
+func (m Move) GetTo() string          { return m.To }
+func (m Move) IsCaptureMove() bool    { return m.IsCapture }
+func (m Move) SetIsKingedMove(b bool) { m.IsCapture = b }
+func (m Move) IsKingedMove() bool     { return m.IsKinged }
+
+type ChessMove struct {
+	Move                  // embed base move
+	PromotionPiece string `json:"promotion_piece"`
+}
+
+func UnmarshalMove(raw []byte, gameName string) (MoveInterface, error) {
+	switch gameName {
+	case "BatalhaDasDamas":
+		var m Move
+		if err := json.Unmarshal(raw, &m); err != nil {
+			return nil, err
+		}
+		return m, nil
+
+	case "BatalhaDoChess":
+		var m ChessMove
+		if err := json.Unmarshal(raw, &m); err != nil {
+			return nil, err
+		}
+		return m, nil
+
+	default:
+		return nil, fmt.Errorf("unknown game type: %s", gameName)
+	}
 }
 
 type GameMovesRequest struct {
@@ -86,16 +191,15 @@ func mapPlayers(r *Room) []GamePlayer {
 
 func (r *Room) NewGame() *Game {
 	whiteID, _ := r.GetOpponentPlayerID(r.CurrentPlayerID)
-
 	game := Game{
 		ID:    r.ID,
-		Board: *NewBoard(r.CurrentPlayerID, whiteID, "std-game"),
+		Board: NewBoard(r.CurrentPlayerID, whiteID, "std-game", r.OperatorIdentifier.GameName),
 		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "two-pieces-endgame"),
 		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "multiple-capture"),
 		Players:         mapPlayers(r),
 		CurrentPlayerID: r.CurrentPlayerID,
 		Turn:            0,
-		Moves:           []Move{},
+		Moves:           []MoveInterface{},
 		StartTime:       time.Now(),
 		Winner:          "",
 		BetValue:        r.BetValue,
@@ -143,8 +247,8 @@ func (g *Game) CalcGameMaxTimer() (int, error) {
 
 func (g *Game) CountPlayerPieces(playerID string) int {
 	count := 0
-	for _, piece := range g.Board.Grid {
-		if piece != nil && piece.PlayerID == playerID {
+	for _, piece := range g.Board.GetPieces() {
+		if piece != nil && piece.GetPlayerID() == playerID {
 			count++
 		}
 	}
@@ -223,37 +327,45 @@ func (g *Game) NextPlayer() {
 }
 
 func (g *Game) RemovePiece(pos string) {
-	if _, exists := g.Board.Grid[pos]; exists {
-		g.Board.Grid[pos] = nil
+	if _, exists := g.Board.GetPiece(pos); exists {
+		g.Board.RemovePiece(pos)
 	}
 }
 
-func (g *Game) MovePiece(move Move) bool {
+// TODO: THIS NEEDS TO BE MOVED TO THE BOARD, SINCE THE BOARD IS WHAT CHANGED EACH GAME IT SHOULD BE THE ONE TO MAKE THE MOVE!
+func (g *Game) MovePiece(move MoveInterface) bool {
 
 	// Validate move
-	piece, exists := g.Board.Grid[move.From]
-	if !exists || piece == nil || piece.PieceID != move.PieceID || piece.PlayerID != move.PlayerID {
-		// Invalid move, update and break
+	piece, exists := g.Board.GetPiece(move.GetFrom())
+	if !exists {
+		logger.Default.Warnf("invalid move: no piece exists at position %v", move.GetFrom())
+		return false
+	}
+	if piece == nil {
+		logger.Default.Warnf("invalid move: piece at %v is nil", move.GetFrom())
+		return false
+	}
+	if piece.GetID() != move.GetPieceID() {
+		logger.Default.Warnf("invalid move: piece ID %v != move piece ID %v",
+			piece.GetID(), move.GetPieceID())
+		return false
+	}
+	if piece.GetPlayerID() != move.GetPlayerID() {
+		logger.Default.Warnf("invalid move: piece ID %v does not belong to player %v",
+			piece.GetID(), move.GetPlayerID())
 		return false
 	}
 
 	// Move piece to new position
-	g.Board.Grid[move.To] = piece
-	g.Board.Grid[move.From] = nil
+	g.Board.MovePiece(move.GetFrom(), move.GetTo())
 
-	//if move.IsCapture && !piece.IsKinged {
-	//	midRow := (move.From[0] + move.To[0]) / 2
-	//	midCol := (move.From[1] + move.To[1]) / 2
-	//	capturePos := fmt.Sprintf("%c%c", midRow, midCol)
-	//	g.Board.Grid[capturePos] = nil // Remove captured piece
-	//}
 	// Handle capture
-	if move.IsCapture {
+	if move.IsCaptureMove() {
 		var capturePos string
-		if piece.IsKinged {
+		if piece.IsPieceKinged() {
 			// For kinged pieces, the captured piece is the last square before the landing position
-			fromRow, fromCol := move.From[0], move.From[1]
-			toRow, toCol := move.To[0], move.To[1]
+			fromRow, fromCol := move.GetFrom()[0], move.GetFrom()[1]
+			toRow, toCol := move.GetTo()[0], move.GetTo()[1]
 
 			// Calculate the direction of movement
 			rowStep := 1
@@ -271,13 +383,13 @@ func (g *Game) MovePiece(move Move) bool {
 			capturePos = fmt.Sprintf("%c%c", captureRow, captureCol)
 		} else {
 			// For regular pieces, the captured piece is in the middle of the from and to positions
-			midRow := (move.From[0] + move.To[0]) / 2
-			midCol := (move.From[1] + move.To[1]) / 2
+			midRow := (move.GetFrom()[0] + move.GetTo()[0]) / 2
+			midCol := (move.GetFrom()[1] + move.GetTo()[1]) / 2
 			capturePos = fmt.Sprintf("%c%c", midRow, midCol)
 		}
 
 		// Remove the captured piece
-		g.Board.Grid[capturePos] = nil
+		g.Board.RemovePiece(capturePos)
 	}
 	return true
 }

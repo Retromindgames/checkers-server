@@ -169,7 +169,7 @@ func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
 	return nil
 }
 
-func (pc *PostgresCli) FetchGameMoves(gameID string) ([]models.Move, error) {
+func (pc *PostgresCli) FetchGameMoves(gameID string) ([]models.MoveInterface, error) {
 	query := `SELECT moves FROM games WHERE id = $1`
 	log.Printf("Fetching moves for gameID: %s", gameID) // not [%s]
 	parsedUUID, err := uuid.Parse(gameID)
@@ -184,7 +184,7 @@ func (pc *PostgresCli) FetchGameMoves(gameID string) ([]models.Move, error) {
 		return nil, fmt.Errorf("error fetching moves for game %s: %w", gameID, err)
 	}
 
-	var moves []models.Move
+	var moves []models.MoveInterface
 	if err := json.Unmarshal(movesJSON, &moves); err != nil {
 		return nil, fmt.Errorf("error unmarshalling moves JSON: %w", err)
 	}

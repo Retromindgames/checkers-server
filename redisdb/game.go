@@ -19,7 +19,7 @@ func (r *RedisClient) AddGame(game *models.Game) error {
 	if err != nil {
 		return err
 	}
-	betKey := fmt.Sprintf("games:bet:%.2f", game.BetValue)
+	betKey := fmt.Sprintf("games:{%s}:bet:%.2f", game.OperatorIdentifier.GameName, game.BetValue)
 	return r.Client.SAdd(context.Background(), betKey, game.ID).Err()
 }
 
@@ -46,12 +46,11 @@ func (r *RedisClient) GetGame(gameID string) (*models.Game, error) {
 		return nil, fmt.Errorf("[RedisClient] - failed to get game: %v", err)
 	}
 
-	var game models.Game
-	err = json.Unmarshal([]byte(data), &game)
+	game, err := models.UnmarshalGame([]byte(data))
 	if err != nil {
 		return nil, fmt.Errorf("[RedisClient] - failed to deserialize Game: %v", err)
 	}
-	return &game, nil
+	return game, nil
 }
 
 func (r *RedisClient) RemoveGame(gameID string) error {
@@ -60,8 +59,8 @@ func (r *RedisClient) RemoveGame(gameID string) error {
 	if err != nil {
 		return fmt.Errorf("[RedisClient] - Error getting game: %s", gameID)
 	}
-	var game models.Game
-	if err := json.Unmarshal([]byte(data), &game); err != nil {
+	game, err := models.UnmarshalGame([]byte(data))
+	if err != nil {
 		return fmt.Errorf("[RedisClient] - failed to unmarshal game: %v", err)
 	}
 	// Delete from main hash
@@ -69,7 +68,7 @@ func (r *RedisClient) RemoveGame(gameID string) error {
 		return fmt.Errorf("[RedisClient] - failed to delete game: %v", err)
 	}
 	// Remove from the specific bet value set
-	betKey := fmt.Sprintf("games:bet:%.2f", game.BetValue)
+	betKey := fmt.Sprintf("games:{%s}:bet:%.2f", game.OperatorIdentifier.GameName, game.BetValue)
 	if err := r.Client.SRem(context.Background(), betKey, gameID).Err(); err != nil {
 		return fmt.Errorf("[RedisClient] - failed to remove from bet value set: %v", err)
 	}
@@ -90,8 +89,8 @@ func (r *RedisClient) GetNumberOfGames() int {
 	return int(count)
 }
 
-func (r *RedisClient) CountGamesByBetValue(betValue float64) (int64, error) {
-	betKey := fmt.Sprintf("games:bet:%.2f", betValue)
+func (r *RedisClient) CountGamesByBetValue(betValue float64, gameName string) (int64, error) {
+	betKey := fmt.Sprintf("games:{%s}:bet:%.2f", gameName, betValue)
 	return r.Client.SCard(context.Background(), betKey).Result()
 }
 

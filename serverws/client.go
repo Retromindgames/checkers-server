@@ -281,7 +281,8 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 
 	// Now that our player has subscribbed to our stuff, we will notify the gameworker of the reconnect.
 	if wasdisconnectedInGame {
-		hub.redis.RPush("reconnect_game", player)
+		key := fmt.Sprintf("reconnect_game:{%v}", client.hub.gameName)
+		hub.redis.RPush(key, player)
 	}
 
 	// The queue handling of a disconnected player also has to be done...
