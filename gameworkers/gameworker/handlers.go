@@ -1,10 +1,10 @@
 package gameworker
 
 import (
-	"github.com/Lavizord/checkers-server/interfaces"
 	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/messages"
 	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/platforminterfaces"
 )
 
 func (gw *GameWorker) HandleGameEnd(game *models.Game, reason string, winnerID string) {
@@ -13,7 +13,7 @@ func (gw *GameWorker) HandleGameEnd(game *models.Game, reason string, winnerID s
 	gw.PublishStopToTimerChannel(game.ID)
 	game.FinishGame(winnerID)
 
-	winAmount := interfaces.CalculateWinAmount(int64(game.BetValue*100), game.OperatorIdentifier.WinFactor)
+	winAmount := platforminterfaces.CalculateWinAmount(int64(game.BetValue*100), game.OperatorIdentifier.WinFactor)
 	gameOverMsg, err := messages.GenerateGameOverMessage(reason, *game, winAmount)
 	if err != nil {
 		logger.Default.Errorf("[gameworker] - (Handle Game Over) - Failed to generate game over message, for game: %v, with player1 session: %v and player2 session: %v, with err: %v", game.ID, game.Players[0].SessionID, game.Players[1].SessionID, err)
@@ -33,7 +33,7 @@ func (gw *GameWorker) HandleGameEnd(game *models.Game, reason string, winnerID s
 }
 
 func (gw *GameWorker) HandleGameEndForPlayer(winnerID string, game *models.Game, gamePlayer models.GamePlayer, reason string, winAmount int64, gameOverMsg []byte) {
-	interfaceModule := interfaces.OperatorModules[game.OperatorIdentifier.OperatorName]
+	interfaceModule := platforminterfaces.OperatorModules[game.OperatorIdentifier.OperatorName]
 	var balanceUpdateMsg []byte
 
 	// 1. The Winner needs to have a post to the wallet.

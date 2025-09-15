@@ -36,7 +36,7 @@ jobs:
 
       - name: Build and push restapi image
         run: |
-          docker build -f restapiworker.dockerfile -t $ECR_REGISTRY:restapi .
+          docker build -f api.dockerfile -t $ECR_REGISTRY:restapi .
           docker push $ECR_REGISTRY:restapi
 
       - name: Build and push room image

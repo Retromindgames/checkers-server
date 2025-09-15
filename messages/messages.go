@@ -240,7 +240,7 @@ func GenerateGameStartMessage(game models.Game) ([]byte, error) {
 		MaxTimer:        maxTimer,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers:     ConvertGamePlayersToResponse(game.Players),
-		WinFactor:       game.OperatorIdentifier.WinFactor,
+		//WinFactor:       game.OperatorIdentifier.WinFactor,
 	}
 	return NewMessage("game_start", gamestart)
 }
@@ -253,7 +253,7 @@ func GenerateGameBoardState(game models.Game) ([]byte, error) {
 		MaxTimer:        maxTimer,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers:     ConvertGamePlayersToResponse(game.Players),
-		WinFactor:       game.OperatorIdentifier.WinFactor,
+		//WinFactor:       game.OperatorIdentifier.WinFactor,
 	}
 	return NewMessage("board_state", gamestart)
 }
@@ -267,7 +267,7 @@ func GenerateGameReconnectMessage(game models.Game) ([]byte, error) {
 		MaxTimer:        maxTimer,
 		CurrentPlayerID: game.CurrentPlayerID,
 		GamePlayers:     ConvertGamePlayersToResponse(game.Players),
-		WinFactor:       game.OperatorIdentifier.WinFactor,
+		//WinFactor:       game.OperatorIdentifier.WinFactor,
 	}
 	return NewMessage("game_reconnect", gamestart)
 }

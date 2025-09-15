@@ -8,9 +8,9 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Lavizord/checkers-server/interfaces"
 	"github.com/Lavizord/checkers-server/messages"
 	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/platforminterfaces"
 	"github.com/Lavizord/checkers-server/redisdb"
 )
 
@@ -82,13 +82,13 @@ func (rw *RoomWorker) HandleQueuePaired(player1, player2 *models.Player, p1disc,
 		return
 	}
 
-	message1, err := messages.GeneratePairedMessage(player1, player2, room.ID, colorp1, interfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor), 30)
+	message1, err := messages.GeneratePairedMessage(player1, player2, room.ID, colorp1, platforminterfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor), 30)
 	if err != nil {
 		log.Printf("Error generating message for player1: %v\n", err)
 		return
 	}
 
-	message2, err := messages.GeneratePairedMessage(player2, player1, room.ID, colorp2, interfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor), 30)
+	message2, err := messages.GeneratePairedMessage(player2, player1, room.ID, colorp2, platforminterfaces.CalculateWinAmount(int64(room.BetValue*100), room.OperatorIdentifier.WinFactor), 30)
 	if err != nil {
 		log.Printf("Error generating message for player2: %v\n", err)
 		return
@@ -144,7 +144,7 @@ func (rw *RoomWorker) HandleReadyRoomNew(player *models.Player, proom *models.Ro
 	}
 	// Now! If both players are ready...!!
 	// Before we start the game, we will need to post to the wallet api of the bet, we will use our api interface for that.
-	module, exists := interfaces.OperatorModules[proom.OperatorIdentifier.OperatorName]
+	module, exists := platforminterfaces.OperatorModules[proom.OperatorIdentifier.OperatorName]
 	if !exists {
 		log.Printf("[RoomWorker-%d] - Error handleReadyRoom getting getting interfaces.OperatorModules[%v]:%s\n", pid, proom.OperatorIdentifier.OperatorName, err)
 		return

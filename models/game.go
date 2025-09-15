@@ -21,18 +21,18 @@ type GamePlayer struct {
 }
 
 type Game struct {
-	ID                 string             `json:"id"`
-	Board              Board              `json:"board"`
-	Players            []GamePlayer       `json:"players"`
-	CurrentPlayerID    string             `json:"current_player_id"`
-	Turn               int                `json:"turn"`
-	Moves              []MoveInterface    `json:"moves"`
-	StartTime          time.Time          `json:"start_time"`
-	EndTime            time.Time          `json:"end_time"`
-	Winner             string             `json:"winner"`
-	BetValue           float64            `json:"bet_value"` // Bet amount for the game
-	TimerSetting       string             `json:"timer_settings"`
-	OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
+	ID              string          `json:"id"`
+	Board           Board           `json:"board"`
+	Players         []GamePlayer    `json:"players"`
+	CurrentPlayerID string          `json:"current_player_id"`
+	Turn            int             `json:"turn"`
+	Moves           []MoveInterface `json:"moves"`
+	StartTime       time.Time       `json:"start_time"`
+	EndTime         time.Time       `json:"end_time"`
+	Winner          string          `json:"winner"`
+	BetValue        float64         `json:"bet_value"` // Bet amount for the game
+	TimerSetting    string          `json:"timer_settings"`
+	//OperatorIdentifier OperatorIdentifier `json:"operator_identifier"`
 }
 
 type rawGame struct {
@@ -196,15 +196,15 @@ func (r *Room) NewGame() *Game {
 		Board: NewBoard(r.CurrentPlayerID, whiteID, "std-game", r.OperatorIdentifier.GameName),
 		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "two-pieces-endgame"),
 		//Board:           *NewBoard(r.CurrentPlayerID, whiteID, "multiple-capture"),
-		Players:            mapPlayers(r),
-		CurrentPlayerID:    r.CurrentPlayerID,
-		Turn:               0,
-		Moves:              []MoveInterface{},
-		StartTime:          time.Now(),
-		Winner:             "",
-		BetValue:           r.BetValue,
-		TimerSetting:       config.Cfg.Services["gameworker"].TimerSetting,
-		OperatorIdentifier: r.OperatorIdentifier,
+		Players:         mapPlayers(r),
+		CurrentPlayerID: r.CurrentPlayerID,
+		Turn:            0,
+		Moves:           []MoveInterface{},
+		StartTime:       time.Now(),
+		Winner:          "",
+		BetValue:        r.BetValue,
+		TimerSetting:    config.Cfg.Services["gameworker"].TimerSetting,
+		//OperatorIdentifier: r.OperatorIdentifier,
 	}
 
 	if game.Players[0].ID == whiteID {

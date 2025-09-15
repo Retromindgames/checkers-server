@@ -45,11 +45,11 @@ services:
     networks:
       - app-network
 
-  restapi:
-    container_name: restapiworker
+  api:
+    container_name: api
     build:
       context: .
-      dockerfile: restapiworker.dockerfile
+      dockerfile: ./api/api.dockerfile
     expose:
       - "80" 
     networks:

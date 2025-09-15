@@ -1,6 +1,7 @@
 package postgrescli
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -8,13 +9,15 @@ import (
 	"time"
 
 	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/postgrescli/ent"
 	"github.com/google/uuid"
 
 	_ "github.com/lib/pq"
 )
 
 type PostgresCli struct {
-	DB *sql.DB
+	DB     *sql.DB
+	EntCli *ent.Client
 }
 
 func NewPostgresCli(user, password, dbname, host, port string, ssl bool) (*PostgresCli, error) {
@@ -41,48 +44,48 @@ func NewPostgresCli(user, password, dbname, host, port string, ssl bool) (*Postg
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	return &PostgresCli{DB: db}, nil
+	// Ent client
+	entClient, err := ent.Open("postgres", connStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open ent client: %w", err)
+	}
+
+	return &PostgresCli{
+		DB:     db,
+		EntCli: entClient,
+	}, nil
 }
 
 func (pc *PostgresCli) Close() {
 	pc.DB.Close()
+	pc.EntCli.Close()
 }
 
-func (pc *PostgresCli) SaveSession(session models.Session) error {
-	query := `
-		INSERT INTO sessions (
-			SessionId, Token, PlayerName, Currency, OperatorBaseUrl, CreatedAt, OperatorName, OperatorGameName, GameName
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`
-	//start := time.Now()
-
-	stmt, err := pc.DB.Prepare(query)
-	if err != nil {
-		return fmt.Errorf("prepare session insert: %w", err)
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(
-		session.ID,
-		session.Token,
-		session.PlayerName,
-		session.Currency,
-		session.OperatorBaseUrl,
-		session.CreatedAt,
-		session.OperatorIdentifier.OperatorName,
-		session.OperatorIdentifier.OperatorGameName,
-		session.OperatorIdentifier.GameName,
-	)
-	//duration := time.Since(start)
-	//log.Printf("[Postgres metric] - SaveSession Insert took %v", duration)
-
-	if err != nil {
-		log.Printf("[PostgresCli] - error saving session: %v", err)
-		return fmt.Errorf("exec session insert: %w", err)
+func (pc *PostgresCli) CreateDb() error {
+	//TODO: Auto-create schema remove in production, replace with migrations
+	if err := pc.EntCli.Schema.Create(context.Background()); err != nil {
+		return fmt.Errorf("failed to run ent schema migration: %w", err)
 	}
 	return nil
 }
 
+func (pc *PostgresCli) SaveSessionNew(session models.Session) error {
+	ctx := context.Background()
+	_, err := pc.EntCli.Session.
+		Create().
+		SetToken(session.Token).
+		SetClientID(session.ID).
+		SetDemo(false).
+		Save(ctx)
+
+	if err != nil {
+		log.Printf("[PostgresCli] - error saving session: %v", err)
+		return fmt.Errorf("ent: save session: %w", err)
+	}
+	return nil
+}
+
+/*
 func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 	query := `
 		INSERT INTO transactions (
@@ -117,6 +120,7 @@ func (pc *PostgresCli) SaveTransaction(transaction models.Transaction) error {
 	}
 	return nil
 }
+*/
 
 func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
 	movesJSON, err := json.Marshal(game.Moves)
@@ -145,16 +149,16 @@ func (pc *PostgresCli) SaveGame(game models.Game, reason string) error {
 
 	_, err = stmt.Exec(
 		game.ID,
-		game.OperatorIdentifier.OperatorName,
-		game.OperatorIdentifier.OperatorGameName,
-		game.OperatorIdentifier.GameName,
+		//game.OperatorIdentifier.OperatorName,
+		//game.OperatorIdentifier.OperatorGameName,
+		//game.OperatorIdentifier.GameName,
 		game.StartTime,
 		game.EndTime,
 		string(movesJSON),
 		game.BetValue,
 		game.Winner,
 		string(playersJSON),
-		game.OperatorIdentifier.WinFactor,
+		//game.OperatorIdentifier.WinFactor,
 		len(game.Moves),
 		reason,
 	)
@@ -186,34 +190,4 @@ func (pc *PostgresCli) FetchGameMoves(gameID string) ([]models.MoveInterface, er
 	}
 
 	return moves, nil
-}
-
-// FetchOperator fetches an operator from the database using OperatorName and OperatorGameName
-func (pc *PostgresCli) FetchOperator(operatorName, operatorGameName string) (*models.Operator, error) {
-	query := `
-		SELECT ID, OperatorName, OperatorGameName, GameName, Active, GameBaseUrl, OperatorWalletBaseUrl, WinFactor
-		FROM operators
-		WHERE OperatorName = $1 AND OperatorGameName = $2
-	`
-	row := pc.DB.QueryRow(query, operatorName, operatorGameName)
-
-	var operator models.Operator
-	err := row.Scan(
-		&operator.ID,
-		&operator.OperatorName,
-		&operator.OperatorGameName,
-		&operator.GameName,
-		&operator.Active,
-		&operator.GameBaseUrl,
-		&operator.OperatorWalletBaseUrl,
-		&operator.WinFactor,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("operator not found with OperatorName=%s and OperatorGameName=%s", operatorName, operatorGameName)
-		}
-		return nil, fmt.Errorf("error fetching operator: %w", err)
-	}
-
-	return &operator, nil
 }

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Lavizord/checkers-server/interfaces"
 	"github.com/Lavizord/checkers-server/logger"
 	"github.com/Lavizord/checkers-server/models"
+	"github.com/Lavizord/checkers-server/platforminterfaces"
 	"github.com/Lavizord/checkers-server/redisdb"
 )
 
@@ -42,7 +42,7 @@ func fetchAndValidateSession(token, sessionID, currency string, redis *redisdb.R
 	if session.Token != token {
 		return nil, fmt.Errorf("token mismatch for session: %v expected %s, got %s", sessionID, token, session.Token)
 	}
-	if session.OperatorIdentifier.OperatorName == "TestOp" {
+	if session.Demo {
 		return session, nil
 	}
 	if session.IsTokenExpired() {
@@ -52,7 +52,7 @@ func fetchAndValidateSession(token, sessionID, currency string, redis *redisdb.R
 }
 
 func FetchWalletBallance(session *models.Session, redis *redisdb.RedisClient) (int64, error) {
-	module := interfaces.OperatorModules[session.OperatorIdentifier.OperatorName]
+	module := platforminterfaces.PlatformModules[session..OperatorName]
 	walletBalance, err := module.HandleFetchWalletBalance(*session, redis)
 	if err != nil {
 		return 0, fmt.Errorf("failed to fetch wallet for session: %v, with error: %v", session.ID, err)
