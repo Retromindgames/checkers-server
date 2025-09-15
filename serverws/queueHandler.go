@@ -16,7 +16,7 @@ type QueueHandler struct {
 	Client      *Client
 	RedisClient *redisdb.RedisClient
 	Msg         *messages.Message[json.RawMessage]
-
+	GameName    string
 	// Track changes for cleanup
 	initialValidationsFailed bool
 	statusUpdated            bool
@@ -24,11 +24,12 @@ type QueueHandler struct {
 	queueCountIncr           bool
 }
 
-func NewQueueHandler(client *Client, redis *redisdb.RedisClient, msg *messages.Message[json.RawMessage]) *QueueHandler {
+func NewQueueHandler(client *Client, redis *redisdb.RedisClient, msg *messages.Message[json.RawMessage], gn string) *QueueHandler {
 	return &QueueHandler{
 		Client:      client,
 		RedisClient: redis,
 		Msg:         msg,
+		GameName:    gn,
 	}
 }
 
@@ -92,7 +93,7 @@ func (qh *QueueHandler) cleanup() {
 	}
 
 	if qh.queueCountIncr {
-		qh.RedisClient.DecrementQueueCount(qh.Client.player.SelectedBet)
+		qh.RedisClient.DecrementQueueCount(qh.GameName, qh.Client.player.SelectedBet)
 		sendFailedQueueConfirmation = true
 	}
 
@@ -130,7 +131,7 @@ func (qh *QueueHandler) updatePlayerState(betValue float64) {
 }
 
 func (qh *QueueHandler) addToRedisQueue() error {
-	queueName := fmt.Sprintf("queue:%f", qh.Client.player.SelectedBet)
+	queueName := fmt.Sprintf("queue:{%v}:%f", qh.GameName, qh.Client.player.SelectedBet)
 	err := qh.RedisClient.RPush(queueName, qh.Client.player)
 	if err != nil {
 		msgBytes, _ := messages.GenerateGenericMessage("error", "error adding player to queue")
@@ -142,12 +143,12 @@ func (qh *QueueHandler) addToRedisQueue() error {
 }
 
 func (qh *QueueHandler) updateQueueCount() {
-	exists, err := qh.RedisClient.CheckQueueCountExists(qh.Client.player.SelectedBet)
+	exists, err := qh.RedisClient.CheckQueueCountExists(qh.GameName, qh.Client.player.SelectedBet)
 	if err == nil {
 		if !exists {
-			qh.RedisClient.CreateQueueCount(qh.Client.player.SelectedBet)
+			qh.RedisClient.CreateQueueCount(qh.GameName, qh.Client.player.SelectedBet)
 		} else {
-			qh.RedisClient.IncrementQueueCount(qh.Client.player.SelectedBet)
+			qh.RedisClient.IncrementQueueCount(qh.GameName, qh.Client.player.SelectedBet)
 		}
 		qh.queueCountIncr = true
 	}
